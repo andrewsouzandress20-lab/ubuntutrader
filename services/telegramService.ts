@@ -28,7 +28,7 @@ export const sendTelegramSignal = async (
 - **FORÇA:** **${strength}**
 - **SCORE:** \`${score}\`
 --------------------------------------
-*ANALISE A ZONA CMS/FGV PARA UMA ENTRADA MELHOR*
+*ANALISE A ZONA SMC/FGV PARA UMA ENTRADA MELHOR*
   `;
 
   const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
