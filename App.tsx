@@ -5,6 +5,7 @@ import { fetchRealData, fetchCorrelationData, fetchMarketBreadth, calculateVolum
 import { sendTelegramSignal } from './services/telegramService';
 import { detectSMCZones } from './utils/fvgDetector';
 import TradingChart from './components/TradingChart';
+import MqlCalendarWidget from './components/MqlCalendarWidget';
 
 const App: React.FC = () => {
   const [selectedAsset, setSelectedAsset] = useState<Asset>(SUPPORTED_ASSETS[1]); 
@@ -14,7 +15,6 @@ const App: React.FC = () => {
   const [events, setEvents] = useState<EconomicEvent[]>([]);
   const [breadthSummary, setBreadthSummary] = useState<MarketBreadthSummary>({ advancing: 0, declining: 0, total: 30 });
   const [breadthDetails, setBreadthDetails] = useState<BreadthCompanyDetails[]>([]);
-  const [selectedEvent, setSelectedEvent] = useState<EconomicEvent | null>(null);
   const [isBreadthModalOpen, setIsBreadthModalOpen] = useState(false);
   const [volumePressure, setVolumePressure] = useState<VolumePressure>({ buyPercent: 50, sellPercent: 50, total: 0 });
   const [gap, setGap] = useState<GapData>({ value: 0, percent: 0, type: 'none' });
@@ -24,13 +24,11 @@ const App: React.FC = () => {
   const [lastAutoSignalDate, setLastAutoSignalDate] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
 
-  // Lógica de Direção do Score
   const getScoreLabel = useCallback((s: number) => {
     if (Math.abs(s) <= 15) return "NEUTRO";
     return s > 0 ? "COMPRA" : "VENDA";
   }, []);
 
-  // Lógica de Intensidade
   const getStrengthLabel = useCallback((s: number) => {
     const absScore = Math.abs(s);
     if (absScore <= 15) return "AGUARDANDO";
@@ -85,22 +83,6 @@ const App: React.FC = () => {
     return () => clearInterval(clockInterval);
   }, [selectedAsset, institutionalScore, lastAutoSignalDate, getScoreLabel, getStrengthLabel]);
 
-  const handleTestTelegram = async () => {
-    setIsTestingTelegram(true);
-    const signal = getScoreLabel(institutionalScore);
-    const strength = getStrengthLabel(institutionalScore);
-    const testSignal = signal === 'NEUTRO' ? 'COMPRA' : signal;
-    const testStrength = strength === 'AGUARDANDO' ? 'FRACA' : strength;
-    try {
-      await sendTelegramSignal(selectedAsset.symbol, testSignal, testStrength, institutionalScore);
-      alert(`Teste enviado!\nAtivo: ${selectedAsset.symbol}\nSinal: ${testSignal}`);
-    } catch (e) {
-      alert("Erro ao enviar teste.");
-    } finally {
-      setIsTestingTelegram(false);
-    }
-  };
-
   const loadData = useCallback(async (isInitialLoad = false) => {
     if (isInitialLoad) setLoading(true);
     try {
@@ -133,14 +115,6 @@ const App: React.FC = () => {
     const interval = setInterval(() => loadData(false), 30000); 
     return () => clearInterval(interval);
   }, [selectedAsset, timeframe, loadData]);
-
-  const getSentimentStyles = (sentiment: EconomicEvent['sentiment']) => {
-    switch (sentiment) {
-      case 'POSITIVE': return { border: 'border-emerald-500/30', bg: 'bg-emerald-500/5', text: 'text-emerald-400' };
-      case 'NEGATIVE': return { border: 'border-rose-500/30', bg: 'bg-rose-500/5', text: 'text-rose-400' };
-      default: return { border: 'border-amber-500/30', bg: 'bg-amber-500/5', text: 'text-amber-400' };
-    }
-  };
 
   return (
     <div className="flex flex-col h-screen bg-[#02040a] text-[#94a3b8] overflow-hidden font-['Inter'] selection:bg-indigo-500/30">
@@ -178,15 +152,6 @@ const App: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-4">
-          <button 
-            onClick={handleTestTelegram}
-            disabled={isTestingTelegram}
-            className={`flex items-center gap-2 px-4 py-1.5 rounded-md border border-indigo-500/40 bg-indigo-500/20 text-[10px] font-black text-indigo-100 hover:bg-indigo-500/40 transition-all ${isTestingTelegram ? 'opacity-50 cursor-not-allowed' : 'active:scale-95'}`}
-          >
-            <i className={`fab fa-telegram-plane ${isTestingTelegram ? 'fa-spin' : ''}`}></i>
-            {isTestingTelegram ? 'ENVIANDO...' : 'ENVIAR TESTE TELEGRAM'}
-          </button>
-          
           <div className="flex bg-[#050814] p-1 rounded-lg border border-slate-800">
             {SUPPORTED_ASSETS.map(a => (
               <button 
@@ -202,7 +167,7 @@ const App: React.FC = () => {
       </header>
 
       <main className="flex flex-1 overflow-hidden relative">
-        <aside className="w-[280px] bg-[#050814] border-r border-slate-800/40 p-5 overflow-y-auto custom-scrollbar flex flex-col gap-8 shrink-0 z-30">
+        <aside className="w-[280px] bg-[#050814] border-r border-slate-800/40 p-5 overflow-y-auto no-scrollbar flex flex-col gap-8 shrink-0 z-30">
           <section className="shrink-0">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Monitoramento Macro</h3>
@@ -230,8 +195,6 @@ const App: React.FC = () => {
           </div>
 
           <div className="h-[95px] bg-[#0d1226] border-t border-indigo-500/20 flex items-center px-10 gap-12 shrink-0 z-20 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
-             
-             {/* 1. SCORE INSTITUCIONAL */}
              <div className="flex items-center gap-4 shrink-0">
                 <div className={`w-[58px] h-[58px] rounded-xl flex items-center justify-center border-2 transition-all duration-700 ${institutionalScore >= 0 ? 'border-emerald-500/40 bg-emerald-500/5' : 'border-rose-500/40 bg-rose-500/5'}`}>
                    <span className={`text-[20px] font-black jetbrains ${institutionalScore >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
@@ -239,7 +202,7 @@ const App: React.FC = () => {
                    </span>
                 </div>
                 <div className="flex flex-col justify-center leading-[1.1] min-w-[100px]">
-                   <span className="text-[9px] font-black text-slate-500 tracking-[0.1em] mb-1 text-center sm:text-left">SCORE INST.</span>
+                   <span className="text-[9px] font-black text-slate-500 tracking-[0.1em] mb-1">SCORE INST.</span>
                    <span className={`text-[19px] font-black uppercase tracking-tight leading-none ${getScoreLabel(institutionalScore) === 'COMPRA' ? 'text-emerald-400' : getScoreLabel(institutionalScore) === 'VENDA' ? 'text-rose-400' : 'text-[#64748b]'}`}>
                      {getScoreLabel(institutionalScore)}
                    </span>
@@ -248,7 +211,6 @@ const App: React.FC = () => {
 
              <div className="h-10 w-[1px] bg-slate-800/50 shrink-0"></div>
 
-             {/* 2. FLUXO DE VOLUME */}
              <div className="flex flex-col gap-2 min-w-[150px] shrink-0">
                 <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest leading-none">Fluxo de Volume</span>
                 <div className="bg-[#050814] border border-white/5 px-3 h-11 rounded-xl flex flex-col justify-center gap-1.5 shadow-inner">
@@ -265,7 +227,6 @@ const App: React.FC = () => {
 
              <div className="h-10 w-[1px] bg-slate-800/50 shrink-0"></div>
 
-             {/* 3. GAP DE ABERTURA */}
              <div className="flex flex-col gap-2 min-w-[100px] shrink-0">
                 <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest leading-none">Gap Abertura</span>
                 <div className={`bg-[#050814] border px-3 h-11 rounded-xl flex items-center justify-center ${gap.type !== 'none' ? (gap.type === 'up' ? 'border-emerald-500/20' : 'border-rose-500/20') : 'border-white/5'}`}>
@@ -277,7 +238,6 @@ const App: React.FC = () => {
 
              <div className="h-10 w-[1px] bg-slate-800/50 shrink-0"></div>
 
-             {/* 4. COMPOSIÇÃO DO GRUPO (SIMPLIFICADO) */}
              <button 
                 onClick={() => setIsBreadthModalOpen(true)}
                 className="flex-1 flex flex-col gap-2 min-w-0 group hover:bg-white/5 p-2 rounded-2xl transition-all"
@@ -301,35 +261,23 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        <aside className="w-[320px] bg-[#050814] border-l border-slate-800/40 flex flex-col shrink-0 overflow-hidden z-30 shadow-2xl">
+        <aside className="w-[380px] bg-[#050814] border-l border-slate-800/40 flex flex-col shrink-0 overflow-hidden z-30 shadow-2xl">
            <div className="p-5 flex-1 flex flex-col overflow-hidden gap-4">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-[10px] font-black text-white uppercase tracking-widest flex items-center gap-2">
-                  <span className="w-1.5 h-3 bg-amber-500 rounded-full"></span>
-                  Agenda Econômica
+                <h3 className="text-[11px] font-black text-white uppercase tracking-widest flex items-center gap-3">
+                  <span className="w-1.5 h-3.5 bg-indigo-500 rounded-full"></span>
+                  Agenda Econômica (MQL5)
                 </h3>
+                <div className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
+                  <span className="text-[8px] font-black text-slate-500">REAL-TIME</span>
+                </div>
               </div>
-              <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3">
-                 {events.map((event) => {
-                   const styles = getSentimentStyles(event.sentiment);
-                   return (
-                     <button key={event.id} onClick={() => setSelectedEvent(event)} className={`w-full text-left p-4 rounded-2xl border transition-all relative group overflow-hidden ${styles.border} ${styles.bg} hover:border-indigo-500/40`}>
-                        <div className="flex justify-between items-center mb-2">
-                           <span className={`text-[11px] font-black uppercase ${styles.text} tracking-tight truncate pr-4`}>{event.title}</span>
-                           <span className="text-[9px] font-black text-slate-500 jetbrains shrink-0">{new Date(event.time * 1000).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}</span>
-                        </div>
-                        <div className="flex justify-between items-center mt-2">
-                           <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded border ${styles.border} ${styles.text}`}>IMPACTO {event.impact}</span>
-                           <i className="fas fa-chevron-right text-[8px] opacity-20 group-hover:opacity-100 transition-opacity"></i>
-                        </div>
-                     </button>
-                   );
-                 })}
-              </div>
+              
+              <MqlCalendarWidget />
            </div>
         </aside>
 
-        {/* MODAL COMPOSIÇÃO DO GRUPO (RAIO-X) */}
         {isBreadthModalOpen && (
           <div className="fixed inset-0 z-[120] flex items-center justify-center p-6 bg-[#02040a]/90 backdrop-blur-xl" onClick={() => setIsBreadthModalOpen(false)}>
             <div className="bg-[#050814] border border-indigo-500/30 shadow-2xl rounded-3xl w-full max-w-4xl max-h-[85vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
@@ -341,24 +289,12 @@ const App: React.FC = () => {
                   </h2>
                   <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Sentimento Detalhado por Ativo Individual</p>
                 </div>
-                <div className="flex items-center gap-6">
-                  <div className="flex gap-4">
-                     <div className="flex flex-col items-center">
-                       <span className="text-[16px] font-black text-emerald-400 jetbrains">{breadthSummary.advancing}</span>
-                       <span className="text-[8px] font-black text-slate-500 uppercase">BUY</span>
-                     </div>
-                     <div className="flex flex-col items-center">
-                       <span className="text-[16px] font-black text-rose-400 jetbrains">{breadthSummary.declining}</span>
-                       <span className="text-[8px] font-black text-slate-500 uppercase">SELL</span>
-                     </div>
-                  </div>
-                  <button onClick={() => setIsBreadthModalOpen(false)} className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 transition-colors flex items-center justify-center text-slate-400">
-                    <i className="fas fa-times"></i>
-                  </button>
-                </div>
+                <button onClick={() => setIsBreadthModalOpen(false)} className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 transition-colors flex items-center justify-center text-slate-400">
+                  <i className="fas fa-times"></i>
+                </button>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-8 custom-scrollbar bg-[#02040a]/40">
+              <div className="flex-1 overflow-y-auto p-8 no-scrollbar bg-[#02040a]/40">
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
                   {breadthDetails.map((company) => (
                     <div 
@@ -387,45 +323,6 @@ const App: React.FC = () => {
                 >
                   FECHAR ANALYTICS
                 </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {selectedEvent && (
-          <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-[#02040a]/90 backdrop-blur-md" onClick={() => setSelectedEvent(null)}>
-            <div 
-              className={`bg-[#050814] border shadow-2xl rounded-3xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200 ${getSentimentStyles(selectedEvent.sentiment).border}`}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="p-8">
-                <div className="flex justify-between items-start mb-8">
-                  <div className="flex flex-col gap-2">
-                    <span className={`text-[10px] font-black uppercase px-2 py-1 rounded bg-[#0d1226] border tracking-[0.2em] w-fit ${getSentimentStyles(selectedEvent.sentiment).text} ${getSentimentStyles(selectedEvent.sentiment).border}`}>
-                      {selectedEvent.impact} IMPACTO
-                    </span>
-                    <h2 className="text-xl font-black text-white leading-tight tracking-tight">{selectedEvent.title}</h2>
-                  </div>
-                  <button onClick={() => setSelectedEvent(null)} className="w-9 h-9 rounded-full hover:bg-white/5 transition-colors flex items-center justify-center text-slate-500">
-                    <i className="fas fa-times"></i>
-                  </button>
-                </div>
-                <div className="bg-[#0d1226] p-6 rounded-2xl border border-slate-800 shadow-inner mb-6 text-xs text-slate-300 leading-relaxed font-medium italic">
-                  "{selectedEvent.description}"
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-[#0d1226]/50 p-4 rounded-xl border border-slate-800/50">
-                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-1">HORÁRIO</span>
-                    <span className="text-[11px] font-bold text-white jetbrains">{new Date(selectedEvent.time * 1000).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'})}</span>
-                  </div>
-                  <div className="bg-[#0d1226]/50 p-4 rounded-xl border border-slate-800/50 flex flex-col justify-center">
-                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-1">STATUS</span>
-                    <span className={`text-[10px] font-black ${getSentimentStyles(selectedEvent.sentiment).text}`}>ANÁLISE ATIVA</span>
-                  </div>
-                </div>
-              </div>
-              <div className="h-14 bg-[#0d1226] border-t border-slate-800/60 px-8 flex items-center justify-end">
-                <button onClick={() => setSelectedEvent(null)} className="text-[10px] font-black text-indigo-400 uppercase tracking-widest hover:text-indigo-300">FECHAR</button>
               </div>
             </div>
           </div>
