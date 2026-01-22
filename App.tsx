@@ -1,15 +1,14 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Candle, Asset, SUPPORTED_ASSETS, Timeframe, TIMEFRAMES, UTC_OFFSETS, CorrelationData, MarketBreadthSummary, BreadthCompanyDetails, VolumePressure, GapData, EconomicEvent, SMCZone, FVGType, ZoneType } from './types';
-import { analyzeMarket } from './services/geminiService';
 import { fetchRealData, fetchCorrelationData, fetchMarketBreadth, calculateVolumePressure, detectOpeningGap, fetchEconomicEvents, fetchCurrentPrice } from './services/dataService';
+import { sendTelegramSignal } from './services/telegramService';
 import { detectSMCZones } from './utils/fvgDetector';
 import TradingChart from './components/TradingChart';
 
 const App: React.FC = () => {
   const [selectedAsset, setSelectedAsset] = useState<Asset>(SUPPORTED_ASSETS[1]); 
   const [timeframe, setTimeframe] = useState<Timeframe>('5m');
-  const [utcOffset, setUtcOffset] = useState<number>(-3);
   const [candles, setCandles] = useState<Candle[]>([]);
   const [correlations, setCorrelations] = useState<CorrelationData[]>([]);
   const [events, setEvents] = useState<EconomicEvent[]>([]);
@@ -19,63 +18,69 @@ const App: React.FC = () => {
   const [selectedEvent, setSelectedEvent] = useState<EconomicEvent | null>(null);
   const [volumePressure, setVolumePressure] = useState<VolumePressure>({ buyPercent: 50, sellPercent: 50, total: 0 });
   const [gap, setGap] = useState<GapData>({ value: 0, percent: 0, type: 'none' });
+  const [currentTime, setCurrentTime] = useState(new Date());
   
-  const [aiAnalysis, setAiAnalysis] = useState<{ text: string; sources: any[] }>({ text: '', sources: [] });
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [latency, setLatency] = useState<number>(0);
-  const [serverTime, setServerTime] = useState<string>('');
+  const [lastSignalDate, setLastSignalDate] = useState<string | null>(null);
 
+  // Relógio interno e monitoramento de sinal
   useEffect(() => {
     const timer = setInterval(() => {
-      setServerTime(new Date().toLocaleTimeString('pt-BR', { hour12: false }));
+      const now = new Date();
+      setCurrentTime(now);
+      
+      const hour = now.getHours();
+      const min = now.getMinutes();
+      const sec = now.getSeconds();
+      const dateKey = `${now.toDateString()}-${selectedAsset.symbol}`;
+
+      // Lógica de disparo automático: 10:30:04 (NY) ou 22:30:04 (HK)
+      const isOpeningTime = (selectedAsset.symbol === 'US30' && hour === 10 && min === 30 && sec === 4) ||
+                            (selectedAsset.symbol === 'HK50' && hour === 22 && min === 30 && sec === 4);
+
+      if (isOpeningTime && lastSignalDate !== dateKey) {
+        const signal = getScoreLabel(institutionalScore);
+        const strength = getStrengthLabel(institutionalScore);
+        
+        // Apenas envia se houver uma direção clara (Score > 20 ou < -20)
+        if (signal !== 'NEUTRO') {
+          sendTelegramSignal(selectedAsset.symbol, signal, strength, institutionalScore);
+          setLastSignalDate(dateKey);
+          console.log(`Sinal enviado via Telegram para ${selectedAsset.symbol}`);
+        }
+      }
     }, 1000);
     return () => clearInterval(timer);
+  }, [currentTime, selectedAsset, lastSignalDate]);
+
+  const getMarketStatus = (symbol: string) => {
+    const hour = currentTime.getHours();
+    const min = currentTime.getMinutes();
+    const timeVal = hour * 100 + min;
+
+    if (symbol === 'US30') {
+      return (timeVal >= 1030 && timeVal <= 1700);
+    } else if (symbol === 'HK50') {
+      return (timeVal >= 2230 || timeVal <= 500);
+    }
+    return false;
+  };
+
+  const getScoreLabel = useCallback((s: number) => {
+    if (s > 20) return "COMPRA";
+    if (s < -20) return "VENDA";
+    return "NEUTRO";
   }, []);
 
-  const loadData = useCallback(async (isInitialLoad = false) => {
-    if (isInitialLoad) setLoading(true);
-    const start = Date.now();
-    try {
-      const [candleData, corrData, breadthRes, eventData, currentPrice] = await Promise.all([
-        fetchRealData(selectedAsset, timeframe),
-        fetchCorrelationData(selectedAsset.symbol),
-        fetchMarketBreadth(selectedAsset.symbol),
-        fetchEconomicEvents(),
-        fetchCurrentPrice(selectedAsset)
-      ]);
-      
-      setLatency(Date.now() - start);
-      setCorrelations(corrData);
-      setBreadthSummary(breadthRes.summary);
-      setBreadthDetails(breadthRes.details);
-      setEvents(eventData);
-      
-      if (candleData.length > 0) {
-        if (currentPrice) {
-          candleData[candleData.length - 1].close = currentPrice;
-        }
-        setCandles(candleData);
-        setVolumePressure(calculateVolumePressure(candleData));
-        setGap(detectOpeningGap(candleData, selectedAsset));
-      }
-    } catch (err) {
-      console.error("Data load failed:", err);
-    } finally {
-      if (isInitialLoad) setLoading(false);
-    }
-  }, [selectedAsset, timeframe]);
-
-  useEffect(() => {
-    loadData(true);
-    const interval = setInterval(() => loadData(false), 30000); 
-    return () => clearInterval(interval);
-  }, [selectedAsset, timeframe, loadData]);
+  const getStrengthLabel = useCallback((s: number) => {
+    const absScore = Math.abs(s);
+    if (absScore === 0) return "---";
+    if (absScore > 70) return "FORTE";
+    if (absScore > 35) return "MODERADA";
+    return "FRACA";
+  }, []);
 
   const smcZones = useMemo(() => detectSMCZones(candles, { lookback: 150, mitigationDetection: true, drawFilled: true }), [candles]);
-  const fvgZones = useMemo(() => smcZones.filter(z => z.type === ZoneType.FVG), [smcZones]);
-  const bullFVGs = useMemo(() => fvgZones.filter(z => z.sentiment === FVGType.BULLISH && !z.mitigated), [fvgZones]);
-  const bearFVGs = useMemo(() => fvgZones.filter(z => z.sentiment === FVGType.BEARISH && !z.mitigated), [fvgZones]);
 
   const institutionalScore = useMemo(() => {
     let score = 0;
@@ -92,60 +97,63 @@ const App: React.FC = () => {
       const correlationScore = Math.max(-100, Math.min(100, avgCorr * 50));
       score += correlationScore * 0.20;
     }
-    const fvgBalance = bullFVGs.length - bearFVGs.length;
+    const bullFVGs = smcZones.filter(z => z.type === ZoneType.FVG && z.sentiment === FVGType.BULLISH && !z.mitigated).length;
+    const bearFVGs = smcZones.filter(z => z.type === ZoneType.FVG && z.sentiment === FVGType.BEARISH && !z.mitigated).length;
+    const fvgBalance = bullFVGs - bearFVGs;
     const smcScore = Math.max(-100, Math.min(100, fvgBalance * 20));
     score += smcScore * 0.20;
-    if (events.length > 0) {
-      const sentimentMap = { 'POSITIVE': 100, 'NEUTRAL': 0, 'NEGATIVE': -100 };
-      const eventScore = events.reduce((acc, e) => acc + sentimentMap[e.sentiment], 0) / events.length;
-      score += eventScore * 0.20;
-    }
     return Math.round(score);
-  }, [volumePressure, breadthSummary, correlations, bullFVGs, bearFVGs, events]);
+  }, [volumePressure, breadthSummary, correlations, smcZones]);
 
-  const getScoreLabel = (s: number) => {
-    if (s > 0) return "COMPRA";
-    if (s < 0) return "VENDA";
-    return "NEUTRO";
-  };
-
-  const getStrengthLabel = (s: number) => {
-    const absScore = Math.abs(s);
-    if (absScore === 0) return "---";
-    if (absScore > 70) return "FORTE";
-    if (absScore > 35) return "MODERADA";
-    return "FRACA";
-  };
-
-  const handleManualAnalysis = async () => {
-    setIsAnalyzing(true);
-    const result = await analyzeMarket(
-      candles, 
-      selectedAsset, 
-      correlations, 
-      events, 
-      "Sinal de Execução Profissional",
-      { 
-        score: institutionalScore, 
-        bullFVG: bullFVGs.length, 
-        bearFVG: bearFVGs.length 
+  const loadData = useCallback(async (isInitialLoad = false) => {
+    if (isInitialLoad) setLoading(true);
+    try {
+      const [candleData, corrData, breadthRes, eventData, currentPrice] = await Promise.all([
+        fetchRealData(selectedAsset, timeframe),
+        fetchCorrelationData(selectedAsset.symbol),
+        fetchMarketBreadth(selectedAsset.symbol),
+        fetchEconomicEvents(),
+        fetchCurrentPrice(selectedAsset)
+      ]);
+      
+      setCorrelations(corrData);
+      setBreadthSummary(breadthRes.summary);
+      setBreadthDetails(breadthRes.details);
+      setEvents(eventData);
+      
+      if (candleData.length > 0) {
+        if (currentPrice) candleData[candleData.length - 1].close = currentPrice;
+        setCandles(candleData);
+        setVolumePressure(calculateVolumePressure(candleData));
+        setGap(detectOpeningGap(candleData, selectedAsset));
       }
-    );
-    setAiAnalysis({ text: result.text, sources: result.sources || [] });
-    setIsAnalyzing(false);
-  };
+    } catch (err) {
+      console.error("Data load failed:", err);
+    } finally {
+      if (isInitialLoad) setLoading(false);
+    }
+  }, [selectedAsset, timeframe]);
 
-  const getSentimentStyles = (sentiment: EconomicEvent['sentiment']) => {
-    switch (sentiment) {
-      case 'POSITIVE': return { border: 'border-emerald-500/30', bg: 'bg-emerald-500/5', text: 'text-emerald-400', badge: 'bg-emerald-500/20 text-emerald-400' };
-      case 'NEGATIVE': return { border: 'border-rose-500/30', bg: 'bg-rose-500/5', text: 'text-rose-400', badge: 'bg-rose-500/20 text-rose-400' };
-      default: return { border: 'border-amber-500/30', bg: 'bg-amber-500/5', text: 'text-amber-400', badge: 'bg-amber-500/20 text-amber-400' };
+  useEffect(() => {
+    loadData(true);
+    const interval = setInterval(() => loadData(false), 30000); 
+    return () => clearInterval(interval);
+  }, [selectedAsset, timeframe, loadData]);
+  
+  const getSentimentStyles = (impact: string) => {
+    switch (impact) {
+      case 'HIGH': return { border: 'border-rose-500/30', bg: 'bg-rose-500/5', text: 'text-rose-400', badge: 'bg-rose-500/20 text-rose-400', label: 'ALTO' };
+      case 'MEDIUM': return { border: 'border-amber-500/30', bg: 'bg-amber-500/5', text: 'text-amber-400', badge: 'bg-amber-500/20 text-amber-400', label: 'MÉDIO' };
+      default: return { border: 'border-slate-500/30', bg: 'bg-slate-500/5', text: 'text-slate-400', badge: 'bg-slate-500/20 text-slate-400', label: 'BAIXO' };
     }
   };
+
+  const now = Math.floor(Date.now() / 1000);
+  const pastEvents = events.filter(e => e.time <= now).sort((a, b) => b.time - a.time);
+  const futureEvents = events.filter(e => e.time > now).sort((a, b) => a.time - b.time);
 
   return (
     <div className="flex flex-col h-screen bg-[#02040a] text-[#94a3b8] overflow-hidden font-['Inter'] selection:bg-indigo-500/30">
-      
       <header className="h-[56px] bg-[#0d1226] border-b border-indigo-500/20 px-6 flex items-center justify-between shrink-0 z-40 shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-3">
@@ -153,49 +161,50 @@ const App: React.FC = () => {
               <i className="fas fa-microchip text-white text-sm"></i>
             </div>
             <div>
-              <h1 className="text-[13px] font-black uppercase tracking-[0.15em] text-white leading-none">SENTINEL SMC FGV</h1>
+              <h1 className="text-[13px] font-black uppercase tracking-[0.15em] text-white leading-none">SENTINEL SMC FVG</h1>
               <span className="text-[9px] font-bold text-indigo-400 mt-1 block uppercase tracking-wider">
-                PRO INSTITUTIONAL ENGINE <span className="text-emerald-400 ml-2 animate-pulse">● LIVE</span>
+                MOTOR INSTITUCIONAL PRO <span className="text-emerald-400 ml-2 animate-pulse">● AO VIVO</span>
               </span>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-6">
-          {/* STATUS MOVIDO PARA A PARTE SUPERIOR */}
-          <div className="flex flex-col items-center">
-             <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest leading-none mb-1">STATUS MERCADO</span>
-             <div className={`px-4 h-7 flex items-center justify-center rounded-lg text-[9px] font-black uppercase tracking-tight border shadow-sm ${Math.abs(institutionalScore) > 35 ? (institutionalScore > 0 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border-rose-500/20') : 'bg-amber-500/10 text-amber-500 border-amber-500/20'}`}>
-                {Math.abs(institutionalScore) > 35 ? (institutionalScore > 0 ? 'IMPULSO ALTA' : 'IMPULSO BAIXA') : 'CORREÇÃO/LATERAL'}
-             </div>
-          </div>
+        <div className="hidden lg:flex items-center gap-6 bg-[#050814] px-4 py-2 rounded-xl border border-slate-800 shadow-inner">
+           <div className="flex flex-col items-center">
+              <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1">Horário de Brasília (BRT)</span>
+              <div className="flex items-center gap-4">
+                 <div className="flex items-center gap-2">
+                    <div className={`w-1.5 h-1.5 rounded-full ${getMarketStatus('US30') ? 'bg-emerald-500 animate-pulse' : 'bg-slate-700'}`}></div>
+                    <span className="text-[10px] font-black text-white tracking-tight">NYSE (US30): <span className="text-indigo-400">10:30</span></span>
+                 </div>
+                 <div className="w-[1px] h-3 bg-slate-800"></div>
+                 <div className="flex items-center gap-2">
+                    <div className={`w-1.5 h-1.5 rounded-full ${getMarketStatus('HK50') ? 'bg-emerald-500 animate-pulse' : 'bg-slate-700'}`}></div>
+                    <span className="text-[10px] font-black text-white tracking-tight">HKEX (HK50): <span className="text-indigo-400">22:30</span></span>
+                 </div>
+              </div>
+           </div>
+        </div>
 
+        <div className="flex items-center gap-6">
           <div className="flex bg-[#050814] p-1 rounded-lg border border-slate-800">
             {SUPPORTED_ASSETS.map(a => (
               <button 
                 key={a.symbol} 
-                onClick={() => setSelectedAsset(a)}
+                onClick={() => {
+                  setSelectedAsset(a);
+                }}
                 className={`px-4 py-1.5 rounded-md text-[10px] font-black transition-all ${selectedAsset.symbol === a.symbol ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-300'}`}
               >
                 {a.symbol}
               </button>
             ))}
           </div>
-
-          <button 
-            onClick={handleManualAnalysis} 
-            disabled={isAnalyzing} 
-            className="h-9 px-6 rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-[11px] font-black uppercase text-white transition-all flex items-center gap-2 active:scale-95 disabled:opacity-50 shadow-lg shadow-indigo-600/20"
-          >
-            {isAnalyzing ? <i className="fas fa-circle-notch fa-spin"></i> : <i className="fas fa-robot"></i>} 
-            {isAnalyzing ? 'Calculando Sinal...' : 'Solicitar Sinal IA'}
-          </button>
         </div>
       </header>
 
       <main className="flex flex-1 overflow-hidden relative">
-        
-        <aside className="w-[300px] bg-[#050814] border-r border-slate-800/40 p-5 overflow-y-auto custom-scrollbar flex flex-col gap-8 shrink-0 z-30">
+        <aside className="w-[280px] bg-[#050814] border-r border-slate-800/40 p-5 overflow-y-auto custom-scrollbar flex flex-col gap-8 shrink-0 z-30">
           <section className="shrink-0">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Fluxo Institucional</h3>
@@ -215,7 +224,6 @@ const App: React.FC = () => {
               ))}
             </div>
           </section>
-
           <section className="mt-auto pt-4 border-t border-slate-800/40 shrink-0">
             <div className="text-[9px] font-medium text-slate-500 flex justify-between">
               <span>ESTADO DO TERMINAL</span>
@@ -228,26 +236,23 @@ const App: React.FC = () => {
           <div className="flex-1 relative">
             <TradingChart asset={selectedAsset} loading={loading} />
           </div>
-
-          <div className="h-[105px] bg-[#0d1226] border-t border-indigo-500/20 flex items-center px-10 gap-12 shrink-0 z-20 shadow-[0_-4px_30px_rgba(0,0,0,0.5)]">
-             
-             {/* SCORE INSTITUCIONAL */}
+          <div className="h-[105px] bg-[#0d1226] border-t border-indigo-500/20 flex items-center justify-center px-6 gap-6 shrink-0 z-20 shadow-[0_-4px_30px_rgba(0,0,0,0.5)]">
              <div className="flex items-center gap-4">
                 <div className={`w-[56px] h-[56px] rounded-xl flex items-center justify-center border-2 transition-all duration-500 ${institutionalScore >= 0 ? 'border-emerald-500/40 bg-emerald-500/5' : 'border-rose-500/40 bg-rose-500/5'}`}>
                    <span className={`text-[19px] font-black jetbrains ${institutionalScore >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
                      {institutionalScore > 0 ? '+' : ''}{institutionalScore}
                    </span>
                 </div>
-                <div className="flex flex-col justify-center gap-0.5">
+                <div className="flex flex-col justify-center gap-0.5 min-w-[70px]">
                    <div className="flex flex-col text-[10px] font-black text-slate-500 tracking-wider leading-tight">
                      <span>SCORE</span>
                      <span>INST.</span>
                    </div>
-                   <span className={`text-[18px] font-black uppercase tracking-tight leading-none ${institutionalScore > 0 ? 'text-emerald-400' : institutionalScore < 0 ? 'text-rose-400' : 'text-slate-400'}`}>
+                   <span className={`text-[17px] font-black uppercase tracking-tight leading-none ${institutionalScore > 20 ? 'text-emerald-400' : institutionalScore < -20 ? 'text-rose-400' : 'text-slate-400'}`}>
                      {getScoreLabel(institutionalScore)}
                    </span>
                 </div>
-                <div className="bg-[#050814] border border-slate-800/60 w-[68px] h-[48px] rounded-xl flex flex-col items-center justify-center shadow-inner ml-2">
+                <div className="bg-[#050814] border border-slate-800/60 w-[64px] h-[48px] rounded-xl flex flex-col items-center justify-center shadow-inner">
                    <span className={`text-[13px] font-black leading-none mb-0.5 jetbrains ${institutionalScore >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
                      {Math.abs(institutionalScore)}%
                    </span>
@@ -256,10 +261,7 @@ const App: React.FC = () => {
                    </span>
                 </div>
              </div>
-
              <div className="h-10 w-[1px] bg-slate-800/50"></div>
-
-             {/* COMPONENTES */}
              <div className="flex flex-col gap-2">
                 <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest leading-none">
                    COMPONENTES {selectedAsset.symbol === 'US30' ? 'DOW' : 'HK'}
@@ -271,27 +273,20 @@ const App: React.FC = () => {
                    <div className="flex gap-4 items-center">
                       <div className="flex items-center gap-2">
                          <i className="fas fa-arrow-up text-[10px] text-emerald-500"></i>
-                         <span className="text-[17px] font-black text-emerald-400 jetbrains leading-none">
-                            {breadthSummary.advancing}
-                         </span>
+                         <span className="text-[17px] font-black text-emerald-400 jetbrains leading-none">{breadthSummary.advancing}</span>
                       </div>
                       <div className="flex items-center gap-2">
                          <i className="fas fa-arrow-down text-[10px] text-rose-500"></i>
-                         <span className="text-[17px] font-black text-rose-400 jetbrains leading-none">
-                            {breadthSummary.declining}
-                         </span>
+                         <span className="text-[17px] font-black text-rose-400 jetbrains leading-none">{breadthSummary.declining}</span>
                       </div>
                    </div>
                    <div className="h-5 w-[1px] bg-slate-800/80"></div>
                    <i className="fas fa-bars text-[12px] text-slate-600 group-hover:text-indigo-400 transition-colors"></i>
                 </button>
              </div>
-
              <div className="h-10 w-[1px] bg-slate-800/50"></div>
-
-             {/* VOLUME PRESSURE */}
-             <div className="flex flex-col gap-2 min-w-[210px]">
-                <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest leading-none">VOLUME PRESSURE</span>
+             <div className="flex flex-col gap-2 min-w-[170px]">
+                <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest leading-none">PRESSÃO DE VOLUME</span>
                 <div className="bg-[#050814] border border-slate-800/80 px-4 h-11 rounded-2xl shadow-inner flex flex-col justify-center gap-1.5">
                    <div className="flex justify-between items-center px-0.5">
                       <span className="text-[12px] font-black text-emerald-400 jetbrains leading-none">{volumePressure.buyPercent.toFixed(0)}%</span>
@@ -303,224 +298,128 @@ const App: React.FC = () => {
                    </div>
                 </div>
              </div>
-
              <div className="h-10 w-[1px] bg-slate-800/50"></div>
+             <div className="flex flex-col gap-2 min-w-[150px]">
+                <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest leading-none text-right md:text-left">GAP DE ABERTURA</span>
+                <div className={`bg-[#050814] border ${gap.type !== 'none' ? (gap.type === 'up' ? 'border-emerald-500/20' : 'border-rose-500/20') : 'border-slate-800/80'} px-4 h-11 rounded-2xl shadow-inner flex items-center justify-between`}>
+                   <div className="flex items-center gap-2">
+                      {gap.type !== 'none' ? (
+                        <i className={`fas ${gap.type === 'up' ? 'fa-arrow-trend-up text-emerald-400' : 'fa-arrow-trend-down text-rose-400'} text-[12px]`}></i>
+                      ) : (
+                        <i className="fas fa-minus text-slate-600 text-[12px]"></i>
+                      )}
+                      <span className={`text-[14px] font-black jetbrains ${gap.type === 'up' ? 'text-emerald-400' : gap.type === 'down' ? 'text-rose-400' : 'text-slate-500'}`}>
+                        {gap.type !== 'none' ? `${Math.abs(gap.percent).toFixed(2)}%` : '0.00%'}
+                      </span>
+                   </div>
+                   <div className="flex flex-col items-end">
+                      <span className={`text-[8px] font-black uppercase tracking-widest leading-none ${gap.isFilled ? 'text-indigo-400' : (gap.type !== 'none' ? 'text-amber-500 animate-pulse' : 'text-slate-600')}`}>
+                        {gap.type === 'none' ? 'SEM GAP' : (gap.isFilled ? 'PREENCHIDO' : 'ABERTO')}
+                      </span>
+                   </div>
+                </div>
+             </div>
           </div>
         </div>
 
         <aside className="w-[320px] bg-[#050814] border-l border-slate-800/40 flex flex-col shrink-0 overflow-hidden z-30 shadow-[-4px_0_200px_rgba(0,0,0,0.3)]">
-           <div className="p-5 flex-1 flex flex-col overflow-hidden border-b border-slate-800/40">
-              <div className="flex items-center justify-between mb-5">
-                <h3 className="text-[11px] font-black text-white uppercase tracking-[0.2em] flex items-center gap-2">
-                  <span className="w-2 h-4 bg-indigo-500 rounded-sm"></span>
-                  Feed de Eventos
-                </h3>
-                <span className="text-[9px] font-bold text-slate-500 bg-[#0d1226] px-2 py-1 rounded-md">Live</span>
-              </div>
-
-              <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 space-y-3">
-                 {events.length > 0 ? (
-                   events.map((event) => {
-                     const styles = getSentimentStyles(event.sentiment);
-                     return (
-                       <button 
-                        key={event.id} 
-                        onClick={() => setSelectedEvent(event)}
-                        className={`w-full text-left p-4 rounded-2xl border ${styles.bg} ${styles.border} relative group transition-all hover:scale-[1.02] active:scale-95 shadow-sm hover:shadow-indigo-500/10`}
-                       >
-                          <div className="flex justify-between items-center mb-1.5">
-                             <span className={`text-[11px] font-black uppercase ${styles.text} tracking-tight leading-none`}>
-                                {event.title}
-                             </span>
-                             <span className="text-[9px] font-bold text-slate-500 jetbrains">{new Date(event.time * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-                          </div>
-                          <p className="text-[10px] text-slate-400 mt-1 mb-3 leading-snug line-clamp-2">
-                            {event.description}
-                          </p>
-                          <div className="flex justify-between items-center">
-                             <span className={`text-[8px] font-black uppercase px-2 py-1 rounded-md ${styles.badge} tracking-wider`}>
-                                IMPACTO: {event.impact}
-                             </span>
-                          </div>
-                       </button>
-                     );
-                   })
-                 ) : (
-                   <div className="flex flex-col items-center justify-center h-full opacity-20 py-10">
-                      <i className="fas fa-rss text-4xl mb-4"></i>
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-center">Buscando notícias...</p>
-                   </div>
-                 )}
-              </div>
-           </div>
-
-           <div className="h-[320px] bg-[#0d1226] p-5 flex flex-col border-t border-indigo-500/10">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-7 h-7 bg-indigo-600/20 rounded flex items-center justify-center">
-                  <i className="fas fa-brain text-indigo-400 text-xs"></i>
+           <div className="p-5 flex-1 flex flex-col overflow-hidden gap-6">
+              <section className="flex-1 flex flex-col overflow-hidden">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-[11px] font-black text-white uppercase tracking-[0.2em] flex items-center gap-2">
+                    <span className="w-2 h-4 bg-amber-500 rounded-sm"></span>
+                    Calendário de Eventos (BR)
+                  </h3>
+                  <a href="https://www.forexfactory.com/calendar" target="_blank" rel="noopener noreferrer" className="text-[9px] font-bold text-slate-500 bg-[#0d1226] px-2 py-1 rounded-md hover:text-indigo-400 transition-colors">Forex Factory</a>
                 </div>
-                <h3 className="text-[10px] font-black text-white uppercase tracking-[0.15em]">AI Trading Terminal</h3>
-              </div>
-              
-              <div className="flex-1 overflow-y-auto custom-scrollbar text-[10px] text-slate-300 leading-relaxed font-medium">
-                 {isAnalyzing ? (
-                   <div className="flex flex-col items-center justify-center h-full gap-4">
-                      <div className="relative w-12 h-12">
-                        <div className="absolute inset-0 border-2 border-indigo-500/20 rounded-full"></div>
-                        <div className="absolute inset-0 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-                      </div>
-                      <span className="text-[8px] font-black uppercase tracking-[0.2em] animate-pulse">Sincronizando Macro e SMC...</span>
-                   </div>
-                 ) : aiAnalysis.text ? (
-                   <div className="space-y-4 animate-in fade-in duration-500">
-                     <div className="whitespace-pre-wrap font-mono text-[9px] bg-[#050814] p-3 rounded-lg border border-slate-800">
-                        {aiAnalysis.text}
+                <div className="flex-1 overflow-y-auto custom-scrollbar pr-1">
+                   {pastEvents.length > 0 ? (
+                     <div className="space-y-3">
+                       {pastEvents.map((event) => {
+                         const styles = getSentimentStyles(event.impact);
+                         return (
+                           <button key={event.id} onClick={() => setSelectedEvent(event)} className={`w-full text-left p-4 rounded-2xl border ${styles.bg} ${styles.border} relative group transition-all hover:scale-[1.02] active:scale-95 shadow-sm hover:shadow-indigo-500/10`}>
+                              <div className="flex justify-between items-center mb-1.5">
+                                 <span className={`text-[11px] font-black uppercase ${styles.text} tracking-tight leading-none`}>{event.title}</span>
+                                 <span className="text-[9px] font-bold text-slate-500 jetbrains">{new Date(event.time * 1000).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit', timeZone: 'America/Sao_Paulo'})}</span>
+                              </div>
+                              <p className="text-[10px] text-slate-400 mt-1 mb-3 leading-snug line-clamp-2 italic">{event.description}</p>
+                              <div className="flex justify-between items-center"><span className={`text-[8px] font-black uppercase px-2 py-1 rounded-md ${styles.badge} tracking-wider`}>IMPACTO: {styles.label}</span></div>
+                           </button>
+                         );
+                       })}
                      </div>
-                   </div>
-                 ) : (
-                   <div className="h-full flex flex-col justify-center items-center opacity-30 text-center px-4">
-                      <i className="fas fa-bolt text-2xl mb-3 text-indigo-500 animate-pulse"></i>
-                      <p className="uppercase font-bold tracking-[0.15em] leading-relaxed">Clique no robô no topo para gerar um sinal de trade agora</p>
-                   </div>
-                 )}
-              </div>
+                   ) : (
+                     <div className="flex flex-col items-center justify-center h-full opacity-20 py-10">
+                        <i className="fas fa-calendar-times text-3xl mb-4"></i>
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-center">Nenhum evento relevante</p>
+                     </div>
+                   )}
+                </div>
+                {futureEvents.length > 0 && (
+                  <div className="pt-4 mt-4 border-t border-slate-800/40 shrink-0">
+                    <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Próximos Eventos</h3>
+                    <div className="space-y-2">
+                      {futureEvents.map(event => (
+                        <button key={event.id} onClick={() => setSelectedEvent(event)} className="w-full text-left p-3 rounded-xl border border-slate-800 bg-[#0d1226]/50 group transition-all hover:border-amber-500/40 hover:bg-[#0d1226]">
+                          <div className="flex justify-between items-center">
+                            <span className="text-[10px] font-bold text-slate-300 group-hover:text-amber-400 transition-colors tracking-tight line-clamp-1">{event.title}</span>
+                            <span className="text-[10px] font-bold text-slate-500 jetbrains bg-slate-800/50 px-2 py-0.5 rounded">{new Date(event.time * 1000).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit', timeZone: 'America/Sao_Paulo'})}</span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </section>
            </div>
         </aside>
 
-        {/* POPUP MODAL PARA NOTÍCIA */}
         {selectedEvent && (
           <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-[#02040a]/90 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setSelectedEvent(null)}>
-            <div 
-              className={`bg-[#050814] border-2 shadow-2xl rounded-3xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-300 ${getSentimentStyles(selectedEvent.sentiment).border}`}
-              onClick={(e) => e.stopPropagation()}
-            >
+            <div className={`bg-[#050814] border-2 shadow-2xl rounded-3xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-300 ${getSentimentStyles(selectedEvent.impact).border}`} onClick={(e) => e.stopPropagation()}>
               <div className="p-8">
                 <div className="flex justify-between items-start mb-6">
                   <div className="flex flex-col gap-2">
-                    <span className={`text-[10px] font-black uppercase px-2 py-1 rounded bg-[#0d1226] border tracking-[0.2em] w-fit ${getSentimentStyles(selectedEvent.sentiment).text} ${getSentimentStyles(selectedEvent.sentiment).border}`}>
-                      {selectedEvent.impact} IMPACTO
-                    </span>
-                    <h2 className="text-2xl font-black text-white leading-tight mt-1 tracking-tight">
-                      {selectedEvent.title}
-                    </h2>
+                    <span className={`text-[10px] font-black uppercase px-2 py-1 rounded bg-[#0d1226] border tracking-[0.2em] w-fit ${getSentimentStyles(selectedEvent.impact).text} ${getSentimentStyles(selectedEvent.impact).border}`}>{getSentimentStyles(selectedEvent.impact).label} IMPACTO</span>
+                    <h2 className="text-2xl font-black text-white leading-tight mt-1 tracking-tight">{selectedEvent.title}</h2>
                   </div>
-                  <button onClick={() => setSelectedEvent(null)} className="w-10 h-10 rounded-full hover:bg-white/5 transition-colors flex items-center justify-center text-slate-500">
-                    <i className="fas fa-times text-xl"></i>
-                  </button>
+                  <button onClick={() => setSelectedEvent(null)} className="w-10 h-10 rounded-full hover:bg-white/5 transition-colors flex items-center justify-center text-slate-500"><i className="fas fa-times text-xl"></i></button>
                 </div>
-
                 <div className="space-y-6">
-                  <div className="bg-[#0d1226] p-6 rounded-2xl border border-slate-800 shadow-inner">
-                    <p className="text-sm text-slate-300 leading-relaxed font-medium italic">
-                      "{selectedEvent.description}"
-                    </p>
-                  </div>
-
+                  <div className="bg-[#0d1226] p-6 rounded-2xl border border-slate-800 shadow-inner"><p className="text-sm text-slate-300 leading-relaxed font-medium italic">{selectedEvent.description}</p></div>
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-[#0d1226]/50 p-4 rounded-xl border border-slate-800/50">
-                      <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-1">DATA EVENTO</span>
-                      <span className="text-xs font-bold text-white jetbrains">
-                        {new Date(selectedEvent.time * 1000).toLocaleDateString('pt-BR')}
-                      </span>
-                    </div>
-                    <div className="bg-[#0d1226]/50 p-4 rounded-xl border border-slate-800/50">
-                      <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-1">HORÁRIO</span>
-                      <span className="text-xs font-bold text-white jetbrains">
-                        {new Date(selectedEvent.time * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className={`p-4 rounded-xl border flex items-center gap-4 ${getSentimentStyles(selectedEvent.sentiment).bg} ${getSentimentStyles(selectedEvent.sentiment).border}`}>
-                    <i className={`fas ${selectedEvent.sentiment === 'POSITIVE' ? 'fa-chart-line text-emerald-500' : selectedEvent.sentiment === 'NEGATIVE' ? 'fa-chart-area text-rose-500' : 'fa-minus text-amber-500'} text-xl`}></i>
-                    <div className="flex flex-col">
-                      <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none mb-1">SENTIMENTO IA</span>
-                      <span className={`text-sm font-black ${getSentimentStyles(selectedEvent.sentiment).text}`}>
-                        {selectedEvent.sentiment === 'POSITIVE' ? 'ALTISTA / BULLISH' : selectedEvent.sentiment === 'NEGATIVE' ? 'BAIXISTA / BEARISH' : 'NEUTRO / LATERAL'}
-                      </span>
-                    </div>
+                    <div className="bg-[#0d1226]/50 p-4 rounded-xl border border-slate-800/50"><span className="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-1">DATA EVENTO</span><span className="text-xs font-bold text-white jetbrains">{new Date(selectedEvent.time * 1000).toLocaleDateString('pt-BR', {timeZone: 'America/Sao_Paulo'})}</span></div>
+                    <div className="bg-[#0d1226]/50 p-4 rounded-xl border border-slate-800/50"><span className="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-1">HORÁRIO</span><span className="text-xs font-bold text-white jetbrains">{new Date(selectedEvent.time * 1000).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit', timeZone: 'America/Sao_Paulo'})}</span></div>
                   </div>
                 </div>
               </div>
-              
-              <div className="h-14 bg-[#0d1226] border-t border-slate-800/60 px-8 flex items-center justify-between">
-                <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">SENTINEL NEWS TERMINAL v3</span>
-                <button 
-                  onClick={() => setSelectedEvent(null)}
-                  className="text-[10px] font-black text-indigo-400 hover:text-indigo-300 uppercase tracking-widest transition-colors"
-                >
-                  FECHAR JANELA
-                </button>
-              </div>
+              <div className="h-14 bg-[#0d1226] border-t border-slate-800/60 px-8 flex items-center justify-between"><span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">SENTINEL TERMINAL v3.8</span><button onClick={() => setSelectedEvent(null)} className="text-[10px] font-black text-indigo-400 hover:text-indigo-300 uppercase tracking-widest transition-colors">FECHAR JANELA</button></div>
             </div>
           </div>
         )}
 
-        {/* POPUP MODAL PARA COMPONENTES */}
         {isBreadthModalOpen && (
            <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-[#02040a]/80 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setIsBreadthModalOpen(false)}>
-              <div 
-                className="bg-[#050814] border border-slate-800 shadow-2xl rounded-2xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-300"
-                onClick={(e) => e.stopPropagation()}
-              >
+              <div className="bg-[#050814] border border-slate-800 shadow-2xl rounded-2xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-300" onClick={(e) => e.stopPropagation()}>
                  <div className="h-16 bg-[#0d1226] border-b border-slate-800 px-8 flex items-center justify-between shrink-0">
-                    <div className="flex items-center gap-4">
-                       <div className="w-8 h-8 bg-indigo-600 rounded flex items-center justify-center shadow-lg shadow-indigo-600/20">
-                          <i className="fas fa-th-large text-white text-xs"></i>
-                       </div>
-                       <h3 className="text-[13px] font-black text-white uppercase tracking-[0.2em]">
-                          {selectedAsset.symbol === 'US30' ? 'Componentes Dow Jones 30' : 'Componentes Hang Seng 50'}
-                       </h3>
-                    </div>
-                    
-                    <div className="flex items-center gap-8">
-                       <div className="flex items-center gap-6 text-[11px] font-black jetbrains">
-                          <span className="text-emerald-500 px-3 py-1 bg-emerald-500/10 rounded-full border border-emerald-500/20">
-                            ↑ {breadthSummary.advancing} Alta
-                          </span>
-                          <span className="text-rose-500 px-3 py-1 bg-rose-500/10 rounded-full border border-rose-500/20">
-                            ↓ {breadthSummary.declining} Baixa
-                          </span>
-                       </div>
-                       <button 
-                          onClick={() => setIsBreadthModalOpen(false)}
-                          className="w-10 h-10 rounded-full hover:bg-slate-800 transition-colors flex items-center justify-center text-slate-400 hover:text-white"
-                       >
-                          <i className="fas fa-times text-lg"></i>
-                       </button>
-                    </div>
+                    <div className="flex items-center gap-4"><div className="w-8 h-8 bg-indigo-600 rounded flex items-center justify-center shadow-lg shadow-indigo-600/20"><i className="fas fa-th-large text-white text-xs"></i></div><h3 className="text-[13px] font-black text-white uppercase tracking-[0.2em]">{selectedAsset.symbol === 'US30' ? 'Componentes Dow Jones 30' : 'Componentes Hang Seng 50'}</h3></div>
+                    <div className="flex items-center gap-8"><div className="flex items-center gap-6 text-[11px] font-black jetbrains"><span className="text-emerald-500 px-3 py-1 bg-emerald-500/10 rounded-full border border-emerald-500/20">↑ {breadthSummary.advancing} Alta</span><span className="text-rose-500 px-3 py-1 bg-rose-500/10 rounded-full border border-rose-500/20">↓ {breadthSummary.declining} Baixa</span></div><button onClick={() => setIsBreadthModalOpen(false)} className="w-10 h-10 rounded-full hover:bg-slate-800 transition-colors flex items-center justify-center text-slate-400 hover:text-white"><i className="fas fa-times text-lg"></i></button></div>
                  </div>
-
-                 <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                 <div className="flex-1 overflow-y-auto p-8 custom-scrollbar"><div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                        {breadthDetails.map(ticker => (
-                          <div key={ticker.symbol} className={`p-4 rounded-xl border flex flex-col justify-between h-24 transition-all duration-300 ${ticker.change >= 0 ? 'bg-emerald-500/5 border-emerald-500/10 hover:bg-emerald-500/10 hover:border-emerald-500/30' : 'bg-rose-500/5 border-rose-500/10 hover:bg-rose-500/10 hover:border-rose-500/30'}`}>
-                             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{ticker.symbol.replace('.HK', '')}</span>
-                             <div className="flex items-end justify-between">
-                                <span className={`text-[16px] font-black jetbrains ${ticker.change >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                   {ticker.change >= 0 ? '+' : ''}{ticker.change.toFixed(2)}%
-                                </span>
-                                <i className={`fas ${ticker.change >= 0 ? 'fa-chart-line text-emerald-500/30' : 'fa-chart-area text-rose-500/30'} text-2xl`}></i>
-                             </div>
-                          </div>
+                          <div key={ticker.symbol} className={`p-4 rounded-xl border flex flex-col justify-between h-24 transition-all duration-300 ${ticker.change >= 0 ? 'bg-emerald-500/5 border-emerald-500/10 hover:bg-emerald-500/10 hover:border-emerald-500/30' : 'bg-rose-500/5 border-rose-500/10 hover:bg-rose-500/10 hover:border-rose-500/30'}`}><span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{ticker.symbol.replace('.HK', '')}</span><div className="flex items-end justify-between"><span className={`text-[16px] font-black jetbrains ${ticker.change >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{ticker.change >= 0 ? '+' : ''}{ticker.change.toFixed(2)}%</span><i className={`fas ${ticker.change >= 0 ? 'fa-chart-line text-emerald-500/30' : 'fa-chart-area text-rose-500/30'} text-2xl`}></i></div></div>
                        ))}
-                    </div>
-                 </div>
-                 
-                 <div className="h-12 bg-[#0d1226] border-t border-slate-800 px-8 flex items-center justify-center shrink-0">
-                    <span className="text-[9px] font-bold text-slate-600 uppercase tracking-[0.3em]">Institutional Grade Heatmap Analysis</span>
-                 </div>
+                    </div></div>
+                 <div className="h-12 bg-[#0d1226] border-t border-slate-800 px-8 flex items-center justify-center shrink-0"><span className="text-[9px] font-bold text-slate-600 uppercase tracking-[0.3em]">Análise de Calor Nível Institucional</span></div>
               </div>
            </div>
         )}
       </main>
 
       <footer className="h-8 bg-[#02040a] border-t border-slate-800/40 flex items-center justify-between px-8 text-[8px] font-black uppercase tracking-[0.3em] text-slate-600">
-        <div className="flex items-center gap-8">
-          <span className="flex items-center gap-2"><div className="w-1 h-1 rounded-full bg-indigo-500"></div> SCM Engine: V3.8.2-PRO</span>
-          <span className="flex items-center gap-2"><div className="w-1 h-1 rounded-full bg-indigo-500"></div> Inst. Score Engine: V4</span>
-        </div>
-        <div className="text-slate-500">NY SENTINEL © 2025 INSTITUTIONAL ACCESS</div>
+        <div className="flex items-center gap-8"><span className="flex items-center gap-2"><div className="w-1 h-1 rounded-full bg-indigo-500"></div> MOTOR SCM: V3.8.2-PRO</span><span className="flex items-center gap-2"><div className="w-1 h-1 rounded-full bg-indigo-500"></div> SCORE INSTITUCIONAL: V4</span></div>
+        <div className="text-slate-500">SENTINEL NY © 2025 ACESSO INSTITUCIONAL</div>
       </footer>
     </div>
   );

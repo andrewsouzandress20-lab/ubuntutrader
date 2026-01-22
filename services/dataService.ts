@@ -4,17 +4,99 @@ import { Asset, Candle, Timeframe, CorrelationData, MarketBreadthSummary, Breadt
 const PROXIES = [
   'https://api.allorigins.win/get?url=',
   'https://corsproxy.io/?',
+  'https://thingproxy.freeboard.io/fetch/',
 ];
 
-const fetchFromYahoo = async (url: string): Promise<any> => {
+// Dicionário ultra-expandido para tradução de eventos econômicos
+const EVENT_TRANSLATIONS: Record<string, string> = {
+  'Unemployment Rate': 'Taxa de Desemprego',
+  'CPI': 'IPC (Inflação)',
+  'Core CPI': 'Núcleo do IPC',
+  'PPI': 'IPP (Inflação ao Produtor)',
+  'Retail Sales': 'Vendas no Varejo',
+  'FOMC Meeting Minutes': 'Ata do FOMC',
+  'Federal Funds Rate': 'Taxa de Juros do FED',
+  'Non-Farm Employment Change': 'Payroll (NFP)',
+  'ADP Non-Farm Employment Change': 'Variação de Emprego ADP',
+  'Consumer Confidence': 'Confiança do Consumidor',
+  'ISM Manufacturing PMI': 'PMI Industrial ISM',
+  'ISM Services PMI': 'PMI de Serviços ISM',
+  'GDP': 'PIB',
+  'Initial Jobless Claims': 'Pedidos de Auxílio-Desemprego',
+  'Trade Balance': 'Balança Comercial',
+  'Building Permits': 'Alvarás de Construção',
+  'Crude Oil Inventories': 'Estoques de Petróleo',
+  'Empire State Manufacturing Index': 'Índice de Manufatura Empire State',
+  'Philly Fed Manufacturing Index': 'Índice de Manufatura Philly Fed',
+  'Flash Manufacturing PMI': 'PMI Industrial Prévia',
+  'Flash Services PMI': 'PMI de Serviços Prévia',
+  'Existing Home Sales': 'Vendas de Casas Existentes',
+  'New Home Sales': 'Vendas de Casas Novas',
+  'Durable Goods Orders': 'Pedidos de Bens Duráveis',
+  'Consumer Sentiment': 'Sentimento do Consumidor',
+  'Beige Book': 'Livro Bege (FED)',
+  'JOLTS Job Openings': 'Vagas de Emprego JOLTS',
+  'Average Hourly Earnings': 'Ganhos Médios por Hora',
+  'Pending Home Sales': 'Vendas de Casas Pendentes',
+  'Personal Spending': 'Gastos Pessoais',
+  'Factory Orders': 'Pedidos à Indústria',
+  'Business Inventories': 'Estoques de Empresas',
+  'Wholesale Inventories': 'Estoques de Atacado',
+  'Consumer Credit': 'Crédito ao Consumidor',
+  'Treasury Budget': 'Orçamento do Tesouro',
+  'Housing Starts': 'Início de Construções',
+  'Industrial Production': 'Produção Industrial',
+  'Capacity Utilization': 'Utilização da Capacidade',
+  'Philadelphia Fed Index': 'Índice Fed de Filadélfia',
+  'Leading Index': 'Índice de Indicadores Antecedentes',
+  'S&P/CS HPI': 'Índice de Preços de Casas S&P',
+  'Richmond Fed Index': 'Índice Fed de Richmond',
+  'Chicago PMI': 'PMI de Chicago',
+  'Pending Sales': 'Vendas Pendentes'
+};
+
+const IMPACT_TRANSLATIONS: Record<string, string> = {
+  'high': 'ALTO',
+  'medium': 'MÉDIO',
+  'low': 'BAIXO'
+};
+
+const translateEvent = (title: string): string => {
+  let translated = title;
+  // Traduz termos específicos
+  for (const [eng, pt] of Object.entries(EVENT_TRANSLATIONS)) {
+    const regex = new RegExp(eng, 'gi');
+    translated = translated.replace(regex, pt);
+  }
+  // Traduz conectores comuns
+  translated = translated.replace(/speak/gi, 'fala')
+                         .replace(/member/gi, 'membro')
+                         .replace(/report/gi, 'relatório')
+                         .replace(/index/gi, 'índice')
+                         .replace(/forecast/gi, 'previsão')
+                         .replace(/actual/gi, 'atual')
+                         .replace(/previous/gi, 'anterior');
+  return translated;
+};
+
+const fetchWithRetry = async (url: string, useProxy: boolean = true): Promise<any> => {
+  if (!useProxy) {
+    try {
+      const response = await fetch(url);
+      if (response.ok) return await response.json();
+    } catch (e) {
+      console.warn("Direct fetch failed, falling back to proxies...");
+    }
+  }
+
   for (const proxy of PROXIES) {
     try {
-      const targetUrl = proxy === PROXIES[0] ? proxy + encodeURIComponent(url) : proxy + url;
+      const targetUrl = proxy.includes('allorigins') ? proxy + encodeURIComponent(url) : proxy + url;
       const response = await fetch(targetUrl);
       if (!response.ok) continue;
       
       let data;
-      if (proxy === PROXIES[0]) {
+      if (proxy.includes('allorigins')) {
           const json = await response.json();
           data = JSON.parse(json.contents);
       } else {
@@ -22,10 +104,14 @@ const fetchFromYahoo = async (url: string): Promise<any> => {
       }
       return data;
     } catch (error) {
-      console.warn(`Proxy ${proxy} failed:`, error);
+      console.warn(`Proxy ${proxy} failed for ${url}:`, error);
     }
   }
   return null;
+};
+
+const fetchFromYahoo = async (url: string): Promise<any> => {
+  return await fetchWithRetry(url, true);
 };
 
 const fetchYahooData = async (symbol: string, interval: string, range: string = '5d'): Promise<any> => {
@@ -34,9 +120,6 @@ const fetchYahooData = async (symbol: string, interval: string, range: string = 
   return data?.chart?.result?.[0];
 };
 
-/**
- * Fetches the latest price for a given asset from Yahoo Finance.
- */
 export const fetchCurrentPrice = async (asset: Asset): Promise<number | null> => {
   let yahooSymbol = '';
   if (asset.symbol === 'US30') yahooSymbol = '^DJI';
@@ -59,9 +142,9 @@ export const fetchCorrelationData = async (assetSymbol: string): Promise<Correla
     targets = [
       { symbol: '^VIX', name: 'VIX', corr: 'negative' as const },
       { symbol: 'USDJPY=X', name: 'USD/JPY', corr: 'negative' as const },
-      { symbol: 'GC=F', name: 'GOLD', corr: 'negative' as const },
+      { symbol: 'GC=F', name: 'OURO', corr: 'negative' as const },
       { symbol: '^N225', name: 'NIKKEI 225', corr: 'positive' as const },
-      { symbol: 'HG=F', name: 'COPPER', corr: 'positive' as const },
+      { symbol: 'HG=F', name: 'COBRE', corr: 'positive' as const },
       { symbol: '^IXIC', name: 'NASDAQ', corr: 'positive' as const },
       { symbol: '000001.SS', name: 'SHANGHAI', corr: 'positive' as const },
     ];
@@ -109,50 +192,52 @@ export const fetchCorrelationData = async (assetSymbol: string): Promise<Correla
 };
 
 export const fetchEconomicEvents = async (): Promise<EconomicEvent[]> => {
-    const now = Math.floor(Date.now() / 1000);
-    // Mocking real-time institutional events for display
-    return [
-        {
-            id: '1',
-            time: now - 300,
-            title: 'FED: Discurso de Jerome Powell',
-            impact: 'HIGH',
-            sentiment: 'NEUTRAL',
-            description: 'Powell indica cautela sobre cortes de juros no curto prazo.'
-        },
-        {
-            id: '2',
-            time: now - 1800,
-            title: 'Dados de Emprego (ADP)',
-            impact: 'HIGH',
-            sentiment: 'POSITIVE',
-            description: 'Números acima do esperado fortalecem o dólar e ativos de risco.'
-        },
-        {
-            id: '3',
-            time: now - 3600,
-            title: 'IPC Zona do Euro',
-            impact: 'MEDIUM',
-            sentiment: 'NEGATIVE',
-            description: 'Inflação persistente pressiona o Banco Central Europeu.'
-        },
-        {
-            id: '4',
-            time: now - 5400,
-            title: 'Estoque de Petróleo Bruto',
-            impact: 'MEDIUM',
-            sentiment: 'NEUTRAL',
-            description: 'Dados em linha com o esperado, mercado lateralizado.'
-        },
-        {
-            id: '5',
-            time: now - 7200,
-            title: 'PMI Industrial (China)',
-            impact: 'HIGH',
-            sentiment: 'POSITIVE',
-            description: 'Expansão industrial chinesa impulsiona HK50.'
+    const calendarUrl = 'https://nfs.faireconomy.media/ff_calendar_thisweek.json';
+
+    try {
+        const data = await fetchWithRetry(calendarUrl, true);
+
+        if (!data || !Array.isArray(data)) {
+            console.warn('Não foi possível carregar o calendário econômico.');
+            return [];
         }
-    ];
+
+        const relevantCurrencies = ['USD', 'CNY', 'EUR', 'JPY', 'GBP'];
+        const relevantImpacts = ['high', 'medium'];
+
+        return data
+            .filter((event: any) =>
+                event &&
+                event.country &&
+                event.impact &&
+                relevantCurrencies.includes(event.country.toUpperCase()) &&
+                relevantImpacts.includes(event.impact.toLowerCase())
+            )
+            .map((event: any): EconomicEvent => {
+                const rawImpact = event.impact.toLowerCase();
+                let impact: 'HIGH' | 'MEDIUM' | 'LOW';
+                
+                if (rawImpact.includes('high')) impact = 'HIGH';
+                else if (rawImpact.includes('medium')) impact = 'MEDIUM';
+                else impact = 'LOW';
+
+                const translatedTitle = translateEvent(event.title);
+                const translatedImpact = IMPACT_TRANSLATIONS[rawImpact] || rawImpact.toUpperCase();
+
+                return {
+                    id: `${event.title}-${event.date}`,
+                    time: new Date(event.date).getTime() / 1000,
+                    title: `${translatedTitle} (${event.country})`,
+                    impact,
+                    sentiment: 'NEUTRAL',
+                    description: `Moeda: ${event.country} | Impacto: ${translatedImpact} | Previsão: ${event.forecast || '---'} | Anterior: ${event.previous || '---'}`,
+                };
+            })
+            .sort((a, b) => a.time - b.time);
+    } catch (error) {
+        console.error("Erro ao buscar eventos econômicos:", error);
+        return [];
+    }
 };
 
 export const fetchMarketBreadth = async (assetSymbol: string): Promise<{ summary: MarketBreadthSummary, details: BreadthCompanyDetails[] }> => {
@@ -273,7 +358,6 @@ export const detectOpeningGap = (candles: Candle[], asset: Asset): GapData => {
   const gapThreshold = 0.01; 
   const gapType: 'up' | 'down' | 'none' = Math.abs(pct) > gapThreshold ? (pct > 0 ? 'up' : 'down') : 'none';
 
-  // Lógica de preenchimento (Mitigação do Gap)
   let isFilled = false;
   if (gapType !== 'none') {
     for (let j = startIndex; j < candles.length; j++) {
