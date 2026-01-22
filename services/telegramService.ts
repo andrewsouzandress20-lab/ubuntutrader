@@ -28,7 +28,7 @@ export const sendTelegramSignal = async (
 - **FORÇA:** **${strength}**
 - **SCORE:** \`${score}\`
 --------------------------------------
-*Sinal automático gerado 4s após a abertura. Gerencie o risco.*
+*ANALISE A ZONA CMS/FGV PARA UMA ENTRADA MELHOR*
   `;
 
   const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;

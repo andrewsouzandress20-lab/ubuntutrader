@@ -20,6 +20,7 @@ const App: React.FC = () => {
   const [gap, setGap] = useState<GapData>({ value: 0, percent: 0, type: 'none' });
   
   const [loading, setLoading] = useState(true);
+  const [isTestingTelegram, setIsTestingTelegram] = useState(false);
   const [lastAutoSignalDate, setLastAutoSignalDate] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
 
@@ -49,6 +50,14 @@ const App: React.FC = () => {
     return Math.round(Math.max(-100, Math.min(100, score)));
   }, [volumePressure, breadthSummary, smcZones]);
 
+  const handleManualTelegramTest = async () => {
+    setIsTestingTelegram(true);
+    const signal = getScoreLabel(institutionalScore);
+    const strength = getStrengthLabel(institutionalScore);
+    await sendTelegramSignal(`${selectedAsset.symbol} (TESTE)`, signal, strength, institutionalScore);
+    setTimeout(() => setIsTestingTelegram(false), 2000);
+  };
+
   const marketStatus = useMemo(() => {
     const hrs = currentTime.getHours();
     const mins = currentTime.getMinutes();
@@ -67,12 +76,16 @@ const App: React.FC = () => {
       const hours = now.getHours();
       const minutes = now.getMinutes();
       const seconds = now.getSeconds();
+      
       const dateKey = `${now.toISOString().split('T')[0]}-${selectedAsset.symbol}`;
-      const isUS30Opening = selectedAsset.symbol === 'US30' && hours === 10 && minutes === 30 && seconds === 4;
-      const isHK50Opening = selectedAsset.symbol === 'HK50' && hours === 22 && minutes === 30 && seconds === 4;
+      
+      const isUS30Opening = selectedAsset.symbol === 'US30' && hours === 10 && minutes === 30 && seconds === 5;
+      const isHK50Opening = selectedAsset.symbol === 'HK50' && hours === 22 && minutes === 30 && seconds === 5;
+
       if ((isUS30Opening || isHK50Opening) && lastAutoSignalDate !== dateKey) {
         const signal = getScoreLabel(institutionalScore);
         const strength = getStrengthLabel(institutionalScore);
+        
         if (signal !== 'NEUTRO') {
           sendTelegramSignal(selectedAsset.symbol, signal, strength, institutionalScore);
           setLastAutoSignalDate(dateKey);
@@ -150,7 +163,16 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-6">
+          <button 
+            onClick={handleManualTelegramTest}
+            disabled={isTestingTelegram}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all ${isTestingTelegram ? 'bg-indigo-500/20 border-indigo-500/40 text-indigo-400' : 'bg-slate-800/40 border-slate-700/50 text-slate-400 hover:border-indigo-500/50 hover:text-white'}`}
+          >
+            <i className={`fab fa-telegram-plane ${isTestingTelegram ? 'animate-bounce' : ''}`}></i>
+            <span className="text-[9px] font-black uppercase tracking-widest">{isTestingTelegram ? 'Enviando...' : 'Testar Telegram'}</span>
+          </button>
+
           <div className="flex bg-[#050814] p-1 rounded-lg border border-slate-800">
             {SUPPORTED_ASSETS.map(a => (
               <button 
@@ -193,10 +215,7 @@ const App: React.FC = () => {
             <TradingChart asset={selectedAsset} loading={loading} />
           </div>
 
-          {/* RODAPÉ ORGANIZADO */}
           <div className="h-[105px] bg-[#0d1226]/95 backdrop-blur-md border-t border-indigo-500/20 flex items-stretch shrink-0 z-20 shadow-[0_-10px_40px_rgba(0,0,0,0.6)]">
-             
-             {/* COLUNA 1: SCORE INSTITUCIONAL */}
              <div className="w-[250px] border-r border-slate-800/40 flex items-center px-6 gap-4">
                 <div className={`w-[58px] h-[58px] rounded-xl flex items-center justify-center border-2 transition-all duration-700 shadow-lg ${institutionalScore >= 0 ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400 shadow-emerald-500/10' : 'border-rose-500/40 bg-rose-500/10 text-rose-400 shadow-rose-500/10'}`}>
                    <span className="text-[22px] font-black jetbrains">
@@ -212,7 +231,6 @@ const App: React.FC = () => {
                 </div>
              </div>
 
-             {/* COLUNA 2: VOLUME (PRESSÃO) */}
              <div className="flex-1 border-r border-slate-800/40 flex flex-col justify-center px-8 gap-2">
                 <div className="flex justify-between items-end px-1">
                   <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">VOLUME</span>
@@ -227,7 +245,6 @@ const App: React.FC = () => {
                 </div>
              </div>
 
-             {/* COLUNA 3: ESTRUTURA (GAP) */}
              <div className="w-[180px] border-r border-slate-800/40 flex flex-col justify-center px-6 gap-2 bg-[#050814]/30">
                 <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest leading-none text-center">Estrutura GAP</span>
                 <div className={`flex items-center justify-center gap-2 py-1.5 px-3 rounded-lg border transition-all ${gap.type !== 'none' ? (gap.type === 'up' ? 'border-emerald-500/30 bg-emerald-500/5 text-emerald-400' : 'border-rose-500/30 bg-rose-500/5 text-rose-400') : 'border-white/5 bg-[#050814] text-slate-600'}`}>
@@ -238,7 +255,6 @@ const App: React.FC = () => {
                 </div>
              </div>
 
-             {/* COLUNA 4: COMPONENTES */}
              <button 
                 onClick={() => setIsBreadthModalOpen(true)}
                 className="w-[300px] flex flex-col justify-center px-8 gap-2 group hover:bg-indigo-500/5 transition-all relative overflow-hidden"
@@ -333,7 +349,7 @@ const App: React.FC = () => {
       <footer className="h-6 bg-[#02040a] border-t border-slate-800/40 flex items-center justify-between px-8 text-[7px] font-black uppercase tracking-[0.5em] text-slate-700">
         <div className="flex gap-8">
            <span>SENTINEL CORE: ACTIVE</span>
-           <span>SMC ANALYTICS: CALIBRATED</span>
+           <span>TELEGRAM BOT: READY</span>
         </div>
         <div className="text-slate-500">PRO-TRADE INTERFACE © 2025</div>
       </footer>
