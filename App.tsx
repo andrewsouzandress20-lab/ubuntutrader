@@ -20,7 +20,6 @@ const App: React.FC = () => {
   const [gap, setGap] = useState<GapData>({ value: 0, percent: 0, type: 'none' });
   
   const [loading, setLoading] = useState(true);
-  const [isTestingTelegram, setIsTestingTelegram] = useState(false);
   const [lastAutoSignalDate, setLastAutoSignalDate] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
 
@@ -127,7 +126,7 @@ const App: React.FC = () => {
             </div>
             <div>
               <h1 className="text-[13px] font-black uppercase tracking-[0.15em] text-white leading-none">SENTINEL PRO</h1>
-              <span className="text-[8px] font-bold text-slate-500 mt-1 block uppercase tracking-wider">V3.8 INSTITUTIONAL</span>
+              <span className="text-[8px] font-bold text-slate-500 mt-1 block uppercase tracking-wider">SMC ENGINE V4.0</span>
             </div>
           </div>
 
@@ -135,14 +134,14 @@ const App: React.FC = () => {
 
           <div className="flex items-center gap-5">
             <div className="flex flex-col gap-0.5">
-              <span className="text-[7px] font-black text-slate-500 uppercase tracking-widest">Sessão US30 (NY)</span>
+              <span className="text-[7px] font-black text-slate-500 uppercase tracking-widest">Sessão NY (US30)</span>
               <div className="flex items-center gap-2">
                 <div className={`w-1.5 h-1.5 rounded-full ${marketStatus.isUSOpen ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></div>
                 <span className="text-[10px] font-black text-white jetbrains tracking-tight">ABRE: 10:30 BRT</span>
               </div>
             </div>
             <div className="flex flex-col gap-0.5">
-              <span className="text-[7px] font-black text-slate-500 uppercase tracking-widest">Sessão HK50 (HK)</span>
+              <span className="text-[7px] font-black text-slate-500 uppercase tracking-widest">Sessão HK (HK50)</span>
               <div className="flex items-center gap-2">
                 <div className={`w-1.5 h-1.5 rounded-full ${marketStatus.isHKOpen ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></div>
                 <span className="text-[10px] font-black text-white jetbrains tracking-tight">ABRE: 22:30 BRT</span>
@@ -170,14 +169,14 @@ const App: React.FC = () => {
         <aside className="w-[280px] bg-[#050814] border-r border-slate-800/40 p-5 overflow-y-auto no-scrollbar flex flex-col gap-8 shrink-0 z-30">
           <section className="shrink-0">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Monitoramento Macro</h3>
-              <i className="fas fa-layer-group text-indigo-500 text-[10px]"></i>
+              <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Fluxo Global</h3>
+              <i className="fas fa-globe text-indigo-500 text-[10px]"></i>
             </div>
             <div className="space-y-2">
               {correlations.map(c => (
-                <div key={c.symbol} className="bg-[#0d1226] border border-slate-800/60 p-3 rounded-xl flex items-center justify-between hover:border-indigo-500/40 transition-all">
+                <div key={c.symbol} className="bg-[#0d1226] border border-slate-800/60 p-3 rounded-xl flex items-center justify-between hover:border-indigo-500/40 transition-all group">
                   <div className="flex flex-col">
-                    <span className="text-[11px] font-black text-white">{c.name}</span>
+                    <span className="text-[11px] font-black text-white group-hover:text-indigo-400 transition-colors">{c.name}</span>
                     <span className="text-[8px] font-bold text-slate-500 uppercase">{c.correlation === 'positive' ? 'Direta' : 'Inversa'}</span>
                   </div>
                   <div className={`text-[11px] font-black jetbrains ${c.change >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
@@ -194,67 +193,69 @@ const App: React.FC = () => {
             <TradingChart asset={selectedAsset} loading={loading} />
           </div>
 
-          <div className="h-[95px] bg-[#0d1226] border-t border-indigo-500/20 flex items-center px-10 gap-12 shrink-0 z-20 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
-             <div className="flex items-center gap-4 shrink-0">
-                <div className={`w-[58px] h-[58px] rounded-xl flex items-center justify-center border-2 transition-all duration-700 ${institutionalScore >= 0 ? 'border-emerald-500/40 bg-emerald-500/5' : 'border-rose-500/40 bg-rose-500/5'}`}>
-                   <span className={`text-[20px] font-black jetbrains ${institutionalScore >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+          {/* RODAPÉ ORGANIZADO */}
+          <div className="h-[105px] bg-[#0d1226]/95 backdrop-blur-md border-t border-indigo-500/20 flex items-stretch shrink-0 z-20 shadow-[0_-10px_40px_rgba(0,0,0,0.6)]">
+             
+             {/* COLUNA 1: SCORE INSTITUCIONAL */}
+             <div className="w-[250px] border-r border-slate-800/40 flex items-center px-6 gap-4">
+                <div className={`w-[58px] h-[58px] rounded-xl flex items-center justify-center border-2 transition-all duration-700 shadow-lg ${institutionalScore >= 0 ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400 shadow-emerald-500/10' : 'border-rose-500/40 bg-rose-500/10 text-rose-400 shadow-rose-500/10'}`}>
+                   <span className="text-[22px] font-black jetbrains">
                      {institutionalScore > 0 ? '+' : ''}{institutionalScore}
                    </span>
                 </div>
-                <div className="flex flex-col justify-center leading-[1.1] min-w-[100px]">
-                   <span className="text-[9px] font-black text-slate-500 tracking-[0.1em] mb-1">SCORE INST.</span>
-                   <span className={`text-[19px] font-black uppercase tracking-tight leading-none ${getScoreLabel(institutionalScore) === 'COMPRA' ? 'text-emerald-400' : getScoreLabel(institutionalScore) === 'VENDA' ? 'text-rose-400' : 'text-[#64748b]'}`}>
+                <div className="flex flex-col justify-center leading-none">
+                   <span className="text-[9px] font-black text-slate-500 tracking-[0.1em] mb-1.5 uppercase">Viés SMC</span>
+                   <span className={`text-[20px] font-black uppercase tracking-tight leading-none ${getScoreLabel(institutionalScore) === 'COMPRA' ? 'text-emerald-400' : getScoreLabel(institutionalScore) === 'VENDA' ? 'text-rose-400' : 'text-slate-500'}`}>
                      {getScoreLabel(institutionalScore)}
                    </span>
+                   <span className="text-[8px] font-bold text-slate-600 mt-1 uppercase tracking-widest">Confiança: {getStrengthLabel(institutionalScore)}</span>
                 </div>
              </div>
 
-             <div className="h-10 w-[1px] bg-slate-800/50 shrink-0"></div>
-
-             <div className="flex flex-col gap-2 min-w-[150px] shrink-0">
-                <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest leading-none">Fluxo de Volume</span>
-                <div className="bg-[#050814] border border-white/5 px-3 h-11 rounded-xl flex flex-col justify-center gap-1.5 shadow-inner">
-                   <div className="flex justify-between items-center text-[10px] font-black jetbrains leading-none">
-                      <span className="text-emerald-400">{volumePressure.buyPercent.toFixed(0)}%</span>
-                      <span className="text-rose-400">{volumePressure.sellPercent.toFixed(0)}%</span>
-                   </div>
-                   <div className="h-[4px] bg-slate-800/50 rounded-full overflow-hidden flex">
-                      <div className="h-full bg-emerald-500 transition-all duration-1000" style={{ width: `${volumePressure.buyPercent}%` }}></div>
-                      <div className="h-full bg-rose-500 transition-all duration-1000" style={{ width: `${volumePressure.sellPercent}%` }}></div>
-                   </div>
+             {/* COLUNA 2: VOLUME (PRESSÃO) */}
+             <div className="flex-1 border-r border-slate-800/40 flex flex-col justify-center px-8 gap-2">
+                <div className="flex justify-between items-end px-1">
+                  <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">VOLUME</span>
+                  <div className="flex gap-4 text-[11px] font-black jetbrains">
+                    <span className="text-emerald-400">{volumePressure.buyPercent.toFixed(0)}% <i className="fas fa-caret-up"></i></span>
+                    <span className="text-rose-400">{volumePressure.sellPercent.toFixed(0)}% <i className="fas fa-caret-down"></i></span>
+                  </div>
+                </div>
+                <div className="h-[8px] bg-[#050814] border border-white/5 rounded-full overflow-hidden flex shadow-inner">
+                   <div className="h-full bg-gradient-to-r from-emerald-600 to-emerald-400 transition-all duration-1000" style={{ width: `${volumePressure.buyPercent}%` }}></div>
+                   <div className="h-full bg-gradient-to-r from-rose-400 to-rose-600 transition-all duration-1000" style={{ width: `${volumePressure.sellPercent}%` }}></div>
                 </div>
              </div>
 
-             <div className="h-10 w-[1px] bg-slate-800/50 shrink-0"></div>
-
-             <div className="flex flex-col gap-2 min-w-[100px] shrink-0">
-                <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest leading-none">Gap Abertura</span>
-                <div className={`bg-[#050814] border px-3 h-11 rounded-xl flex items-center justify-center ${gap.type !== 'none' ? (gap.type === 'up' ? 'border-emerald-500/20' : 'border-rose-500/20') : 'border-white/5'}`}>
-                   <span className={`text-[14px] font-black jetbrains ${gap.type === 'up' ? 'text-emerald-400' : gap.type === 'down' ? 'text-rose-400' : 'text-slate-500'}`}>
-                     {gap.type !== 'none' ? `${Math.abs(gap.percent).toFixed(2)}%` : '0.00%'}
+             {/* COLUNA 3: ESTRUTURA (GAP) */}
+             <div className="w-[180px] border-r border-slate-800/40 flex flex-col justify-center px-6 gap-2 bg-[#050814]/30">
+                <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest leading-none text-center">Estrutura GAP</span>
+                <div className={`flex items-center justify-center gap-2 py-1.5 px-3 rounded-lg border transition-all ${gap.type !== 'none' ? (gap.type === 'up' ? 'border-emerald-500/30 bg-emerald-500/5 text-emerald-400' : 'border-rose-500/30 bg-rose-500/5 text-rose-400') : 'border-white/5 bg-[#050814] text-slate-600'}`}>
+                   <i className={`fas ${gap.type === 'up' ? 'fa-arrow-trend-up' : gap.type === 'down' ? 'fa-arrow-trend-down' : 'fa-minus'} text-xs`}></i>
+                   <span className="text-[14px] font-black jetbrains uppercase tracking-tight">
+                     {gap.type !== 'none' ? `${Math.abs(gap.percent).toFixed(2)}%` : 'Sem Gap'}
                    </span>
                 </div>
              </div>
 
-             <div className="h-10 w-[1px] bg-slate-800/50 shrink-0"></div>
-
+             {/* COLUNA 4: COMPONENTES */}
              <button 
                 onClick={() => setIsBreadthModalOpen(true)}
-                className="flex-1 flex flex-col gap-2 min-w-0 group hover:bg-white/5 p-2 rounded-2xl transition-all"
+                className="w-[300px] flex flex-col justify-center px-8 gap-2 group hover:bg-indigo-500/5 transition-all relative overflow-hidden"
              >
-                <div className="flex items-center justify-between w-full">
-                  <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest leading-none">Constituintes do Índice</span>
-                  <i className="fas fa-expand-arrows-alt text-[8px] text-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                <div className="absolute top-0 right-0 p-2 opacity-20 group-hover:opacity-100 group-hover:text-indigo-500 transition-all">
+                  <i className="fas fa-search-plus text-[10px]"></i>
                 </div>
-                <div className="bg-[#050814]/50 border border-white/5 h-11 rounded-xl flex items-center justify-center gap-6 px-6">
-                   <div className="flex items-center gap-2">
+                <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest leading-none text-center">Componentes {selectedAsset.symbol}</span>
+                <div className="flex items-center justify-between px-2">
+                   <div className="flex flex-col items-center">
                      <span className="text-[18px] font-black text-emerald-400 jetbrains">{breadthSummary.advancing}</span>
-                     <span className="text-[10px] font-black text-emerald-500/50 uppercase tracking-tighter">COMPRA</span>
+                     <span className="text-[7px] font-bold text-slate-600 uppercase">ALTA</span>
                    </div>
-                   <div className="text-slate-700 font-black text-sm jetbrains">x</div>
-                   <div className="flex items-center gap-2">
+                   <div className="w-[1px] h-6 bg-slate-800"></div>
+                   <div className="flex flex-col items-center">
                      <span className="text-[18px] font-black text-rose-400 jetbrains">{breadthSummary.declining}</span>
-                     <span className="text-[10px] font-black text-rose-500/50 uppercase tracking-tighter">VENDA</span>
+                     <span className="text-[7px] font-bold text-slate-600 uppercase">BAIXA</span>
                    </div>
                 </div>
              </button>
@@ -266,11 +267,11 @@ const App: React.FC = () => {
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-[11px] font-black text-white uppercase tracking-widest flex items-center gap-3">
                   <span className="w-1.5 h-3.5 bg-indigo-500 rounded-full"></span>
-                  Agenda Econômica (MQL5)
+                  Agenda Econômica Tradays
                 </h3>
                 <div className="flex items-center gap-2">
                   <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
-                  <span className="text-[8px] font-black text-slate-500">REAL-TIME</span>
+                  <span className="text-[8px] font-black text-slate-500">MQL5 SYNC</span>
                 </div>
               </div>
               
@@ -284,10 +285,10 @@ const App: React.FC = () => {
               <div className="p-8 border-b border-slate-800 flex items-center justify-between shrink-0">
                 <div className="flex flex-col gap-1">
                   <h2 className="text-xl font-black text-white flex items-center gap-3">
-                    <i className="fas fa-th-large text-indigo-500"></i>
-                    RAIO-X DO ÍNDICE: {selectedAsset.symbol}
+                    <i className="fas fa-dna text-indigo-500"></i>
+                    DNA DO ÍNDICE: {selectedAsset.symbol}
                   </h2>
-                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Sentimento Detalhado por Ativo Individual</p>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Correlação Técnica por Ativo</p>
                 </div>
                 <button onClick={() => setIsBreadthModalOpen(false)} className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 transition-colors flex items-center justify-center text-slate-400">
                   <i className="fas fa-times"></i>
@@ -316,7 +317,7 @@ const App: React.FC = () => {
               </div>
 
               <div className="p-6 bg-[#0d1226] border-t border-slate-800 flex justify-between items-center shrink-0">
-                <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest italic">Fonte: Yahoo Finance Engine / Sentinel Core V3.8</span>
+                <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest italic">Sentinel Engine V4.0 @ Yahoo Finance</span>
                 <button 
                   onClick={() => setIsBreadthModalOpen(false)}
                   className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-black rounded-lg transition-all"
@@ -331,8 +332,8 @@ const App: React.FC = () => {
 
       <footer className="h-6 bg-[#02040a] border-t border-slate-800/40 flex items-center justify-between px-8 text-[7px] font-black uppercase tracking-[0.5em] text-slate-700">
         <div className="flex gap-8">
-           <span>MOTOR CORE: V4.1.0</span>
-           <span>SMC ANALYTICS: ACTIVE</span>
+           <span>SENTINEL CORE: ACTIVE</span>
+           <span>SMC ANALYTICS: CALIBRATED</span>
         </div>
         <div className="text-slate-500">PRO-TRADE INTERFACE © 2025</div>
       </footer>
