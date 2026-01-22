@@ -80,6 +80,56 @@ const App: React.FC = () => {
   const bullImbalances = useMemo(() => smcZones.filter(z => z.sentiment === FVGType.BULLISH && !z.mitigated).length, [smcZones]);
   const bearImbalances = useMemo(() => smcZones.filter(z => z.sentiment === FVGType.BEARISH && !z.mitigated).length, [smcZones]);
 
+  // MARKET STRENGTH CALCULATION
+  const marketStrength = useMemo(() => {
+    let score = 0;
+
+    // 1. Breadth Factor (Max 35 points)
+    const breadthRatio = breadthSummary.advancing / (breadthSummary.total || 1);
+    score += (breadthRatio - 0.5) * 70;
+
+    // 2. Volume Pressure Factor (Max 25 points)
+    score += (volumePressure.buyPercent - 50) * 0.5;
+
+    // 3. Correlation Factor (Max 30 points)
+    correlations.forEach(c => {
+      const impact = c.change * (c.correlation === 'positive' ? 1 : -1);
+      score += Math.max(-10, Math.min(10, impact * 2));
+    });
+
+    // 4. Gap Factor (Max 10 points)
+    if (gap.type !== 'none') {
+      score += gap.type === 'up' ? 10 : -10;
+    }
+
+    const absScore = Math.abs(score);
+    const normalizedScore = Math.min(100, Math.round(absScore));
+    
+    let direction: 'COMPRA' | 'VENDA' | 'NEUTRO' = 'NEUTRO';
+    let color = 'text-slate-400';
+    let borderColor = 'border-slate-800';
+    let bgColor = 'bg-slate-800/40';
+    let label = 'INDEFINIDO';
+
+    if (score > 5) {
+      direction = 'COMPRA';
+      color = 'text-emerald-500';
+      borderColor = 'border-emerald-500/40';
+      bgColor = 'bg-emerald-500/5';
+    } else if (score < -5) {
+      direction = 'VENDA';
+      color = 'text-rose-500';
+      borderColor = 'border-rose-500/40';
+      bgColor = 'bg-rose-500/5';
+    }
+
+    if (normalizedScore >= 70) label = 'FORTE';
+    else if (normalizedScore >= 30) label = 'MODERADO';
+    else label = 'FRACO';
+
+    return { direction, color, bgColor, borderColor, value: normalizedScore, label, raw: score };
+  }, [breadthSummary, volumePressure, correlations, gap]);
+
   const handleManualAnalysis = async () => {
     setIsAnalyzing(true);
     const result = await analyzeMarket(candles, selectedAsset, correlations, events, "Deep Institutional Analysis");
@@ -106,6 +156,17 @@ const App: React.FC = () => {
               <span className="text-[9px] font-bold text-slate-500 mt-0.5 block">NYSE: {serverTime} <span className="text-emerald-500 ml-1">● LIVE FEED ACTIVE</span></span>
             </div>
           </div>
+        </div>
+
+        {/* Real-time Bias Meter in Header */}
+        <div className={`flex items-center gap-4 px-4 py-1.5 rounded border border-slate-800 ${marketStrength.bgColor} shadow-inner`}>
+            <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Bias Monitor</span>
+            <div className="flex items-center gap-2">
+                <span className={`text-[11px] font-black jetbrains ${marketStrength.color}`}>{marketStrength.direction}</span>
+                <span className={`text-[10px] font-black px-2 py-0.5 rounded bg-slate-900/50 border border-slate-800 ${marketStrength.color}`}>
+                    {marketStrength.value}% {marketStrength.label}
+                </span>
+            </div>
         </div>
 
         <div className="flex items-center gap-3">
@@ -158,6 +219,36 @@ const App: React.FC = () => {
         {/* LEFT SIDEBAR: Market Sentiment */}
         <aside className="w-[280px] bg-[#0d1226]/50 border-r border-slate-800/40 p-4 overflow-y-auto custom-scrollbar flex flex-col gap-6 shrink-0">
           
+          {/* Institutional Strength Gauge - Refined */}
+          <section>
+            <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Institutional Force</h3>
+            <div className="bg-[#151b33]/40 border border-slate-800/50 p-6 rounded-lg flex flex-col items-center">
+                <div className="relative w-36 h-36 flex items-center justify-center">
+                    {/* Circle Gauge with improved viewbox and stroke */}
+                    <svg viewBox="0 0 140 140" className="w-full h-full -rotate-90">
+                        <circle cx="70" cy="70" r="62" stroke="currentColor" strokeWidth="10" fill="transparent" className="text-slate-800/50" />
+                        <circle cx="70" cy="70" r="62" stroke="currentColor" strokeWidth="10" fill="transparent" 
+                            strokeDasharray={389.55} 
+                            strokeDashoffset={389.55 - (389.55 * marketStrength.value) / 100}
+                            strokeLinecap="round"
+                            className={`transition-all duration-1000 ${marketStrength.direction === 'COMPRA' ? 'text-emerald-500' : marketStrength.direction === 'VENDA' ? 'text-rose-500' : 'text-slate-600'}`} 
+                        />
+                    </svg>
+                    <div className="absolute flex flex-col items-center">
+                        <span className={`text-2xl font-black jetbrains leading-tight ${marketStrength.color}`}>{marketStrength.value}%</span>
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter mt-[-2px]">{marketStrength.label}</span>
+                    </div>
+                </div>
+                
+                {/* Bias Box - Matching Screenshot */}
+                <div className={`mt-6 w-full py-2.5 rounded border ${marketStrength.borderColor} ${marketStrength.bgColor} flex items-center justify-center gap-2 transition-all duration-500`}>
+                    <span className={`text-[10px] font-black uppercase tracking-widest ${marketStrength.color}`}>
+                        Institutional Bias: {marketStrength.direction}
+                    </span>
+                </div>
+            </div>
+          </section>
+
           <section>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Market Sentiment</h3>
@@ -220,16 +311,6 @@ const App: React.FC = () => {
             </div>
           </section>
 
-          <section>
-            <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Market Gap</h3>
-            <div className="bg-[#151b33]/40 border border-slate-800/50 p-4 rounded-lg flex flex-col items-center">
-               <span className="text-[9px] font-bold text-slate-500 uppercase mb-1">Opening Gap</span>
-               <span className={`text-xl font-black jetbrains ${gap.type === 'up' ? 'text-emerald-500' : gap.type === 'down' ? 'text-rose-500' : 'text-slate-400'}`}>
-                 {gap.percent > 0 ? '+' : ''}{gap.percent.toFixed(2)}%
-               </span>
-               <span className="text-[8px] font-bold text-emerald-500/60 uppercase mt-1 tracking-widest">Institutional Inflow</span>
-            </div>
-          </section>
         </aside>
 
         {/* CENTER: CHART + STATUS PANEL */}
@@ -246,7 +327,7 @@ const App: React.FC = () => {
             />
           </div>
 
-          {/* BOTTOM STATUS BAR OVERLAYED OR SEPARATE */}
+          {/* BOTTOM STATUS BAR */}
           <div className="h-24 bg-[#0d1226]/80 backdrop-blur-md border-t border-slate-800/50 flex items-center px-6 gap-8 shrink-0 z-20">
              <div className="flex flex-col">
                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">NYSE Status</span>
