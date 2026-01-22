@@ -6,6 +6,7 @@ import { sendTelegramSignal } from './services/telegramService';
 import { detectSMCZones } from './utils/fvgDetector';
 import TradingChart from './components/TradingChart';
 import MqlCalendarWidget from './components/MqlCalendarWidget';
+import MacroHeaderAlert from './components/MacroHeaderAlert';
 
 const App: React.FC = () => {
   const [selectedAsset, setSelectedAsset] = useState<Asset>(SUPPORTED_ASSETS[1]); 
@@ -20,7 +21,6 @@ const App: React.FC = () => {
   const [gap, setGap] = useState<GapData>({ value: 0, percent: 0, type: 'none' });
   
   const [loading, setLoading] = useState(true);
-  const [isTestingTelegram, setIsTestingTelegram] = useState(false);
   const [lastAutoSignalDate, setLastAutoSignalDate] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
 
@@ -49,14 +49,6 @@ const App: React.FC = () => {
     score += (bullFVGs - bearFVGs) * 6;
     return Math.round(Math.max(-100, Math.min(100, score)));
   }, [volumePressure, breadthSummary, smcZones]);
-
-  const handleManualTelegramTest = async () => {
-    setIsTestingTelegram(true);
-    const signal = getScoreLabel(institutionalScore);
-    const strength = getStrengthLabel(institutionalScore);
-    await sendTelegramSignal(`${selectedAsset.symbol} (TESTE)`, signal, strength, institutionalScore);
-    setTimeout(() => setIsTestingTelegram(false), 2000);
-  };
 
   const marketStatus = useMemo(() => {
     const hrs = currentTime.getHours();
@@ -163,16 +155,12 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-6">
-          <button 
-            onClick={handleManualTelegramTest}
-            disabled={isTestingTelegram}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all ${isTestingTelegram ? 'bg-indigo-500/20 border-indigo-500/40 text-indigo-400' : 'bg-slate-800/40 border-slate-700/50 text-slate-400 hover:border-indigo-500/50 hover:text-white'}`}
-          >
-            <i className={`fab fa-telegram-plane ${isTestingTelegram ? 'animate-bounce' : ''}`}></i>
-            <span className="text-[9px] font-black uppercase tracking-widest">{isTestingTelegram ? 'Enviando...' : 'Testar Telegram'}</span>
-          </button>
+        {/* ALERTA MACRO CENTRALIZADO NO HEADER */}
+        <div className="hidden lg:flex flex-1 justify-center px-10">
+          <MacroHeaderAlert events={events} selectedAsset={selectedAsset} />
+        </div>
 
+        <div className="flex items-center gap-6">
           <div className="flex bg-[#050814] p-1 rounded-lg border border-slate-800">
             {SUPPORTED_ASSETS.map(a => (
               <button 
