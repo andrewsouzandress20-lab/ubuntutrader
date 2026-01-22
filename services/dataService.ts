@@ -34,11 +34,30 @@ const fetchYahooData = async (symbol: string, interval: string, range: string = 
   return data?.chart?.result?.[0];
 };
 
+/**
+ * Fetches the latest price for a given asset from Yahoo Finance.
+ */
+export const fetchCurrentPrice = async (asset: Asset): Promise<number | null> => {
+  let yahooSymbol = '';
+  if (asset.symbol === 'US30') yahooSymbol = '^DJI';
+  else if (asset.symbol === 'HK50') yahooSymbol = '^HSI';
+  else yahooSymbol = asset.symbol;
+
+  const quoteUrl = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(yahooSymbol)}`;
+  const data = await fetchFromYahoo(quoteUrl);
+  
+  if (data?.quoteResponse?.result && data.quoteResponse.result.length > 0) {
+    return data.quoteResponse.result[0].regularMarketPrice || null;
+  }
+  return null;
+};
+
 export const fetchCorrelationData = async (assetSymbol: string): Promise<CorrelationData[]> => {
   let targets: { symbol: string, name: string, corr: 'positive' | 'negative' }[] = [];
 
   if (assetSymbol === 'HK50') {
     targets = [
+      { symbol: '^VIX', name: 'VIX', corr: 'negative' as const },
       { symbol: 'USDJPY=X', name: 'USD/JPY', corr: 'negative' as const },
       { symbol: 'GC=F', name: 'GOLD', corr: 'negative' as const },
       { symbol: '^N225', name: 'NIKKEI 225', corr: 'positive' as const },
@@ -47,7 +66,6 @@ export const fetchCorrelationData = async (assetSymbol: string): Promise<Correla
       { symbol: '000001.SS', name: 'SHANGHAI', corr: 'positive' as const },
     ];
   } else {
-    // Default targets for US30
     targets = [
       { symbol: '^VIX', name: 'VIX', corr: 'negative' as const },
       { symbol: '^IXIC', name: 'NASDAQ', corr: 'positive' as const },
@@ -77,7 +95,6 @@ export const fetchCorrelationData = async (assetSymbol: string): Promise<Correla
     });
   }
 
-  // Fallback em caso de erro na API
   if (results.length === 0) {
     return targets.map(t => ({
       symbol: t.symbol,
@@ -93,22 +110,47 @@ export const fetchCorrelationData = async (assetSymbol: string): Promise<Correla
 
 export const fetchEconomicEvents = async (): Promise<EconomicEvent[]> => {
     const now = Math.floor(Date.now() / 1000);
+    // Mocking real-time institutional events for display
     return [
         {
             id: '1',
-            time: now - 3600,
-            title: 'Fed Monetary Policy',
+            time: now - 300,
+            title: 'FED: Discurso de Jerome Powell',
             impact: 'HIGH',
             sentiment: 'NEUTRAL',
-            description: 'Expectations on interest rates impacting global indices.'
+            description: 'Powell indica cautela sobre cortes de juros no curto prazo.'
         },
         {
             id: '2',
-            time: now - 7200,
-            title: 'China Manufacturing PMI',
+            time: now - 1800,
+            title: 'Dados de Emprego (ADP)',
             impact: 'HIGH',
             sentiment: 'POSITIVE',
-            description: 'Manufacturing data showing growth in Asian markets.'
+            description: 'Números acima do esperado fortalecem o dólar e ativos de risco.'
+        },
+        {
+            id: '3',
+            time: now - 3600,
+            title: 'IPC Zona do Euro',
+            impact: 'MEDIUM',
+            sentiment: 'NEGATIVE',
+            description: 'Inflação persistente pressiona o Banco Central Europeu.'
+        },
+        {
+            id: '4',
+            time: now - 5400,
+            title: 'Estoque de Petróleo Bruto',
+            impact: 'MEDIUM',
+            sentiment: 'NEUTRAL',
+            description: 'Dados em linha com o esperado, mercado lateralizado.'
+        },
+        {
+            id: '5',
+            time: now - 7200,
+            title: 'PMI Industrial (China)',
+            impact: 'HIGH',
+            sentiment: 'POSITIVE',
+            description: 'Expansão industrial chinesa impulsiona HK50.'
         }
     ];
 };
@@ -229,14 +271,31 @@ export const detectOpeningGap = (candles: Candle[], asset: Asset): GapData => {
   const pct = (diff / prevDayClose) * 100;
   
   const gapThreshold = 0.01; 
+  const gapType: 'up' | 'down' | 'none' = Math.abs(pct) > gapThreshold ? (pct > 0 ? 'up' : 'down') : 'none';
+
+  // Lógica de preenchimento (Mitigação do Gap)
+  let isFilled = false;
+  if (gapType !== 'none') {
+    for (let j = startIndex; j < candles.length; j++) {
+      if (gapType === 'up' && candles[j].low <= prevDayClose) {
+        isFilled = true;
+        break;
+      }
+      if (gapType === 'down' && candles[j].high >= prevDayClose) {
+        isFilled = true;
+        break;
+      }
+    }
+  }
 
   return {
     value: diff,
     percent: pct,
-    type: Math.abs(pct) > gapThreshold ? (pct > 0 ? 'up' : 'down') : 'none',
+    type: gapType,
     startIndex: startIndex,
     prevClose: prevDayClose,
-    openPrice: todayOpen
+    openPrice: todayOpen,
+    isFilled: isFilled
   };
 };
 

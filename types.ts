@@ -51,6 +51,7 @@ export interface GapData {
   startIndex?: number;
   prevClose?: number;
   openPrice?: number;
+  isFilled?: boolean;
 }
 
 export interface EconomicEvent {
@@ -123,16 +124,16 @@ export const UTC_OFFSETS = [
 ];
 
 export const DOW_30_TICKERS = [
-  'AAPL', 'AMGN', 'AXP', 'BA', 'CAT', 'CRM', 'CSCO', 'CVX', 'DIS', 'GS',
-  'HD', 'HON', 'IBM', 'INTC', 'JNJ', 'JPM', 'KO', 'MCD', 'MMM', 'MSFT',
-  'NKE', 'PG', 'TRV', 'UNH', 'V', 'VZ', 'WBA', 'WMT', 'AMZN', 'PYPL'
+  'AAPL', 'AMGN', 'AMZN', 'AXP', 'BA', 'CAT', 'CRM', 'CSCO', 'CVX', 'DIS', 
+  'GS', 'HD', 'HON', 'IBM', 'INTC', 'JNJ', 'JPM', 'KO', 'MCD', 'MMM', 
+  'MSFT', 'NKE', 'PG', 'SHW', 'TRV', 'UNH', 'V', 'VZ', 'WBA', 'WMT'
 ];
 
 export const HK_50_TICKERS = [
   '0001.HK', '0002.HK', '0003.HK', '0005.HK', '0006.HK', '0011.HK', '0012.HK', '0016.HK', '0017.HK', '0027.HK',
-  '0066.HK', '0101.HK', '0175.HK', '0267.HK', '0288.HK', '0386.HK', '0388.HK', '0669.HK', '0688.HK', '0700.HK',
-  '0762.HK', '0823.HK', '0857.HK', '0883.HK', '0939.HK', '0941.HK', '0960.HK', '0968.HK', '0981.HK', '0992.HK',
-  '1038.HK', '1044.HK', '1088.HK', '1093.HK', '1109.HK', '1113.HK', '1177.HK', '1211.HK', '1299.HK', '1398.HK',
-  '1810.HK', '1928.HK', '2020.HK', '2313.HK', '2318.HK', '2319.HK', '2331.HK', '2382.HK', '2388.HK', '2628.HK',
-  '3690.HK', '3968.HK', '3988.HK', '9618.HK', '9633.HK', '9888.HK', '9988.HK', '9999.HK'
+  '0066.HK', '0101.HK', '0175.HK', '0241.HK', '0267.HK', '0288.HK', '0386.HK', '0388.HK', '0669.HK', '0688.HK', 
+  '0700.HK', '0762.HK', '0823.HK', '0857.HK', '0883.HK', '0939.HK', '0941.HK', '0960.HK', '0968.HK', '0981.HK', 
+  '0992.HK', '1038.HK', '1044.HK', '1088.HK', '1093.HK', '1109.HK', '1113.HK', '1177.HK', '1211.HK', '1299.HK', 
+  '1398.HK', '1810.HK', '1928.HK', '2020.HK', '2313.HK', '2318.HK', '2319.HK', '2331.HK', '2382.HK', '2388.HK', 
+  '2628.HK', '2688.HK', '3690.HK', '3968.HK', '3988.HK', '9618.HK', '9633.HK', '9888.HK', '9988.HK', '9999.HK'
 ];
