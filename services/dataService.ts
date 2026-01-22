@@ -7,7 +7,7 @@ const PROXIES = [
   'https://thingproxy.freeboard.io/fetch/',
 ];
 
-// Dicionário ultra-expandido para tradução de eventos econômicos
+// Dicionário simples para tradução de eventos comuns
 const EVENT_TRANSLATIONS: Record<string, string> = {
   'Unemployment Rate': 'Taxa de Desemprego',
   'CPI': 'IPC (Inflação)',
@@ -27,56 +27,14 @@ const EVENT_TRANSLATIONS: Record<string, string> = {
   'Building Permits': 'Alvarás de Construção',
   'Crude Oil Inventories': 'Estoques de Petróleo',
   'Empire State Manufacturing Index': 'Índice de Manufatura Empire State',
-  'Philly Fed Manufacturing Index': 'Índice de Manufatura Philly Fed',
-  'Flash Manufacturing PMI': 'PMI Industrial Prévia',
-  'Flash Services PMI': 'PMI de Serviços Prévia',
-  'Existing Home Sales': 'Vendas de Casas Existentes',
-  'New Home Sales': 'Vendas de Casas Novas',
-  'Durable Goods Orders': 'Pedidos de Bens Duráveis',
-  'Consumer Sentiment': 'Sentimento do Consumidor',
-  'Beige Book': 'Livro Bege (FED)',
-  'JOLTS Job Openings': 'Vagas de Emprego JOLTS',
-  'Average Hourly Earnings': 'Ganhos Médios por Hora',
-  'Pending Home Sales': 'Vendas de Casas Pendentes',
-  'Personal Spending': 'Gastos Pessoais',
-  'Factory Orders': 'Pedidos à Indústria',
-  'Business Inventories': 'Estoques de Empresas',
-  'Wholesale Inventories': 'Estoques de Atacado',
-  'Consumer Credit': 'Crédito ao Consumidor',
-  'Treasury Budget': 'Orçamento do Tesouro',
-  'Housing Starts': 'Início de Construções',
-  'Industrial Production': 'Produção Industrial',
-  'Capacity Utilization': 'Utilização da Capacidade',
-  'Philadelphia Fed Index': 'Índice Fed de Filadélfia',
-  'Leading Index': 'Índice de Indicadores Antecedentes',
-  'S&P/CS HPI': 'Índice de Preços de Casas S&P',
-  'Richmond Fed Index': 'Índice Fed de Richmond',
-  'Chicago PMI': 'PMI de Chicago',
-  'Pending Sales': 'Vendas Pendentes'
-};
-
-const IMPACT_TRANSLATIONS: Record<string, string> = {
-  'high': 'ALTO',
-  'medium': 'MÉDIO',
-  'low': 'BAIXO'
+  'Philly Fed Manufacturing Index': 'Índice de Manufatura Philly Fed'
 };
 
 const translateEvent = (title: string): string => {
-  let translated = title;
-  // Traduz termos específicos
   for (const [eng, pt] of Object.entries(EVENT_TRANSLATIONS)) {
-    const regex = new RegExp(eng, 'gi');
-    translated = translated.replace(regex, pt);
+    if (title.includes(eng)) return title.replace(eng, pt);
   }
-  // Traduz conectores comuns
-  translated = translated.replace(/speak/gi, 'fala')
-                         .replace(/member/gi, 'membro')
-                         .replace(/report/gi, 'relatório')
-                         .replace(/index/gi, 'índice')
-                         .replace(/forecast/gi, 'previsão')
-                         .replace(/actual/gi, 'atual')
-                         .replace(/previous/gi, 'anterior');
-  return translated;
+  return title;
 };
 
 const fetchWithRetry = async (url: string, useProxy: boolean = true): Promise<any> => {
@@ -198,7 +156,7 @@ export const fetchEconomicEvents = async (): Promise<EconomicEvent[]> => {
         const data = await fetchWithRetry(calendarUrl, true);
 
         if (!data || !Array.isArray(data)) {
-            console.warn('Não foi possível carregar o calendário econômico.');
+            console.warn('Could not load economic calendar from primary source.');
             return [];
         }
 
@@ -214,15 +172,14 @@ export const fetchEconomicEvents = async (): Promise<EconomicEvent[]> => {
                 relevantImpacts.includes(event.impact.toLowerCase())
             )
             .map((event: any): EconomicEvent => {
-                const rawImpact = event.impact.toLowerCase();
+                const impactUpper = event.impact.toUpperCase();
                 let impact: 'HIGH' | 'MEDIUM' | 'LOW';
                 
-                if (rawImpact.includes('high')) impact = 'HIGH';
-                else if (rawImpact.includes('medium')) impact = 'MEDIUM';
+                if (impactUpper.includes('HIGH')) impact = 'HIGH';
+                else if (impactUpper.includes('MEDIUM')) impact = 'MEDIUM';
                 else impact = 'LOW';
 
                 const translatedTitle = translateEvent(event.title);
-                const translatedImpact = IMPACT_TRANSLATIONS[rawImpact] || rawImpact.toUpperCase();
 
                 return {
                     id: `${event.title}-${event.date}`,
@@ -230,12 +187,12 @@ export const fetchEconomicEvents = async (): Promise<EconomicEvent[]> => {
                     title: `${translatedTitle} (${event.country})`,
                     impact,
                     sentiment: 'NEUTRAL',
-                    description: `Moeda: ${event.country} | Impacto: ${translatedImpact} | Previsão: ${event.forecast || '---'} | Anterior: ${event.previous || '---'}`,
+                    description: `Moeda: ${event.country} | Impacto: ${event.impact} | Previsão: ${event.forecast || '---'} | Anterior: ${event.previous || '---'}`,
                 };
             })
             .sort((a, b) => a.time - b.time);
     } catch (error) {
-        console.error("Erro ao buscar eventos econômicos:", error);
+        console.error("Error in fetchEconomicEvents:", error);
         return [];
     }
 };
