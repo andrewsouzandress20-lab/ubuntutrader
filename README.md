@@ -18,3 +18,30 @@ View your app in AI Studio: https://ai.studio/apps/drive/1UYxH8gF1WEa0lbaiyV1FqB
 2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
 3. Run the app:
    `npm run dev`
+
+## Deploy no Render.com
+
+1. No painel do Render, crie um novo serviço Web Static Site ou Web Service.
+2. Configure as variáveis de ambiente necessárias (ex: VITE_GEMINI_API_KEY, VITE_TELEGRAM_BOT_TOKEN, VITE_TELEGRAM_CHAT_ID).
+3. Use as configurações abaixo:
+
+**Build Command:**
+```sh
+npm run build
+```
+
+**Start Command:**
+```sh
+npm run preview -- --port $PORT
+```
+
+Se o preview não funcionar corretamente, instale um servidor estático:
+```sh
+npm install -g serve
+```
+E use como Start Command:
+```sh
+serve -s dist -l $PORT
+```
+
+O Render irá expor a variável $PORT automaticamente.
