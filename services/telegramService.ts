@@ -1,6 +1,9 @@
 
-const BOT_TOKEN = "7367907001:AAFEc8FwNIa6PNHd79rQ8uYNrzgfx2hTJc0";
-const CHAT_ID = "603201843";
+const BOT_TOKEN = import.meta.env.VITE_TELEGRAM_BOT_TOKEN;
+const CHAT_ID = import.meta.env.VITE_TELEGRAM_CHAT_ID;
+if (!BOT_TOKEN || !CHAT_ID) {
+  console.error("Telegram ENV não configurado");
+}
 
 /**
  * Envia uma mensagem de sinal de trade para um canal do Telegram.
