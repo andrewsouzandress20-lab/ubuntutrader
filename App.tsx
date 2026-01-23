@@ -165,14 +165,14 @@ const App: React.FC = () => {
               <span className="text-[7px] font-black text-slate-500 uppercase tracking-widest">Sessão NY (US30)</span>
               <div className="flex items-center gap-2">
                 <div className={`w-1.5 h-1.5 rounded-full ${marketStatus.isUSOpen ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></div>
-                <span className="text-[10px] font-black text-white jetbrains tracking-tight">ABRE: 10:30 BRT</span>
+                <span className="text-[10px] font-black text-white jetbrains tracking-tight">ABRE: 11:30 BRT (UTC-3)</span>
               </div>
             </div>
             <div className="flex flex-col gap-0.5">
               <span className="text-[7px] font-black text-slate-500 uppercase tracking-widest">Sessão HK (HK50)</span>
               <div className="flex items-center gap-2">
                 <div className={`w-1.5 h-1.5 rounded-full ${marketStatus.isHKOpen ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></div>
-                <span className="text-[10px] font-black text-white jetbrains tracking-tight">ABRE: 22:30 BRT</span>
+                <span className="text-[10px] font-black text-white jetbrains tracking-tight">ABRE: 22:30 BRT (UTC-3)</span>
               </div>
             </div>
           </div>

@@ -50,7 +50,7 @@ const SuggestionBanner: React.FC<SuggestionBannerProps> = ({ isMarketOpen, marke
   if (!isMarketOpen) {
     return (
       <div className="text-slate-400 text-[13px] md:text-[13px] sm:text-[12px] font-bold tracking-wide px-6 py-2 sm:px-2 sm:py-1 rounded bg-[#181e2a] border border-slate-700/40 w-full max-w-[420px] text-center">
-        <span role='img' aria-label='relogio'>⏳</span> Aguardando abertura da bolsa...
+        <span role='img' aria-label='bot'>🤖</span> <span role='img' aria-label='relogio'>⏳</span> Aguardando abertura da bolsa...
       </div>
     );
   }
@@ -59,7 +59,7 @@ const SuggestionBanner: React.FC<SuggestionBannerProps> = ({ isMarketOpen, marke
   if (isMarketOpen && !showSuggestion) {
     return (
       <div className="text-indigo-400 text-[13px] md:text-[13px] sm:text-[12px] font-bold tracking-wide px-6 py-2 sm:px-2 sm:py-1 rounded bg-[#181e2a] border border-indigo-700/40 animate-pulse w-full max-w-[420px] text-center">
-        <span role='img' aria-label='analise'>🤖</span> Analisando cenário de abertura...
+        <span role='img' aria-label='bot'>🤖</span> Analisando cenário de abertura...
       </div>
     );
   }
@@ -68,7 +68,7 @@ const SuggestionBanner: React.FC<SuggestionBannerProps> = ({ isMarketOpen, marke
   if (showSuggestion && suggestion) {
     return (
       <div className="text-amber-400 text-[14px] md:text-[14px] sm:text-[13px] font-bold tracking-wide px-6 py-2 sm:px-2 sm:py-1 rounded bg-[#181e2a] border border-amber-500/40 w-full max-w-[420px] text-center">
-        <span role='img' aria-label='luz'>💡</span> Sugestão: Viés de <b>{suggestion.bias.toUpperCase()}</b> na zona <b>{suggestion.zone}</b>.
+        <span role='img' aria-label='bot'>🤖</span> <span role='img' aria-label='luz'>💡</span> Sugestão: Viés de <b>{suggestion.bias.toUpperCase()}</b> na zona <b>{suggestion.zone}</b>.
       </div>
     );
   }
