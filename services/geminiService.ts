@@ -10,7 +10,11 @@ export const analyzeMarket = async (
   context: string = "Standard",
   extraData: { score: number, bullFVG: number, bearFVG: number }
 ): Promise<{ text: string, sources?: any[] }> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const ai = new GoogleGenAI({
+  apiKey: import.meta.env.VITE_GEMINI_API_KEY
+});
+
+
   
   if (candles.length === 0) return { text: "Nenhum dado disponível para análise." };
   
