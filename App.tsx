@@ -7,6 +7,7 @@ import { detectSMCZones } from './utils/fvgDetector';
 import TradingChart from './components/TradingChart';
 import MqlCalendarWidget from './components/MqlCalendarWidget';
 import MacroHeaderAlert from './components/MacroHeaderAlert';
+import GeminiSignalHeader from './components/GeminiSignalHeader';
 
 const App: React.FC = () => {
   const [selectedAsset, setSelectedAsset] = useState<Asset>(SUPPORTED_ASSETS[1]); 
@@ -155,9 +156,16 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        {/* ALERTA MACRO CENTRALIZADO NO HEADER */}
+        {/* SUGESTÃO IA CENTRALIZADA NO HEADER */}
         <div className="hidden lg:flex flex-1 justify-center px-10">
-          <MacroHeaderAlert events={events} selectedAsset={selectedAsset} />
+          <GeminiSignalHeader 
+            candles={candles}
+            asset={selectedAsset}
+            correlations={correlations}
+            events={events}
+            smcZones={smcZones}
+            institutionalScore={institutionalScore}
+          />
         </div>
 
         <div className="flex items-center gap-6">
