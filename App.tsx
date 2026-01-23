@@ -4,10 +4,12 @@ import { Candle, Asset, SUPPORTED_ASSETS, Timeframe, TIMEFRAMES, UTC_OFFSETS, Co
 import { fetchRealData, fetchCorrelationData, fetchMarketBreadth, calculateVolumePressure, detectOpeningGap, fetchEconomicEvents, fetchCurrentPrice } from './services/dataService';
 import { sendTelegramSignal } from './services/telegramService';
 import { detectSMCZones } from './utils/fvgDetector';
+
 import TradingChart from './components/TradingChart';
 import MqlCalendarWidget from './components/MqlCalendarWidget';
 import MacroHeaderAlert from './components/MacroHeaderAlert';
 import GeminiSignalHeader from './components/GeminiSignalHeader';
+import SuggestionBanner from './components/SuggestionBanner';
 
 const App: React.FC = () => {
   const [selectedAsset, setSelectedAsset] = useState<Asset>(SUPPORTED_ASSETS[1]); 
@@ -121,9 +123,29 @@ const App: React.FC = () => {
     return () => clearInterval(interval);
   }, [selectedAsset, timeframe, loadData]);
 
+  // Dados agregados para sugestão
+  const suggestionData = useMemo(() => ({
+    volume: candles.length > 0 ? candles[candles.length - 1].volume || 0 : 0,
+    gap: gap.value,
+    gapType: gap.type,
+    breadth: breadthSummary,
+    volumePressure,
+    institutionalScore,
+    smcZones,
+    events,
+    correlations,
+    asset: selectedAsset,
+  }), [candles, gap, breadthSummary, volumePressure, institutionalScore, smcZones, events, correlations, selectedAsset]);
+
+  // Detecta abertura do mercado do ativo selecionado
+  const isMarketOpen = useMemo(() => {
+    if (selectedAsset.symbol === 'US30') return marketStatus.isUSOpen;
+    if (selectedAsset.symbol === 'HK50') return marketStatus.isHKOpen;
+    return false;
+  }, [selectedAsset, marketStatus]);
+
   return (
     <div className="flex flex-col h-screen bg-[#02040a] text-[#94a3b8] overflow-hidden font-['Inter'] selection:bg-indigo-500/30">
-      
       <header className="h-[56px] bg-[#0d1226] border-b border-indigo-500/20 px-6 flex items-center justify-between shrink-0 z-40 shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
         <div className="flex items-center gap-8">
           <div className="flex items-center gap-3">
@@ -131,8 +153,8 @@ const App: React.FC = () => {
               <i className="fas fa-microchip text-white text-sm"></i>
             </div>
             <div>
-              <h1 className="text-[13px] font-black uppercase tracking-[0.15em] text-white leading-none">SENTINEL PRO</h1>
-              <span className="text-[8px] font-bold text-slate-500 mt-1 block uppercase tracking-wider">SMC ENGINE V4.0</span>
+              <h1 className="text-[13px] font-black uppercase tracking-[0.15em] text-white leading-none">UBUNTU TRADER</h1>
+              <span className="text-[8px] font-bold text-slate-500 mt-1 block uppercase tracking-wider">análise fundamentalista</span>
             </div>
           </div>
 
@@ -157,16 +179,22 @@ const App: React.FC = () => {
         </div>
 
         {/* SUGESTÃO IA CENTRALIZADA NO HEADER */}
-        <div className="hidden lg:flex flex-1 justify-center px-10">
-          <GeminiSignalHeader 
-            candles={candles}
-            asset={selectedAsset}
-            correlations={correlations}
-            events={events}
-            smcZones={smcZones}
-            institutionalScore={institutionalScore}
-          />
+        <div className="flex flex-1 justify-center px-2 md:px-6 lg:px-10 min-w-0">
+          <div className="flex w-full justify-center items-center min-w-0">
+            <SuggestionBanner isMarketOpen={isMarketOpen} marketData={suggestionData} />
+          </div>
         </div>
+        {/* Se quiser manter o GeminiSignalHeader, pode deixar abaixo ou remover */}
+        {/*
+        <GeminiSignalHeader 
+          candles={candles}
+          asset={selectedAsset}
+          correlations={correlations}
+          events={events}
+          smcZones={smcZones}
+          institutionalScore={institutionalScore}
+        />
+        */}
 
         <div className="flex items-center gap-6">
           <div className="flex bg-[#050814] p-1 rounded-lg border border-slate-800">
@@ -344,10 +372,10 @@ const App: React.FC = () => {
 
       <footer className="h-6 bg-[#02040a] border-t border-slate-800/40 flex items-center justify-between px-8 text-[7px] font-black uppercase tracking-[0.5em] text-slate-700">
         <div className="flex gap-8">
-           <span>SENTINEL CORE: ACTIVE</span>
-           <span>TELEGRAM BOT: READY</span>
+           <span>developer by ANDRE SOUZA</span>
+           <span>importante entrar na abertura conforme as zonas de liquidez exemplo: SMC/FGV/ETC...</span>
         </div>
-        <div className="text-slate-500">PRO-TRADE INTERFACE © 2025</div>
+        <div className="text-slate-500">UBUNTU TRADER © 2026</div>
       </footer>
     </div>
   );
