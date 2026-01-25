@@ -12,6 +12,13 @@ import GeminiSignalHeader from './components/GeminiSignalHeader';
 import SuggestionBanner from './components/SuggestionBanner';
 
 const App: React.FC = () => {
+  const [isMobile, setIsMobile] = React.useState(false);
+  React.useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth <= 600);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
   const [selectedAsset, setSelectedAsset] = useState<Asset>(SUPPORTED_ASSETS[1]); 
   const [timeframe, setTimeframe] = useState<Timeframe>('5m');
   const [candles, setCandles] = useState<Candle[]>([]);
@@ -144,8 +151,163 @@ const App: React.FC = () => {
     return false;
   }, [selectedAsset, marketStatus]);
 
+  if (isMobile) {
+    // Dados dinâmicos
+    const score = institutionalScore;
+    const scoreLabel = getScoreLabel(score);
+    const scoreColor = scoreLabel === 'COMPRA' ? '#4ade80' : scoreLabel === 'VENDA' ? '#ff5a5a' : '#fbbf24';
+    const gapColor = gap.type === 'up' ? '#4ade80' : gap.type === 'down' ? '#ff5a5a' : '#fbbf24';
+    const gapValue = gap.type !== 'none' ? `${Math.abs(gap.percent).toFixed(2)}%` : 'Sem Gap';
+    const advancing = breadthSummary.advancing;
+    const declining = breadthSummary.declining;
+    const assetName = selectedAsset.symbol;
+    const buyPercent = volumePressure.buyPercent.toFixed(0);
+    const sellPercent = volumePressure.sellPercent.toFixed(0);
+    // Agenda econômica
+    // Filtra eventos válidos (data e título)
+    const agenda = events.filter(ev => {
+      // Considera inválido se a data não for um número de data válido ou se o título estiver vazio
+      const dateObj = new Date(ev.date);
+      return ev.title && !isNaN(dateObj.getTime());
+    }).slice(0,2);
+    return (
+      <div className="main-mobile">
+        {/* Header com abas e horários */}
+        <header className="header-mobile">
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 16px'}}>
+            <div style={{display:'flex',flexDirection:'column',alignItems:'flex-start'}}>
+              <h1 style={{fontSize:'1rem',fontWeight:'bold',color:'#fff',letterSpacing:'0.1em',marginBottom:2}}>UBUNTU TRADER</h1>
+              <span style={{fontSize:'0.7rem',color:'#b3b3c6',fontWeight:600}}>ANÁLISE FUNDAMENTALISTA</span>
+            </div>
+            <div style={{display:'flex',gap:8}}>
+              <button
+                style={{
+                  background: selectedAsset.symbol === 'HK50' ? '#23243a' : '#23243a',
+                  color: selectedAsset.symbol === 'HK50' ? '#fff' : '#b3b3c6',
+                  border: selectedAsset.symbol === 'HK50' ? '2px solid #4f46e5' : 'none',
+                  borderRadius: 8,
+                  padding: '4px 14px',
+                  fontWeight: 700,
+                  fontSize: '0.9rem',
+                  marginRight: 4
+                }}
+                onClick={() => setSelectedAsset(SUPPORTED_ASSETS.find(a => a.symbol === 'HK50') || SUPPORTED_ASSETS[0])}
+              >
+                HK50
+              </button>
+              <button
+                style={{
+                  background: selectedAsset.symbol === 'US30' ? '#23243a' : '#23243a',
+                  color: selectedAsset.symbol === 'US30' ? '#fff' : '#b3b3c6',
+                  border: selectedAsset.symbol === 'US30' ? '2px solid #4f46e5' : 'none',
+                  borderRadius: 8,
+                  padding: '4px 14px',
+                  fontWeight: 700,
+                  fontSize: '0.9rem'
+                }}
+                onClick={() => setSelectedAsset(SUPPORTED_ASSETS.find(a => a.symbol === 'US30') || SUPPORTED_ASSETS[1])}
+              >
+                US30
+              </button>
+            </div>
+          </div>
+          <div style={{display:'flex',justifyContent:'space-between',padding:'0 16px',marginTop:6}}>
+            <div style={{fontSize:'0.8rem',color:'#fff',fontWeight:600}}>SESSÃO NY (US30)</div>
+            <div style={{fontSize:'0.8rem',color:'#fff',fontWeight:600}}>SESSÃO HK (HK50)</div>
+          </div>
+          <div style={{display:'flex',justifyContent:'space-between',padding:'0 16px',marginTop:2}}>
+            <div style={{fontSize:'0.75rem',color:'#fff'}}>ABRE: <span style={{color:'#ffe600'}}>11:30 BRT</span> (UTC-3)</div>
+            <div style={{fontSize:'0.75rem',color:'#fff'}}>ABRE: <span style={{color:'#ffe600'}}>22:30 BRT</span> (UTC-3)</div>
+          </div>
+        </header>
+        {/* Banner de sugestão/alerta */}
+        <div className="suggestion-banner-mobile">
+          <span role="img" aria-label="alerta">⏳</span> Aguardando abertura da bolsa...
+        </div>
+        {/* Card principal com score, volume, gap, componentes */}
+        <div style={{background:'#23243a',borderRadius:16,margin:'16px 8px 0 8px',padding:'18px 12px 10px 12px',boxShadow:'0 2px 12px #0004'}}>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start'}}>
+            <div style={{flex:1}}>
+              <div style={{color:score < 0 ? '#ff5a5a' : score > 0 ? '#4ade80' : '#fbbf24',fontWeight:'bold',fontSize:'1.5rem',lineHeight:1}}>{score > 0 ? '+' : ''}{score}</div>
+              <div style={{fontSize:'0.85rem',color:'#fff',fontWeight:700,marginTop:2}}>VIÉS SMC</div>
+              <div style={{fontSize:'1.1rem',fontWeight:900,color:score < 0 ? '#ff5a5a' : score > 0 ? '#4ade80' : '#fbbf24',marginTop:2}}>{scoreLabel}</div>
+              <div style={{fontSize:'0.8rem',color:'#b3b3c6',fontWeight:600,marginTop:2}}>CONFIANÇA: {getStrengthLabel(score)}</div>
+            </div>
+            <div style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center'}}>
+              <div style={{fontSize:'0.8rem',color:'#b3b3c6',fontWeight:600}}>VOLUME</div>
+              <div style={{display:'flex',alignItems:'center',gap:6,marginTop:2}}>
+                <span style={{color:'#4ade80',fontWeight:'bold',fontSize:'1rem'}}>{buyPercent}% <span style={{fontSize:'1rem'}}>▲</span></span>
+                <span style={{color:'#f87171',fontWeight:'bold',fontSize:'1rem'}}>{sellPercent}% <span style={{fontSize:'1rem'}}>▼</span></span>
+              </div>
+              <div style={{width:'90%',height:8,background:'#23243a',borderRadius:8,marginTop:6,display:'flex',overflow:'hidden'}}>
+                <div style={{height:'100%',background:'linear-gradient(90deg,#4ade80,#22d3ee)',width:`${buyPercent}%`,transition:'width 0.5s'}}></div>
+                <div style={{height:'100%',background:'linear-gradient(90deg,#f87171,#fbbf24)',width:`${sellPercent}%`,transition:'width 0.5s'}}></div>
+              </div>
+            </div>
+            <div style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center'}}>
+              <div style={{fontSize:'0.8rem',color:'#b3b3c6',fontWeight:600}}>ESTRUTURA GAP</div>
+              <div style={{color:gapColor,fontWeight:'bold',fontSize:'1.1rem',marginTop:2}}>{gapValue}</div>
+            </div>
+          </div>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:18,borderTop:'1px solid #23243a',paddingTop:10}}>
+            <div style={{color:'#4ade80',fontWeight:'bold',fontSize:'1.1rem',textAlign:'center',flex:1}}>{advancing}<div style={{fontSize:'0.7rem',color:'#b3b3c6',fontWeight:600}}>ALTA</div></div>
+            <div style={{height:32,width:1,background:'#23243a',margin:'0 12px'}}></div>
+            <div style={{color:'#f87171',fontWeight:'bold',fontSize:'1.1rem',textAlign:'center',flex:1}}>{declining}<div style={{fontSize:'0.7rem',color:'#b3b3c6',fontWeight:600}}>BAIXA</div></div>
+          </div>
+          <div style={{fontSize:'0.8rem',color:'#b3b3c6',fontWeight:600,marginTop:6}}>COMPONENTES US30</div>
+        </div>
+        {/* Fluxo Global - acima do gráfico */}
+        <section className="global-flow-mobile" style={{marginTop: '24px', marginBottom: '0'}}>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 18px 0 18px',marginBottom:8}}>
+            <span style={{fontSize:'1rem',color:'#b3b3c6',fontWeight:700,letterSpacing:'0.1em'}}>FLUXO GLOBAL</span>
+            <span style={{color:'#4f46e5',fontSize:'1.1rem'}}><i className="fas fa-globe"></i></span>
+          </div>
+          {correlations && correlations.length > 0 ? (
+            correlations.map((corr, idx) => (
+              <div className="card-mobile" key={corr.symbol}
+                style={{margin:'12px 12px 0 12px',background:'#181a20',border:'1.5px solid #23243a',boxShadow:'0 1.5px 6px #0002'}}>
+                <div>
+                  <div style={{fontWeight:700}}>{corr.name}</div>
+                  <div style={{fontSize:'0.8rem',color:'#b3b3c6'}}>{corr.correlation === 'positive' ? 'DIRETA' : 'INVERSA'}</div>
+                </div>
+                <span style={{color:corr.change < 0 ? '#f87171' : '#4ade80',fontWeight:700,fontSize:'1.1rem'}}>{corr.change >= 0 ? '+' : ''}{corr.change.toFixed(2)}%</span>
+              </div>
+            ))
+          ) : (
+            <div style={{color:'#b3b3c6',textAlign:'center',margin:'24px 0',fontWeight:600}}>Nenhum dado disponível para o fluxo global.</div>
+          )}
+        </section>
+        {/* Gráfico e agenda */}
+        <section className="chart-panel-mobile">
+          <div style={{background:'#23243a',borderRadius:12,padding:8,minHeight:380,color:'#fff',fontSize:'0.9rem',textAlign:'center',boxShadow:'0 1px 4px #0002',height:'380px',display:'flex',alignItems:'center',justifyContent:'center'}}>
+            <TradingChart asset={selectedAsset} loading={loading} />
+          </div>
+        </section>
+        <section className="economic-agenda-mobile">
+          <div style={{padding:'10px 12px 0 12px',fontSize:'0.9rem',color:'#b3b3c6',fontWeight:700,letterSpacing:'0.1em'}}>AGENDA ECONÔMICA TRADAYS <span style={{float:'right',fontSize:'0.8em',color:'#ffe600',fontWeight:600}}>MQL5 SYNC</span></div>
+          {agenda.length === 0 && (
+            <div className="agenda-row-mobile">Nenhum evento econômico encontrado.</div>
+          )}
+          {agenda.map((ev, idx) => (
+            <div className="agenda-row-mobile" key={idx}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                <span style={{color:'#ffe600',fontWeight:700}}>{new Date(ev.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                <span style={{color:'#b3b3c6',fontWeight:600}}>{ev.time}</span>
+              </div>
+              <div style={{fontSize:'0.8rem',color:'#fff',marginTop:2}}>{ev.title}</div>
+            </div>
+          ))}
+        </section>
+        {/* Rodapé */}
+        <footer style={{fontSize:'0.7rem',color:'#888',textAlign:'center',margin:'12px 0',letterSpacing:'0.1em',fontWeight:600}}>
+          DEVELOPER BY ANDRE SOUZA<br/>
+          IMPORTANTE ENTRAR NA ABERTURA CONFORME AS ZONAS DE LIQUIDEZ EXEMPLO: SMC/FVG/ETC...
+        </footer>
+      </div>
+    );
+  }
   return (
-    <div className="flex flex-col h-screen bg-[#02040a] text-[#94a3b8] overflow-hidden font-['Inter'] selection:bg-indigo-500/30">
+    <div className="flex flex-col h-screen bg-[#02040a] text-[#94a3b8] overflow-hidden font-['Inter'] selection:bg-indigo-500/30 desktop-only">
       <header className="h-[56px] bg-[#0d1226] border-b border-indigo-500/20 px-6 flex items-center justify-between shrink-0 z-40 shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
         <div className="flex items-center gap-8">
           <div className="flex items-center gap-3">
