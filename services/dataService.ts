@@ -105,11 +105,6 @@ export const fetchCorrelationData = async (assetSymbol: string): Promise<Correla
       { symbol: '^GSPC', name: '5️⃣ US500 (fechamento do dia anterior)', corr: 'positive', info: 'Herança de risco global\nInfluencia gap e abertura' },
       { symbol: 'USDJPY=X', name: '6️⃣ USD/JPY', corr: 'negative', info: 'Risk-on / risk-off asiático\nApoio secundário' },
       { symbol: 'DX-Y.NYB', name: '7️⃣ DXY', corr: 'negative', info: 'Fluxo global de dólar\nPeso menor, mas útil como filtro' },
-      // Mantém os outros para contexto geral
-      { symbol: '^VIX', name: 'VIX', corr: 'negative', info: 'Índice de volatilidade global' },
-      { symbol: 'GC=F', name: 'OURO', corr: 'negative', info: 'Ouro como proteção global' },
-      { symbol: 'HG=F', name: 'COBRE', corr: 'positive', info: 'Cobre como proxy de crescimento' },
-      { symbol: '^IXIC', name: 'NASDAQ', corr: 'positive', info: 'Tecnologia global' },
     ];
   } else {
     targets = [
@@ -119,9 +114,6 @@ export const fetchCorrelationData = async (assetSymbol: string): Promise<Correla
       { symbol: 'DX-Y.NYB', name: '4️⃣ DXY (Índice do Dólar)', corr: 'negative', info: 'Fluxo de capital global\nFiltro secundário (risk-off)' },
       { symbol: '^TNX', name: '5️⃣ Treasury 10Y (US10Y)', corr: 'negative', info: 'Custo do dinheiro\nPressão direta em ações' },
       { symbol: '^RUT', name: '6️⃣ Russell 2000 (US2000)', corr: 'positive', info: 'Força da economia doméstica\nConfirmação de breadth' },
-      // Mantém os outros para contexto geral
-      { symbol: 'GC=F', name: 'OURO', corr: 'negative', info: 'Ouro como proteção global' },
-      { symbol: 'HG=F', name: 'COBRE', corr: 'positive', info: 'Cobre como proxy de crescimento' },
     ];
   }
 
