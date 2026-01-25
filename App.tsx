@@ -285,8 +285,58 @@ const App: React.FC = () => {
             <div style={{height:32,width:1,background:'#23243a',margin:'0 12px'}}></div>
             <div style={{color:'#f87171',fontWeight:'bold',fontSize:'1.1rem',textAlign:'center',flex:1}}>{declining}<div style={{fontSize:'0.7rem',color:'#b3b3c6',fontWeight:600}}>BAIXA</div></div>
           </div>
-          <div style={{fontSize:'0.8rem',color:'#b3b3c6',fontWeight:600,marginTop:6}}>COMPONENTES US30</div>
+          <div style={{display:'flex',justifyContent:'center',marginTop:18}}>
+            <button
+              style={{
+                fontSize:'1.15rem',
+                color:'#ffe600',
+                fontWeight:900,
+                cursor:'pointer',
+                textAlign:'center',
+                letterSpacing:'0.12em',
+                background:'#181a20',
+                border:'2.5px solid #4f46e5',
+                borderRadius:12,
+                padding:'14px 32px',
+                boxShadow:'0 2px 16px #0006',
+                transition:'background 0.2s, color 0.2s',
+                outline:'none',
+              }}
+              onClick={() => setIsBreadthModalOpen(true)}
+              onMouseOver={e => e.currentTarget.style.background = '#23243a'}
+              onMouseOut={e => e.currentTarget.style.background = '#181a20'}
+            >
+              COMPONENTES {selectedAsset.symbol}
+            </button>
+          </div>
         </div>
+        {/* Modal de componentes para mobile */}
+        {isBreadthModalOpen && (
+          <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'rgba(0,0,0,0.7)',zIndex:9999,display:'flex',alignItems:'center',justifyContent:'center'}} onClick={(e)=>{if(e.target===e.currentTarget)setIsBreadthModalOpen(false);}}>
+            <div style={{background:'#23243a',color:'#fff',borderRadius:16,padding:18,maxWidth:340,boxShadow:'0 2px 24px #000a',fontSize:'0.95rem',whiteSpace:'pre-line',textAlign:'left',position:'relative',width:'95vw',maxHeight:'80vh',overflowY:'auto'}} onClick={e => e.stopPropagation()}>
+              <button style={{position:'absolute',top:8,right:12,fontSize:18,color:'#ffe600',background:'none',border:'none',cursor:'pointer'}} onClick={()=>setIsBreadthModalOpen(false)}>×</button>
+              <div style={{fontWeight:'bold',fontSize:'1.1rem',marginBottom:8}}>DNA DO ÍNDICE: {selectedAsset.symbol}</div>
+              <div style={{fontSize:'0.8rem',color:'#b3b3c6',marginBottom:12}}>Correlação Técnica por Ativo</div>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
+                {breadthDetails.map((company) => (
+                  <div 
+                    key={company.symbol} 
+                    style={{padding:10,borderRadius:10,border:'1px solid #23243a',background:company.change>=0?'#22d3ee22':'#f8717122',display:'flex',flexDirection:'column',gap:4}}
+                  >
+                    <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                      <span style={{fontSize:'0.95rem',fontWeight:'bold',color:'#fff'}}>{company.symbol.split('.')[0]}</span>
+                      <span style={{fontSize:'0.7rem',fontWeight:'bold',padding:'2px 6px',borderRadius:6,background:company.change>=0?'#4ade80':'#f87171',color:'#23243a'}}>{company.status}</span>
+                    </div>
+                    <div style={{fontSize:'1rem',fontWeight:'bold',color:company.change>=0?'#4ade80':'#f87171'}}>{company.change>=0?'+':''}{company.change.toFixed(2)}%</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{marginTop:16,textAlign:'right'}}>
+                <button style={{padding:'8px 18px',background:'#4f46e5',color:'#fff',border:'none',borderRadius:8,fontWeight:'bold',fontSize:'0.9rem',cursor:'pointer'}} onClick={()=>setIsBreadthModalOpen(false)}>FECHAR</button>
+              </div>
+            </div>
+          </div>
+        )}
         {/* Fluxo Global - acima do gráfico */}
         <section className="global-flow-mobile" style={{marginTop: '24px', marginBottom: '0'}}>
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 18px 0 18px',marginBottom:8}}>
@@ -325,21 +375,40 @@ const App: React.FC = () => {
             <TradingChart asset={selectedAsset} loading={loading} />
           </div>
         </section>
-        <section className="economic-agenda-mobile">
-          <div style={{padding:'10px 12px 0 12px',fontSize:'0.9rem',color:'#b3b3c6',fontWeight:700,letterSpacing:'0.1em'}}>AGENDA ECONÔMICA TRADAYS <span style={{float:'right',fontSize:'0.8em',color:'#ffe600',fontWeight:600}}>MQL5 SYNC</span></div>
-          {agenda.length === 0 && (
-            <div className="agenda-row-mobile">Nenhum evento econômico encontrado.</div>
-          )}
-          {agenda.map((ev, idx) => (
-            <div className="agenda-row-mobile" key={idx}>
-              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                <span style={{color:'#ffe600',fontWeight:700}}>{new Date(ev.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
-                <span style={{color:'#b3b3c6',fontWeight:600}}>{ev.time}</span>
-              </div>
-              <div style={{fontSize:'0.8rem',color:'#fff',marginTop:2}}>{ev.title}</div>
-            </div>
-          ))}
+        <section className="economic-agenda-mobile" style={{margin:'24px 0', textAlign:'center'}}>
+          <button
+            style={{
+              padding:'14px 32px',
+              background:'#23243a',
+              color:'#ffe600',
+              fontWeight:'bold',
+              fontSize:'1.1rem',
+              border:'2px solid #4f46e5',
+              borderRadius:12,
+              boxShadow:'0 2px 12px #0004',
+              cursor:'pointer',
+              letterSpacing:'0.1em'
+            }}
+            onClick={()=>setIsBreadthModalOpen('calendar')}
+          >
+            CALENDÁRIO ECONÔMICO
+          </button>
         </section>
+
+        {/* Pop-up do calendário econômico Tradays */}
+        {isBreadthModalOpen === 'calendar' && (
+          <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'rgba(0,0,0,0.7)',zIndex:9999,display:'flex',alignItems:'center',justifyContent:'center'}} onClick={(e)=>{if(e.target===e.currentTarget)setIsBreadthModalOpen(false);}}>
+            <div style={{background:'#23243a',color:'#fff',borderRadius:20,padding:28,maxWidth:600,boxShadow:'0 2px 32px #000a',fontSize:'1.08rem',whiteSpace:'pre-line',textAlign:'left',position:'relative',width:'98vw',maxHeight:'92vh',overflowY:'auto', minHeight:'520px', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center'}} onClick={e => e.stopPropagation()}>
+              <button style={{position:'absolute',top:12,right:18,fontSize:24,color:'#ffe600',background:'none',border:'none',cursor:'pointer'}} onClick={()=>setIsBreadthModalOpen(false)}>×</button>
+              <div style={{fontWeight:'bold',fontSize:'1.25rem',marginBottom:12, textAlign:'center'}}>CALENDÁRIO ECONÔMICO</div>
+              <div style={{width:'100%', height:'700px', display:'flex', alignItems:'center', justifyContent:'center'}}>
+                <div style={{width:'100%', height:'700px', display:'flex', alignItems:'center', justifyContent:'center'}}>
+                  <MqlCalendarWidget />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
         {/* Rodapé */}
         <footer style={{fontSize:'0.7rem',color:'#888',textAlign:'center',margin:'12px 0',letterSpacing:'0.1em',fontWeight:600}}>
           DEVELOPER BY ANDRE SOUZA<br/>
@@ -571,8 +640,7 @@ const App: React.FC = () => {
                 </div>
               </div>
 
-              <div className="p-6 bg-[#0d1226] border-t border-slate-800 flex justify-between items-center shrink-0">
-                <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest italic">Sentinel Engine V4.0 @ Yahoo Finance</span>
+              <div className="p-6 bg-[#0d1226] border-t border-slate-800 flex justify-end items-center shrink-0">
                 <button 
                   onClick={() => setIsBreadthModalOpen(false)}
                   className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-black rounded-lg transition-all"
