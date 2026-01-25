@@ -98,20 +98,30 @@ export const fetchCorrelationData = async (assetSymbol: string): Promise<Correla
 
   if (assetSymbol === 'HK50') {
     targets = [
-      { symbol: '^VIX', name: 'VIX', corr: 'negative' as const },
-      { symbol: 'USDJPY=X', name: 'USD/JPY', corr: 'negative' as const },
-      { symbol: 'GC=F', name: 'OURO', corr: 'negative' as const },
-      { symbol: '^N225', name: 'NIKKEI 225', corr: 'positive' as const },
-      { symbol: 'HG=F', name: 'COBRE', corr: 'positive' as const },
-      { symbol: '^IXIC', name: 'NASDAQ', corr: 'positive' as const },
-      { symbol: '000001.SS', name: 'SHANGHAI', corr: 'positive' as const },
+      { symbol: '^VHSI', name: '🥇 VHSI (HK VIX) – PRINCIPAL', corr: 'negative', info: 'Volatilidade local do Hang Seng\nDefine expansão, pânico ou consolidação\nGatilho real de movimento' },
+      { symbol: 'CNH=X', name: '🥈 CNH (USD/CNH)', corr: 'negative', info: 'Força ou fraqueza do yuan chinês\nImpacto direto no HK50\nFluxo de capital asiático' },
+      { symbol: '^N225', name: '🥉 Nikkei 225', corr: 'positive', info: 'Direção da Ásia no mesmo pregão\nConfirma ou invalida viés' },
+      { symbol: '000001.SS', name: '4️⃣ Shanghai Composite (SSE)', corr: 'positive', info: 'Sentimento do mercado chinês mainland\nConfirmação estrutural' },
+      { symbol: '^GSPC', name: '5️⃣ US500 (fechamento do dia anterior)', corr: 'positive', info: 'Herança de risco global\nInfluencia gap e abertura' },
+      { symbol: 'USDJPY=X', name: '6️⃣ USD/JPY', corr: 'negative', info: 'Risk-on / risk-off asiático\nApoio secundário' },
+      { symbol: 'DX-Y.NYB', name: '7️⃣ DXY', corr: 'negative', info: 'Fluxo global de dólar\nPeso menor, mas útil como filtro' },
+      // Mantém os outros para contexto geral
+      { symbol: '^VIX', name: 'VIX', corr: 'negative', info: 'Índice de volatilidade global' },
+      { symbol: 'GC=F', name: 'OURO', corr: 'negative', info: 'Ouro como proteção global' },
+      { symbol: 'HG=F', name: 'COBRE', corr: 'positive', info: 'Cobre como proxy de crescimento' },
+      { symbol: '^IXIC', name: 'NASDAQ', corr: 'positive', info: 'Tecnologia global' },
     ];
   } else {
     targets = [
-      { symbol: '^VIX', name: 'VIX', corr: 'negative' as const },
-      { symbol: '^IXIC', name: 'NASDAQ', corr: 'positive' as const },
-      { symbol: '^GSPC', name: 'S&P 500', corr: 'positive' as const },
-      { symbol: 'DX-Y.NYB', name: 'DXY', corr: 'negative' as const },
+      { symbol: '^VIX', name: '🥇 VIX (CBOE) – PRINCIPAL', corr: 'negative', info: 'Volatilidade do S&P 500\nGatilho de risco do mercado americano\nImpacto imediato no US30' },
+      { symbol: '^GSPC', name: '🥈 S&P 500 (US500)', corr: 'positive', info: 'Benchmark do mercado dos EUA\nDireção estrutural do dia\nConfirma viés do Dow' },
+      { symbol: '^IXIC', name: '🥉 NASDAQ (US100)', corr: 'positive', info: 'Apetite a risco / tecnologia\nConfirma ou diverge do US30' },
+      { symbol: 'DX-Y.NYB', name: '4️⃣ DXY (Índice do Dólar)', corr: 'negative', info: 'Fluxo de capital global\nFiltro secundário (risk-off)' },
+      { symbol: '^TNX', name: '5️⃣ Treasury 10Y (US10Y)', corr: 'negative', info: 'Custo do dinheiro\nPressão direta em ações' },
+      { symbol: '^RUT', name: '6️⃣ Russell 2000 (US2000)', corr: 'positive', info: 'Força da economia doméstica\nConfirmação de breadth' },
+      // Mantém os outros para contexto geral
+      { symbol: 'GC=F', name: 'OURO', corr: 'negative', info: 'Ouro como proteção global' },
+      { symbol: 'HG=F', name: 'COBRE', corr: 'positive', info: 'Cobre como proxy de crescimento' },
     ];
   }
 
@@ -119,7 +129,7 @@ export const fetchCorrelationData = async (assetSymbol: string): Promise<Correla
   const quoteUrl = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbols}`;
   const data = await fetchFromYahoo(quoteUrl);
   
-  const results: CorrelationData[] = [];
+  const results: any[] = [];
 
   if (data?.quoteResponse?.result && data.quoteResponse.result.length > 0) {
     targets.forEach(target => {
@@ -130,7 +140,8 @@ export const fetchCorrelationData = async (assetSymbol: string): Promise<Correla
           name: target.name,
           price: quote.regularMarketPrice || 0,
           change: quote.regularMarketChangePercent || 0,
-          correlation: target.corr
+          correlation: target.corr,
+          info: (target as any).info || ''
         });
       }
     });
@@ -142,7 +153,8 @@ export const fetchCorrelationData = async (assetSymbol: string): Promise<Correla
       name: t.name,
       price: 0,
       change: (Math.random() - 0.5) * 2,
-      correlation: t.corr
+      correlation: t.corr,
+      info: (t as any).info || ''
     }));
   }
 

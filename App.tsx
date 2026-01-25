@@ -151,6 +151,31 @@ const App: React.FC = () => {
     return false;
   }, [selectedAsset, marketStatus]);
 
+  // Estado global do modal de info dos índices
+  const [modalInfo, setModalInfo] = React.useState<string|null>(null);
+
+  // Função para ordenar os índices por prioridade
+  const getOrderedCorrelations = (correlations: any[], assetSymbol: string) => {
+    if (assetSymbol === 'HK50') {
+      const priority = [
+        '^VHSI', 'CNH=X', '^N225', '000001.SS', '^GSPC', 'USDJPY=X', 'DX-Y.NYB'
+      ];
+      return [
+        ...priority.map(s => correlations.find(c => c.symbol === s)).filter(Boolean),
+        ...correlations.filter(c => !priority.includes(c.symbol))
+      ];
+    } else if (assetSymbol === 'US30') {
+      const priority = [
+        '^VIX', '^GSPC', '^IXIC', 'DX-Y.NYB', '^TNX', '^RUT'
+      ];
+      return [
+        ...priority.map(s => correlations.find(c => c.symbol === s)).filter(Boolean),
+        ...correlations.filter(c => !priority.includes(c.symbol))
+      ];
+    }
+    return correlations;
+  };
+
   if (isMobile) {
     // Dados dinâmicos
     const score = institutionalScore;
@@ -191,7 +216,10 @@ const App: React.FC = () => {
                   fontSize: '0.9rem',
                   marginRight: 4
                 }}
-                onClick={() => setSelectedAsset(SUPPORTED_ASSETS.find(a => a.symbol === 'HK50') || SUPPORTED_ASSETS[0])}
+                onClick={() => {
+                  setSelectedAsset(SUPPORTED_ASSETS.find(a => a.symbol === 'HK50') || SUPPORTED_ASSETS[0]);
+                  setTimeout(() => loadData(true), 10);
+                }}
               >
                 HK50
               </button>
@@ -205,7 +233,10 @@ const App: React.FC = () => {
                   fontWeight: 700,
                   fontSize: '0.9rem'
                 }}
-                onClick={() => setSelectedAsset(SUPPORTED_ASSETS.find(a => a.symbol === 'US30') || SUPPORTED_ASSETS[1])}
+                onClick={() => {
+                  setSelectedAsset(SUPPORTED_ASSETS.find(a => a.symbol === 'US30') || SUPPORTED_ASSETS[1]);
+                  setTimeout(() => loadData(true), 10);
+                }}
               >
                 US30
               </button>
@@ -229,7 +260,7 @@ const App: React.FC = () => {
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start'}}>
             <div style={{flex:1}}>
               <div style={{color:score < 0 ? '#ff5a5a' : score > 0 ? '#4ade80' : '#fbbf24',fontWeight:'bold',fontSize:'1.5rem',lineHeight:1}}>{score > 0 ? '+' : ''}{score}</div>
-              <div style={{fontSize:'0.85rem',color:'#fff',fontWeight:700,marginTop:2}}>VIÉS SMC</div>
+              {/* Removido Viés SMC */}
               <div style={{fontSize:'1.1rem',fontWeight:900,color:score < 0 ? '#ff5a5a' : score > 0 ? '#4ade80' : '#fbbf24',marginTop:2}}>{scoreLabel}</div>
               <div style={{fontSize:'0.8rem',color:'#b3b3c6',fontWeight:600,marginTop:2}}>CONFIANÇA: {getStrengthLabel(score)}</div>
             </div>
@@ -263,9 +294,11 @@ const App: React.FC = () => {
             <span style={{color:'#4f46e5',fontSize:'1.1rem'}}><i className="fas fa-globe"></i></span>
           </div>
           {correlations && correlations.length > 0 ? (
-            correlations.map((corr, idx) => (
+            getOrderedCorrelations(correlations, selectedAsset.symbol).map((corr, idx) => (
               <div className="card-mobile" key={corr.symbol}
-                style={{margin:'12px 12px 0 12px',background:'#181a20',border:'1.5px solid #23243a',boxShadow:'0 1.5px 6px #0002'}}>
+                style={{margin:'12px 12px 0 12px',background:'#181a20',border:'1.5px solid #23243a',boxShadow:'0 1.5px 6px #0002',cursor:'pointer'}}
+                onClick={() => setModalInfo((corr as any).info || 'Sem descrição.')}
+              >
                 <div>
                   <div style={{fontWeight:700}}>{corr.name}</div>
                   <div style={{fontSize:'0.8rem',color:'#b3b3c6'}}>{corr.correlation === 'positive' ? 'DIRETA' : 'INVERSA'}</div>
@@ -275,6 +308,15 @@ const App: React.FC = () => {
             ))
           ) : (
             <div style={{color:'#b3b3c6',textAlign:'center',margin:'24px 0',fontWeight:600}}>Nenhum dado disponível para o fluxo global.</div>
+          )}
+
+          {modalInfo && (
+            <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'rgba(0,0,0,0.7)',zIndex:9999,display:'flex',alignItems:'center',justifyContent:'center'}} onClick={(e)=>{if(e.target===e.currentTarget)setModalInfo(null);}}>
+              <div style={{background:'#23243a',color:'#fff',borderRadius:16,padding:24,maxWidth:340,boxShadow:'0 2px 24px #000a',fontSize:'1rem',whiteSpace:'pre-line',textAlign:'left',position:'relative'}}>
+                <button style={{position:'absolute',top:8,right:12,fontSize:18,color:'#ffe600',background:'none',border:'none',cursor:'pointer'}} onClick={()=>setModalInfo(null)}>×</button>
+                {modalInfo}
+              </div>
+            </div>
           )}
         </section>
         {/* Gráfico e agenda */}
@@ -381,18 +423,29 @@ const App: React.FC = () => {
               <i className="fas fa-globe text-indigo-500 text-[10px]"></i>
             </div>
             <div className="space-y-2">
-              {correlations.map(c => (
-                <div key={c.symbol} className="bg-[#0d1226] border border-slate-800/60 p-3 rounded-xl flex items-center justify-between hover:border-indigo-500/40 transition-all group">
+              {getOrderedCorrelations(correlations, selectedAsset.symbol).map(c => (
+                <div key={c.symbol} className="bg-[#0d1226] border border-slate-800/60 p-3 rounded-xl flex items-center justify-between hover:border-indigo-500/40 transition-all group cursor-pointer"
+                  onClick={() => setModalInfo((c as any).info || 'Sem descrição.')}
+                >
                   <div className="flex flex-col">
                     <span className="text-[11px] font-black text-white group-hover:text-indigo-400 transition-colors">{c.name}</span>
                     <span className="text-[8px] font-bold text-slate-500 uppercase">{c.correlation === 'positive' ? 'Direta' : 'Inversa'}</span>
                   </div>
-                  <div className={`text-[11px] font-black jetbrains ${c.change >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                  <div className={`text-[11px] font-black jetbrains ${c.change >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}> 
                     {c.change >= 0 ? '+' : ''}{c.change.toFixed(2)}%
                   </div>
                 </div>
               ))}
             </div>
+
+            {modalInfo && (
+              <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'rgba(0,0,0,0.7)',zIndex:9999,display:'flex',alignItems:'center',justifyContent:'center'}} onClick={(e)=>{if(e.target===e.currentTarget)setModalInfo(null);}}>
+                <div style={{background:'#23243a',color:'#fff',borderRadius:16,padding:24,maxWidth:340,boxShadow:'0 2px 24px #000a',fontSize:'1rem',whiteSpace:'pre-line',textAlign:'left',position:'relative'}}>
+                  <button style={{position:'absolute',top:8,right:12,fontSize:18,color:'#ffe600',background:'none',border:'none',cursor:'pointer'}} onClick={()=>setModalInfo(null)}>×</button>
+                  {modalInfo}
+                </div>
+              </div>
+            )}
           </section>
         </aside>
 
@@ -409,7 +462,7 @@ const App: React.FC = () => {
                    </span>
                 </div>
                 <div className="flex flex-col justify-center leading-none">
-                   <span className="text-[9px] font-black text-slate-500 tracking-[0.1em] mb-1.5 uppercase">Viés SMC</span>
+                   {/* Removido Viés SMC */}
                    <span className={`text-[20px] font-black uppercase tracking-tight leading-none ${getScoreLabel(institutionalScore) === 'COMPRA' ? 'text-emerald-400' : getScoreLabel(institutionalScore) === 'VENDA' ? 'text-rose-400' : 'text-slate-500'}`}>
                      {getScoreLabel(institutionalScore)}
                    </span>
