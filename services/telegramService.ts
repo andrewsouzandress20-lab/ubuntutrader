@@ -1,6 +1,18 @@
+// Função para obter variáveis de ambiente de forma compatível (Vite ou Node.js)
+function getEnvVar(name: string): string | undefined {
+  // Vite
+  if (typeof import.meta !== 'undefined' && typeof import.meta.env !== 'undefined' && import.meta.env[name]) {
+    return import.meta.env[name];
+  }
+  // Node.js
+  if (typeof process !== 'undefined' && process.env && process.env[name]) {
+    return process.env[name];
+  }
+  return undefined;
+}
 
-const BOT_TOKEN = import.meta.env.VITE_TELEGRAM_BOT_TOKEN;
-const CHAT_ID = import.meta.env.VITE_TELEGRAM_CHAT_ID;
+const BOT_TOKEN = getEnvVar('VITE_TELEGRAM_BOT_TOKEN');
+const CHAT_ID = getEnvVar('VITE_TELEGRAM_CHAT_ID');
 if (!BOT_TOKEN || !CHAT_ID) {
   console.error("Telegram ENV não configurado");
 }
@@ -54,6 +66,39 @@ export const sendTelegramSignal = async (
       console.log("Sinal de abertura enviado com sucesso para o Telegram!");
     } else {
       console.error("Falha ao enviar sinal para o Telegram:", data.description);
+    }
+  } catch (error) {
+    console.error("Erro na comunicação com a API do Telegram:", error);
+  }
+};
+
+/**
+ * Envia uma análise detalhada para o Telegram.
+ * @param message - Texto da análise detalhada.
+ */
+export const sendTelegramAnalysis = async (message: string): Promise<void> => {
+  if (!BOT_TOKEN || !CHAT_ID) {
+    console.error("Telegram ENV não configurado");
+    return;
+  }
+  const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        chat_id: CHAT_ID,
+        text: message,
+        parse_mode: 'Markdown',
+      }),
+    });
+    const data = await response.json();
+    if (data.ok) {
+      console.log("Análise detalhada enviada com sucesso para o Telegram!");
+    } else {
+      console.error("Falha ao enviar análise para o Telegram:", data.description);
     }
   } catch (error) {
     console.error("Erro na comunicação com a API do Telegram:", error);

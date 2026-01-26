@@ -1,9 +1,10 @@
+import { io } from 'socket.io-client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Candle, Asset, SUPPORTED_ASSETS, Timeframe, TIMEFRAMES, UTC_OFFSETS, CorrelationData, MarketBreadthSummary, BreadthCompanyDetails, VolumePressure, GapData, EconomicEvent, SMCZone, FVGType, ZoneType } from './types';
 import { fetchRealData, fetchCorrelationData, fetchMarketBreadth, calculateVolumePressure, detectOpeningGap, fetchEconomicEvents, fetchCurrentPrice } from './services/dataService';
 import { fetchLocalJson } from './utils/fetchLocalJson';
-import { sendTelegramSignal } from './services/telegramService';
+import { sendTelegramSignal, sendTelegramAnalysis } from './services/telegramService';
 import { detectSMCZones } from './utils/fvgDetector';
 
 import TradingChart from './components/TradingChart';
@@ -13,6 +14,17 @@ import GeminiSignalHeader from './components/GeminiSignalHeader';
 import SuggestionBanner from './components/SuggestionBanner';
 
 const App: React.FC = () => {
+    const [onlineCount, setOnlineCount] = useState(0);
+
+    useEffect(() => {
+      const socket = io('http://localhost:4000');
+      socket.on('onlineCount', (count: number) => {
+        setOnlineCount(count);
+      });
+      return () => {
+        socket.disconnect();
+      };
+    }, []);
   const [isMobile, setIsMobile] = React.useState(false);
   React.useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth <= 600);
@@ -169,7 +181,10 @@ const App: React.FC = () => {
       if ((isUS30Opening || isHK50Opening) && lastAutoSignalDate !== dateKey) {
         const { score, msg } = institutionalScore;
         if (score !== 0) {
-          sendTelegramSignal(selectedAsset.symbol, score > 0 ? 'COMPRA' : 'VENDA', Math.abs(score) > 5 ? 'FORTE' : 'FRACO', msg);
+          sendTelegramSignal(selectedAsset.symbol, score > 0 ? 'COMPRA' : 'VENDA', Math.abs(score) > 5 ? 'FORTE' : 'FRACO', score);
+          setTimeout(() => {
+            sendTelegramAnalysis(msg);
+          }, 5000);
           setLastAutoSignalDate(dateKey);
         }
       }
@@ -818,10 +833,11 @@ const App: React.FC = () => {
       </main>
 
       <footer className="h-6 bg-[#02040a] border-t border-slate-800/40 flex items-center justify-between px-8 text-[7px] font-black uppercase tracking-[0.5em] text-slate-700">
-        <div className="flex gap-8">
-           <span>developer by ANDRE SOUZA</span>
-           <span>importante entrar na abertura conforme as zonas de liquidez exemplo: SMC/FGV/ETC...</span>
-        </div>
+          <div className="flex gap-8">
+            <span>developer by ANDRE SOUZA</span>
+            <span>importante entrar na abertura conforme as zonas de liquidez exemplo: SMC/FGV/ETC...</span>
+            <span style={{color:'#ffe600'}}>🟢 Online: {onlineCount}</span>
+          </div>
         <div className="text-slate-500">UBUNTU TRADER © 2026</div>
       </footer>
     </div>
