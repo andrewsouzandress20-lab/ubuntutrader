@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Candle, Asset, SUPPORTED_ASSETS, Timeframe, TIMEFRAMES, UTC_OFFSETS, CorrelationData, MarketBreadthSummary, BreadthCompanyDetails, VolumePressure, GapData, EconomicEvent, SMCZone, FVGType, ZoneType } from './types';
 import { fetchRealData, fetchCorrelationData, fetchMarketBreadth, calculateVolumePressure, detectOpeningGap, fetchEconomicEvents, fetchCurrentPrice } from './services/dataService';
+import { fetchLocalJson } from './utils/fetchLocalJson';
 import { sendTelegramSignal } from './services/telegramService';
 import { detectSMCZones } from './utils/fvgDetector';
 
@@ -26,6 +27,8 @@ const App: React.FC = () => {
   const [events, setEvents] = useState<EconomicEvent[]>([]);
   const [breadthSummary, setBreadthSummary] = useState<MarketBreadthSummary>({ advancing: 0, declining: 0, total: 30 });
   const [breadthDetails, setBreadthDetails] = useState<BreadthCompanyDetails[]>([]);
+  const [indicesSnapshot, setIndicesSnapshot] = useState<any>(null);
+  const [companiesSnapshot, setCompaniesSnapshot] = useState<any>(null);
   const [isBreadthModalOpen, setIsBreadthModalOpen] = useState(false);
   const [volumePressure, setVolumePressure] = useState<VolumePressure>({ buyPercent: 50, sellPercent: 50, total: 0 });
   const [gap, setGap] = useState<GapData>({ value: 0, percent: 0, type: 'none' });
@@ -50,15 +53,94 @@ const App: React.FC = () => {
   const smcZones = useMemo(() => detectSMCZones(candles, { lookback: 150, mitigationDetection: true, drawFilled: true }), [candles]);
 
   const institutionalScore = useMemo(() => {
-    let score = 0;
-    score += (volumePressure.buyPercent - 50) * 0.70;
-    const breadthRatio = breadthSummary.advancing / (breadthSummary.total || 1);
-    score += (breadthRatio - 0.5) * 70;
-    const bullFVGs = smcZones.filter(z => z.type === ZoneType.FVG && z.sentiment === FVGType.BULLISH && !z.mitigated).length;
-    const bearFVGs = smcZones.filter(z => z.type === ZoneType.FVG && z.sentiment === FVGType.BEARISH && !z.mitigated).length;
-    score += (bullFVGs - bearFVGs) * 6;
-    return Math.round(Math.max(-100, Math.min(100, score)));
-  }, [volumePressure, breadthSummary, smcZones]);
+    // Blocos de análise
+    let scoreCompra = 0;
+    let scoreVenda = 0;
+    let pesoTotal = 0;
+    let msg = '';
+
+    // 1️⃣ VOLUME
+    const volVar = candles.length > 0 ? ((candles[candles.length-1].close - candles[candles.length-1].open) / candles[candles.length-1].open) * 100 : 0;
+    const volPressao = volumePressure.buyPercent > volumePressure.sellPercent ? 'COMPRADOR' : 'VENDEDOR';
+    const volScore = volPressao === 'COMPRADOR' ? 5 : -5;
+    pesoTotal += 5;
+    if (volScore > 0) scoreCompra += volScore; else scoreVenda += Math.abs(volScore);
+    msg += `🔹 🥇 1️⃣ VOLUME - FLUXO COMPRADOR/VENDEDOR\n\n`;
+    msg += `⚖️ VOLUME COMPRADOR/VENDEDOR\nAbertura = ${candles.length > 0 ? candles[candles.length-1].open.toFixed(2) : '--'}, Fechamento = ${candles.length > 0 ? candles[candles.length-1].close.toFixed(2) : '--'}, Var = ${volVar.toFixed(2)}%\n`;
+    msg += `${volPressao === 'COMPRADOR' ? '🟢' : '🔴'} Pressão: ${volPressao} (Volume = ${candles.length > 0 ? candles[candles.length-1].volume : '--'})\n`;
+    msg += `💡 Fechou acima da abertura = ${volPressao === 'COMPRADOR' ? 'Compradores dominando = COMPRA US30' : 'Vendedores dominando = VENDA US30'}\n`;
+    msg += `📊 Score Parcial [VOLUME]: ${volPressao === 'COMPRADOR' ? '+5.0 COMPRA' : '-5.0 VENDA'}\n\n`;
+
+    // 2️⃣ VIX
+    const vix = correlations.find(c => c.symbol === '^VIX' || c.symbol === 'VIX');
+    let vixScore = 0;
+    if (vix) {
+      vixScore = vix.change < 0 ? 3 : -3;
+      pesoTotal += 3;
+      if (vixScore > 0) scoreCompra += vixScore; else scoreVenda += Math.abs(vixScore);
+      msg += `🔹 🥈 2️⃣ VIX - CONFIRMAÇÃO RÁPIDA\n\n`;
+      msg += `🔹 ÍNDICE DO MEDO - VIX\nVIX resultado: ${vix.change < 0 ? 'COMPRA 1 x VENDA 0' : 'COMPRA 0 x VENDA 1'}\n`;
+      msg += `📊 Score Parcial [VIX]: ${vix.change < 0 ? '+3.0 COMPRA' : '-3.0 VENDA'}\n\n`;
+    }
+
+    // 3️⃣ DOW 30 - BREADTH
+    const breadthScore = breadthSummary.advancing > breadthSummary.declining ? 3 : -3;
+    pesoTotal += 3;
+    if (breadthScore > 0) scoreCompra += breadthScore; else scoreVenda += Math.abs(breadthScore);
+    msg += `🔹 🥉 3️⃣ DOW 30 - BREADTH INSTANTÂNEO\nDOW 30 resultado: COMPRA ${breadthSummary.advancing} x VENDA ${breadthSummary.declining}\n`;
+    msg += `📊 Score Parcial [DOW 30]: ${breadthScore > 0 ? '+3.0 COMPRA' : '-3.0 VENDA'}\n\n`;
+
+    // 4️⃣ ÍNDICES - ALINHAMENTO INTERMARKET
+    let indicesCompra = 0, indicesVenda = 0;
+    ['^GSPC','^IXIC','^RUT','JP225','HK50'].forEach(sym => {
+      const idx = correlations.find(c => c.symbol === sym);
+      if (idx) {
+        if (idx.change > 0) indicesCompra++; else if (idx.change < 0) indicesVenda++;
+      }
+    });
+    let indicesScore = 0;
+    if (indicesCompra > indicesVenda) indicesScore = 2;
+    else if (indicesVenda > indicesCompra) indicesScore = -2;
+    pesoTotal += 2;
+    if (indicesScore > 0) scoreCompra += indicesScore; else scoreVenda += Math.abs(indicesScore);
+    msg += `🔹 4️⃣ ÍNDICES - ALINHAMENTO INTERMARKET\nÍNDICES resultado: COMPRA ${indicesCompra} x VENDA ${indicesVenda}\n`;
+    msg += `📊 Score Parcial [ÍNDICES]: ${indicesScore > 0 ? '+2.0 COMPRA' : indicesScore < 0 ? '-2.0 VENDA' : 'NEUTRO'}\n\n`;
+
+    // 5️⃣ DXY - FILTRO RÁPIDO
+    const dxy = correlations.find(c => c.symbol === 'DXY' || c.symbol === 'DX-Y.NYB');
+    let dxyScore = 0;
+    if (dxy) {
+      dxyScore = dxy.change < 0 ? 2 : -2;
+      pesoTotal += 2;
+      if (dxyScore > 0) scoreCompra += dxyScore; else scoreVenda += Math.abs(dxyScore);
+      msg += `🔹 5️⃣ DXY - FILTRO RÁPIDO\nDXY resultado: ${dxy.change < 0 ? 'COMPRA' : 'VENDA'}\n`;
+      msg += `📊 Score Parcial [DXY]: ${dxyScore > 0 ? '+2.0 COMPRA' : '-2.0 VENDA'}\n\n`;
+    }
+
+    // 6️⃣ GAP - SÓ SE GRANDE (>1%)
+    let gapScore = 0;
+    if (gap.type !== 'none' && Math.abs(gap.percent) > 1) {
+      gapScore = gap.percent > 0 ? 2 : -2;
+      pesoTotal += 2;
+      if (gapScore > 0) scoreCompra += gapScore; else scoreVenda += Math.abs(gapScore);
+      msg += `🔹 6️⃣ GAP - SÓ SE GRANDE (>1%)\nGAP DE ABERTURA – DOW JONES\nAbertura = ${gap.openPrice?.toFixed(2) || '--'}, Fechamento ontem = ${gap.prevClose?.toFixed(2) || '--'}, Gap = ${gap.percent?.toFixed(2) || '--'}%\n`;
+      msg += `💡 GAP ${gap.percent > 0 ? 'POSITIVO' : 'NEGATIVO'} (${gap.percent?.toFixed(2)}%)\n`;
+      msg += `📊 Score Parcial [GAP]: ${gapScore > 0 ? '+2.0 COMPRA' : '-2.0 VENDA'}\n\n`;
+    } else {
+      msg += `🔹 6️⃣ GAP - SÓ SE GRANDE (>1%)\nGAP DE ABERTURA – DOW JONES\nAbertura = ${gap.openPrice?.toFixed(2) || '--'}, Fechamento ontem = ${gap.prevClose?.toFixed(2) || '--'}, Gap = ${gap.percent?.toFixed(2) || '--'}%\n`;
+      msg += `💡 GAP NEUTRO (${gap.percent?.toFixed(2) || '--'}%) = Sem direção clara\n`;
+      msg += `📊 Score Parcial [GAP]: NEUTRO\n\n`;
+    }
+
+    // Finalização
+    const totalScore = scoreCompra - scoreVenda;
+    const pctCompra = pesoTotal > 0 ? (scoreCompra / pesoTotal) * 100 : 0;
+    const pctVenda = pesoTotal > 0 ? (scoreVenda / pesoTotal) * 100 : 0;
+    msg += `🔹 ⚡ FINALIZAÇÃO - DECISÃO SCALPING\nScore Ponderado: COMPRA=${scoreCompra.toFixed(1)} (${pctCompra.toFixed(1)}%) | VENDA=${scoreVenda.toFixed(1)} (${pctVenda.toFixed(1)}%)\nPeso Total: ${pesoTotal.toFixed(1)} | Margem Mínima: 10.0%\n🎯 DECISÃO FINAL: ${totalScore > 0 ? 'COMPRA' : totalScore < 0 ? 'VENDA' : 'NEUTRO'}\n💪 SINAL ${Math.abs(totalScore) > 5 ? 'FORTE' : 'FRACO'} (${Math.max(pctCompra, pctVenda).toFixed(1)}% de diferença)\n\n━━━━━━━━━━━━━━━━━━\n🚀 SINAL FINAL: ${totalScore > 0 ? '🔺 COMPRA' : totalScore < 0 ? '🔻 VENDA' : '⚖️ NEUTRO'}\n━━━━━━━━━━━━━━━━━━\n`;
+
+    // Retorna score e mensagem
+    return { score: totalScore, msg };
+  }, [volumePressure, breadthSummary, gap, correlations, candles]);
 
   const marketStatus = useMemo(() => {
     const hrs = currentTime.getHours();
@@ -85,17 +167,15 @@ const App: React.FC = () => {
       const isHK50Opening = selectedAsset.symbol === 'HK50' && hours === 22 && minutes === 30 && seconds === 5;
 
       if ((isUS30Opening || isHK50Opening) && lastAutoSignalDate !== dateKey) {
-        const signal = getScoreLabel(institutionalScore);
-        const strength = getStrengthLabel(institutionalScore);
-        
-        if (signal !== 'NEUTRO') {
-          sendTelegramSignal(selectedAsset.symbol, signal, strength, institutionalScore);
+        const { score, msg } = institutionalScore;
+        if (score !== 0) {
+          sendTelegramSignal(selectedAsset.symbol, score > 0 ? 'COMPRA' : 'VENDA', Math.abs(score) > 5 ? 'FORTE' : 'FRACO', msg);
           setLastAutoSignalDate(dateKey);
         }
       }
     }, 1000);
     return () => clearInterval(clockInterval);
-  }, [selectedAsset, institutionalScore, lastAutoSignalDate, getScoreLabel, getStrengthLabel]);
+  }, [selectedAsset, institutionalScore, lastAutoSignalDate]);
 
   const loadData = useCallback(async (isInitialLoad = false) => {
     if (isInitialLoad) setLoading(true);
@@ -124,11 +204,74 @@ const App: React.FC = () => {
     }
   }, [selectedAsset, timeframe]);
 
+  // Carrega dados locais de índices e empresas
   useEffect(() => {
-    loadData(true);
-    const interval = setInterval(() => loadData(false), 30000); 
+    // Função para verificar se está no período de congelamento especial
+    const now = new Date();
+    const openingTimes = [
+      { symbol: 'US30', hour: 10, minute: 30 },
+      { symbol: 'HK50', hour: 22, minute: 30 }
+    ];
+    const assetOpen = openingTimes.find(o => o.symbol === selectedAsset.symbol);
+    let isSpecialWindow = false;
+    if (assetOpen) {
+      const openDate = new Date(now);
+      openDate.setHours(assetOpen.hour, assetOpen.minute, 0, 0);
+      const diffMin = Math.abs((now.getTime() - openDate.getTime()) / 60000);
+      // 15min antes ou no ato da abertura
+      isSpecialWindow = diffMin <= 15;
+    }
+
+    fetchLocalJson<any>('/indices_snapshot.json').then(setIndicesSnapshot);
+    fetchLocalJson<any>('/companies_snapshot.json').then(setCompaniesSnapshot);
+
+    // Se está na janela especial, faz requisições multi-fonte
+    if (isSpecialWindow) {
+      loadData(true); // Multi-fonte (TradingView, Google, etc.)
+    } else {
+      // Fora da janela especial, só Yahoo
+      fetchYahooOnly();
+    }
+
+    const interval = setInterval(() => {
+      fetchLocalJson<any>('/indices_snapshot.json').then(setIndicesSnapshot);
+      fetchLocalJson<any>('/companies_snapshot.json').then(setCompaniesSnapshot);
+      if (isSpecialWindow) {
+        loadData(false);
+      } else {
+        fetchYahooOnly();
+      }
+    }, 30000);
     return () => clearInterval(interval);
   }, [selectedAsset, timeframe, loadData]);
+
+  // Função para buscar só do Yahoo
+  const fetchYahooOnly = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [candleData, corrData, breadthRes, eventData, currentPrice] = await Promise.all([
+        fetchRealData(selectedAsset, timeframe), // Ajuste para garantir que só Yahoo
+        fetchCorrelationData(selectedAsset.symbol),
+        fetchMarketBreadth(selectedAsset.symbol),
+        fetchEconomicEvents(),
+        fetchCurrentPrice(selectedAsset)
+      ]);
+      setCorrelations(corrData);
+      setBreadthSummary(breadthRes.summary);
+      setBreadthDetails(breadthRes.details);
+      setEvents(eventData);
+      if (candleData.length > 0) {
+        if (currentPrice) candleData[candleData.length - 1].close = currentPrice;
+        setCandles(candleData);
+        setVolumePressure(calculateVolumePressure(candleData));
+        setGap(detectOpeningGap(candleData, selectedAsset));
+      }
+    } catch (err) {
+      console.error("Yahoo-only data load failed:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedAsset, timeframe]);
 
   // Dados agregados para sugestão
   const suggestionData = useMemo(() => ({
@@ -137,7 +280,7 @@ const App: React.FC = () => {
     gapType: gap.type,
     breadth: breadthSummary,
     volumePressure,
-    institutionalScore,
+    institutionalScore: institutionalScore.score,
     smcZones,
     events,
     correlations,
@@ -153,6 +296,10 @@ const App: React.FC = () => {
 
   // Estado global do modal de info dos índices
   const [modalInfo, setModalInfo] = React.useState<string|null>(null);
+
+  // Exemplo de uso dos snapshots locais (pode ser adaptado para exibir no UI)
+  // indicesSnapshot?.indices[selectedAsset.symbol]?.price
+  // companiesSnapshot?.indices[selectedAsset.symbol] (array de empresas)
 
   // Função para ordenar os índices por prioridade
   const getOrderedCorrelations = (correlations: any[], assetSymbol: string) => {
@@ -465,7 +612,7 @@ const App: React.FC = () => {
           correlations={correlations}
           events={events}
           smcZones={smcZones}
-          institutionalScore={institutionalScore}
+          institutionalScore={institutionalScore.score}
         />
         */}
 
@@ -525,17 +672,17 @@ const App: React.FC = () => {
 
           <div className="h-[105px] bg-[#0d1226]/95 backdrop-blur-md border-t border-indigo-500/20 flex items-stretch shrink-0 z-20 shadow-[0_-10px_40px_rgba(0,0,0,0.6)]">
              <div className="w-[250px] border-r border-slate-800/40 flex items-center px-6 gap-4">
-                <div className={`w-[58px] h-[58px] rounded-xl flex items-center justify-center border-2 transition-all duration-700 shadow-lg ${institutionalScore >= 0 ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400 shadow-emerald-500/10' : 'border-rose-500/40 bg-rose-500/10 text-rose-400 shadow-rose-500/10'}`}>
+                <div className={`w-[58px] h-[58px] rounded-xl flex items-center justify-center border-2 transition-all duration-700 shadow-lg ${institutionalScore.score >= 0 ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400 shadow-emerald-500/10' : 'border-rose-500/40 bg-rose-500/10 text-rose-400 shadow-rose-500/10'}`}>
                    <span className="text-[22px] font-black jetbrains">
-                     {institutionalScore > 0 ? '+' : ''}{institutionalScore}
+                     {institutionalScore.score > 0 ? '+' : ''}{institutionalScore.score}
                    </span>
                 </div>
                 <div className="flex flex-col justify-center leading-none">
                    {/* Removido Viés SMC */}
-                   <span className={`text-[20px] font-black uppercase tracking-tight leading-none ${getScoreLabel(institutionalScore) === 'COMPRA' ? 'text-emerald-400' : getScoreLabel(institutionalScore) === 'VENDA' ? 'text-rose-400' : 'text-slate-500'}`}>
-                     {getScoreLabel(institutionalScore)}
+                   <span className={`text-[20px] font-black uppercase tracking-tight leading-none ${getScoreLabel(institutionalScore.score) === 'COMPRA' ? 'text-emerald-400' : getScoreLabel(institutionalScore.score) === 'VENDA' ? 'text-rose-400' : 'text-slate-500'}`}>
+                     {getScoreLabel(institutionalScore.score)}
                    </span>
-                   <span className="text-[8px] font-bold text-slate-600 mt-1 uppercase tracking-widest">Confiança: {getStrengthLabel(institutionalScore)}</span>
+                   <span className="text-[8px] font-bold text-slate-600 mt-1 uppercase tracking-widest">Confiança: {getStrengthLabel(institutionalScore.score)}</span>
                 </div>
              </div>
 

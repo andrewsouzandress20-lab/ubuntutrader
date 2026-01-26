@@ -1,0 +1,18 @@
+Coleta Multi-Fonte 2026-01-26 13:40:50
+
+US30: 1111 | fonte: TradingView | url: https://www.tradingview.com/symbols/DJI/
+US500: 2222 | fonte: TradingView | url: https://www.tradingview.com/symbols/SPX/
+US100: 1010 | fonte: TradingView | url: https://www.tradingview.com/symbols/NDX/
+VIX: 11 | fonte: TradingView | url: https://www.tradingview.com/symbols/CBOE-VIX/
+DXY: 4747 | fonte: TradingView | url: https://www.tradingview.com/symbols/TVC-DXY/
+HK50: 26,765.52 | fonte: Google Finance | url: https://www.google.com/finance/quote/INDEXHANGSENG:HSI
+JP225: 52,885.25 | fonte: Google Finance | url: https://www.google.com/finance/quote/INDEXNIKKEI:NI225
+CN50: 3,049.59 | fonte: Google Finance | url: https://www.google.com/finance/quote/SHA:000016
+GOLD: 9999 | fonte: TradingView | url: https://www.tradingview.com/symbols/TVC-GOLD/
+WTI: 1616 | fonte: TradingView | url: https://www.tradingview.com/symbols/TVC-USOIL/
+VHSI: 49,098.71 | fonte: Google Finance | url: https://www.google.com/finance/quote/HKG:3112
+CNH=X: 11 | fonte: TradingView | url: https://www.tradingview.com/symbols/FX_IDC-CNHUSD/
+000001.SS: 000001 | fonte: TradingView | url: https://www.tradingview.com/symbols/SSE-000001/
+USDJPY=X: 3434 | fonte: TradingView | url: https://www.tradingview.com/symbols/FX_IDC-USDJPY/
+^TNX: 6 | fonte: TradingView | url: https://www.tradingview.com/symbols/TVC-US10Y/
+^RUT: 2,669.16 | fonte: Google Finance | url: https://www.google.com/finance/quote/INDEXRUSSELL:RUT
