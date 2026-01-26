@@ -274,18 +274,35 @@ const App: React.FC = () => {
   }, [selectedAsset, timeframe]);
 
   // Dados agregados para sugestão
-  const suggestionData = useMemo(() => ({
-    volume: candles.length > 0 ? candles[candles.length - 1].volume || 0 : 0,
-    gap: gap.value,
-    gapType: gap.type,
-    breadth: breadthSummary,
-    volumePressure,
-    institutionalScore: institutionalScore.score,
-    smcZones,
-    events,
-    correlations,
-    asset: selectedAsset,
-  }), [candles, gap, breadthSummary, volumePressure, institutionalScore, smcZones, events, correlations, selectedAsset]);
+  const suggestionData = useMemo(() => {
+    const lastCandle = candles.length > 0 ? candles[candles.length - 1] : { open: 0, close: 0, volume: 0 };
+    // VIX e DXY
+    const vix = correlations.find(c => c.symbol === '^VIX' || c.symbol === 'VIX');
+    const dxy = correlations.find(c => c.symbol === 'DXY' || c.symbol === 'DX-Y.NYB');
+    // Breadth
+    const breadthAdv = breadthSummary.advancing || 0;
+    const breadthDec = breadthSummary.declining || 0;
+    // Indices
+    const indices = {
+      US500: correlations.find(c => c.symbol === '^GSPC')?.change || 0,
+      US100: correlations.find(c => c.symbol === '^IXIC')?.change || 0,
+      '^RUT': correlations.find(c => c.symbol === '^RUT')?.change || 0,
+      JP225: correlations.find(c => c.symbol === 'JP225')?.change || 0,
+      HK50: correlations.find(c => c.symbol === 'HK50')?.change || 0,
+    };
+    return {
+      volume: lastCandle.volume,
+      open: lastCandle.open,
+      close: lastCandle.close,
+      vix: vix?.change ?? 0,
+      dxyChange: dxy?.change ?? 0,
+      breadthAdv,
+      breadthDec,
+      indices,
+      gap: gap.value,
+      // outros campos se necessário
+    };
+  }, [candles, gap, breadthSummary, correlations]);
 
   // Detecta abertura do mercado do ativo selecionado
   const isMarketOpen = useMemo(() => {
@@ -325,7 +342,7 @@ const App: React.FC = () => {
 
   if (isMobile) {
     // Dados dinâmicos
-    const score = institutionalScore;
+    const score = institutionalScore.score;
     const scoreLabel = getScoreLabel(score);
     const scoreColor = scoreLabel === 'COMPRA' ? '#4ade80' : scoreLabel === 'VENDA' ? '#ff5a5a' : '#fbbf24';
     const gapColor = gap.type === 'up' ? '#4ade80' : gap.type === 'down' ? '#ff5a5a' : '#fbbf24';
