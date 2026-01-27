@@ -1,16 +1,27 @@
 // server.cjs - Contador de usuários online via Socket.IO (CommonJS)
 
+
 const http = require('http');
 const { Server } = require('socket.io');
 const express = require('express');
 const fetch = require('node-fetch');
+const path = require('path');
 
 const app = express();
+
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
     origin: '*',
   }
+});
+
+// Serve arquivos estáticos do frontend React (dist)
+app.use(express.static(path.join(__dirname, 'dist')));
+
+// Para qualquer rota não-API, retorna o index.html do React
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
 let onlineCount = 0;
