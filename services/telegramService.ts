@@ -1,12 +1,21 @@
 // Função para obter variáveis de ambiente de forma compatível (Vite ou Node.js)
+
 function getEnvVar(name: string): string | undefined {
   // Vite
   if (typeof import.meta !== 'undefined' && typeof import.meta.env !== 'undefined' && import.meta.env[name]) {
     return import.meta.env[name];
   }
   // Node.js
-  if (typeof process !== 'undefined' && process.env && process.env[name]) {
-    return process.env[name];
+  if (typeof process !== 'undefined' && process.env) {
+    // Tenta buscar com e sem prefixo VITE_
+    if (process.env[name]) return process.env[name];
+    if (name.startsWith('VITE_')) {
+      const noPrefix = name.replace(/^VITE_/, '');
+      if (process.env[noPrefix]) return process.env[noPrefix];
+    } else {
+      const withPrefix = 'VITE_' + name;
+      if (process.env[withPrefix]) return process.env[withPrefix];
+    }
   }
   return undefined;
 }

@@ -68,7 +68,25 @@ const fetchWithRetry = async (url: string, useProxy: boolean = true): Promise<an
   return null;
 };
 
+
+// Novo: busca do Yahoo via backend local
 const fetchFromYahoo = async (url: string): Promise<any> => {
+  // Detecta se é uma URL de cotação do Yahoo Finance
+  const match = url.match(/finance\.yahoo\.com\/v7\/finance\/quote\?symbols=([^&]+)/);
+  if (match) {
+    const symbol = match[1];
+    // Chama o backend local
+    const apiUrl = `/api/yahoo-quote?symbol=${encodeURIComponent(symbol)}`;
+    try {
+      const response = await fetch(apiUrl);
+      if (response.ok) return await response.json();
+    } catch (e) {
+      console.warn("Falha ao buscar do backend local:", e);
+    }
+    // Fallback: tenta proxy se backend falhar
+    return await fetchWithRetry(url, true);
+  }
+  // Para outras URLs, mantém proxy
   return await fetchWithRetry(url, true);
 };
 

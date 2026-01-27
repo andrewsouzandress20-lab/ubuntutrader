@@ -19,8 +19,8 @@ const io = new Server(server, {
 // Serve arquivos estáticos do frontend React (dist)
 app.use(express.static(path.join(__dirname, 'dist')));
 
-// Para qualquer rota não-API, retorna o index.html do React
-app.get('*', (req, res) => {
+// Para qualquer rota não-API, retorna o index.html do React (Express 5 exige '/*')
+app.get('/*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 

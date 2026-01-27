@@ -14,17 +14,7 @@ import GeminiSignalHeader from './components/GeminiSignalHeader';
 import SuggestionBanner from './components/SuggestionBanner';
 
 const App: React.FC = () => {
-    const [onlineCount, setOnlineCount] = useState(0);
-
-    useEffect(() => {
-      const socket = io('http://localhost:4000');
-      socket.on('onlineCount', (count: number) => {
-        setOnlineCount(count);
-      });
-      return () => {
-        socket.disconnect();
-      };
-    }, []);
+    // ...contador de usuários online removido...
   const [isMobile, setIsMobile] = React.useState(false);
   React.useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth <= 600);
@@ -836,7 +826,7 @@ const App: React.FC = () => {
           <div className="flex gap-8">
             <span>developer by ANDRE SOUZA</span>
             <span>importante entrar na abertura conforme as zonas de liquidez exemplo: SMC/FGV/ETC...</span>
-            <span style={{color:'#ffe600'}}>🟢 Online: {onlineCount}</span>
+            {/* <span style={{color:'#ffe600'}}>🟢 Online: {onlineCount}</span> */}
           </div>
         <div className="text-slate-500">UBUNTU TRADER © 2026</div>
       </footer>
