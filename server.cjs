@@ -1,7 +1,6 @@
 // --- AGENDADOR AUTOMÁTICO PARA ENVIO TELEGRAM ---
 const fs = require('fs');
 const cron = require('node-cron');
-const fetch = require('node-fetch');
 
 // Função utilitária para enviar mensagem ao Telegram
 function sendTelegramMessage(text) {
