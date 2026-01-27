@@ -1,3 +1,61 @@
+// --- AGENDADOR AUTOMÁTICO PARA ENVIO TELEGRAM ---
+const fs = require('fs');
+const cron = require('node-cron');
+const fetch = require('node-fetch');
+
+// Função utilitária para enviar mensagem ao Telegram
+function sendTelegramMessage(text) {
+  const BOT_TOKEN = process.env.VITE_TELEGRAM_BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN;
+  const CHAT_ID = process.env.VITE_TELEGRAM_CHAT_ID || process.env.TELEGRAM_CHAT_ID;
+  if (!BOT_TOKEN || !CHAT_ID) {
+    console.error('Telegram ENV não configurado');
+    return;
+  }
+  const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
+  fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chat_id: CHAT_ID, text, parse_mode: 'Markdown' })
+  })
+    .then(res => res.json())
+    .then(data => {
+      if (data.ok) {
+        console.log('Mensagem enviada ao Telegram!');
+      } else {
+        console.error('Falha ao enviar para o Telegram:', data.description);
+      }
+    })
+    .catch(err => console.error('Erro Telegram:', err));
+}
+
+// Função para montar mensagem simples de abertura (pode ser customizada)
+function montarMensagemAbertura(ativo) {
+  // Exemplo: lê o snapshot e monta mensagem simples
+  let indices = {};
+  try {
+    const data = fs.readFileSync('indices_snapshot.json', 'utf8');
+    indices = JSON.parse(data).indices || {};
+  } catch (e) { console.error('Erro lendo indices_snapshot.json:', e); }
+  const preco = indices[ativo]?.price || '---';
+  return `🚨 ABERTURA ${ativo} 🚨\nPreço: ${preco}\nHora: ${(new Date()).toLocaleTimeString('pt-BR',{hour12:false})}`;
+}
+
+// US30: 11:30 BRT (14:30 UTC) | HK50: 22:30 BRT (01:30 UTC)
+// Exemplo: envia 15 min antes e na abertura
+cron.schedule('15 14 * * 1-5', () => {
+  sendTelegramMessage(montarMensagemAbertura('US30') + '\n(15 min antes)');
+});
+cron.schedule('30 14 * * 1-5', () => {
+  sendTelegramMessage(montarMensagemAbertura('US30') + '\n(ABERTURA)');
+});
+cron.schedule('15 1 * * 1-5', () => {
+  sendTelegramMessage(montarMensagemAbertura('HK50') + '\n(15 min antes)');
+});
+cron.schedule('30 1 * * 1-5', () => {
+  sendTelegramMessage(montarMensagemAbertura('HK50') + '\n(ABERTURA)');
+});
+
+console.log('Agendador de envio para Telegram ativado!');
 // server.cjs - Contador de usuários online via Socket.IO (CommonJS)
 
 
