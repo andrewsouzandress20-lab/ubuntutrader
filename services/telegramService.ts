@@ -20,11 +20,7 @@ function getEnvVar(name: string): string | undefined {
   return undefined;
 }
 
-const BOT_TOKEN = getEnvVar('VITE_TELEGRAM_BOT_TOKEN');
-const CHAT_ID = getEnvVar('VITE_TELEGRAM_CHAT_ID');
-if (!BOT_TOKEN || !CHAT_ID) {
-  console.error("Telegram ENV não configurado");
-}
+
 
 /**
  * Envia uma mensagem de sinal de trade para um canal do Telegram.
@@ -55,29 +51,23 @@ export const sendTelegramSignal = async (
 *ANALISE A ZONA SMC/FGV PARA UMA ENTRADA MELHOR*
   `;
 
-  const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
-  
   try {
-    const response = await fetch(url, {
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || '';
+    const response = await fetch(`${backendUrl}/api/send-telegram`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        chat_id: CHAT_ID,
-        text: message,
-        parse_mode: 'Markdown',
-      }),
+      body: JSON.stringify({ text: message }),
     });
-
     const data = await response.json();
     if (data.ok) {
       console.log("Sinal de abertura enviado com sucesso para o Telegram!");
     } else {
-      console.error("Falha ao enviar sinal para o Telegram:", data.description);
+      console.error("Falha ao enviar sinal para o Telegram:", data.error);
     }
   } catch (error) {
-    console.error("Erro na comunicação com a API do Telegram:", error);
+    console.error("Erro na comunicação com o backend do Telegram:", error);
   }
 };
 
@@ -86,30 +76,22 @@ export const sendTelegramSignal = async (
  * @param message - Texto da análise detalhada.
  */
 export const sendTelegramAnalysis = async (message: string): Promise<void> => {
-  if (!BOT_TOKEN || !CHAT_ID) {
-    console.error("Telegram ENV não configurado");
-    return;
-  }
-  const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
   try {
-    const response = await fetch(url, {
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || '';
+    const response = await fetch(`${backendUrl}/api/send-telegram`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        chat_id: CHAT_ID,
-        text: message,
-        parse_mode: 'Markdown',
-      }),
+      body: JSON.stringify({ text: message }),
     });
     const data = await response.json();
     if (data.ok) {
       console.log("Análise detalhada enviada com sucesso para o Telegram!");
     } else {
-      console.error("Falha ao enviar análise para o Telegram:", data.description);
+      console.error("Falha ao enviar análise para o Telegram:", data.error);
     }
   } catch (error) {
-    console.error("Erro na comunicação com a API do Telegram:", error);
+    console.error("Erro na comunicação com o backend do Telegram:", error);
   }
 };
