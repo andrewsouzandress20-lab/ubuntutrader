@@ -22,13 +22,21 @@ const MqlCalendarWidget: React.FC = () => {
       script.setAttribute('data-type', 'calendar-widget');
       
       // Configuração específica do usuário (incluindo theme: 1 para modo escuro)
+
+      // Filtra para mostrar apenas eventos do dia em curso
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth() + 1).padStart(2, '0');
+      const dd = String(today.getDate()).padStart(2, '0');
+      const dateStr = `${yyyy}-${mm}-${dd}`;
       script.innerHTML = JSON.stringify({
         "width": "100%",
         "height": "100%",
         "mode": "1",
         "fw": "html",
         "lang": "pt",
-        "theme": 1
+        "theme": 1,
+        "date": dateStr
       });
 
       containerRef.current.appendChild(script);
