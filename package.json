@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@google/genai": "^1.38.0",
+    "body-parser": "^2.2.2",
+    "dotenv": "^17.2.3",
     "esbuild-register": "^3.6.0",
     "express": "^5.2.1",
     "lightweight-charts": "4.2.1",

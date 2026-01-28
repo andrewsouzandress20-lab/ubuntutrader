@@ -46,7 +46,6 @@ const App: React.FC = () => {
 
   const getStrengthLabel = useCallback((s: number) => {
     const absScore = Math.abs(s);
-    if (absScore <= 15) return "AGUARDANDO";
     if (absScore > 70) return "FORTE";
     if (absScore > 40) return "MODERADA";
     return "FRACA";
@@ -230,9 +229,18 @@ const App: React.FC = () => {
     fetchLocalJson<any>('/indices_snapshot.json').then(setIndicesSnapshot);
     fetchLocalJson<any>('/companies_snapshot.json').then(setCompaniesSnapshot);
 
-    // Se está na janela especial, faz requisições multi-fonte
-    if (isSpecialWindow) {
-      loadData(true); // Multi-fonte (TradingView, Google, etc.)
+
+    // Durante a janela especial, prioriza snapshot TradingView
+    if (isSpecialWindow && indicesSnapshot && indicesSnapshot.indices && indicesSnapshot.indices[selectedAsset.symbol]) {
+      // Usa o snapshot TradingView para preço
+      const price = parseFloat(indicesSnapshot.indices[selectedAsset.symbol].price);
+      if (!isNaN(price)) {
+        // Cria candle fake só para gap/score
+        const candle = { time: Date.now() / 1000, open: price, high: price, low: price, close: price, volume: 0 };
+        setCandles([candle]);
+        setVolumePressure({ buyPercent: 50, sellPercent: 50, total: 0 });
+        setGap({ value: 0, percent: 0, type: 'none' });
+      }
     } else {
       // Fora da janela especial, só Yahoo
       fetchYahooOnly();

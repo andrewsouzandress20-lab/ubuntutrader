@@ -1,0 +1,5 @@
+// Snapshot de empresas para uso no frontend
+[
+  {"symbol": "US30", "name": "Dow Jones Industrial Average"},
+  {"symbol": "HK50", "name": "Hang Seng Index"}
+]

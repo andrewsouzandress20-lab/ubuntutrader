@@ -1,0 +1,15 @@
+# Arquivos e pastas que podem ser removidos do projeto
+- coleta_teste.txt
+- test-telegram.cjs
+- teste_coleta_indices.py
+- server.js
+- README_fluxo_dados.md
+- README_scraping_cron.md
+- dist/ (gerado pelo build, pode ser limpo)
+- companies_snapshot.json (duplicado na public/)
+- indices_snapshot.json (duplicado na public/)
+- set_static_snapshot.js (duplicado na dist/ e public/)
+
+Os arquivos .git/, node_modules/, e dist/ são gerados automaticamente e não devem ser removidos manualmente, exceto para limpeza.
+
+Se quiser que eu remova esses arquivos agora, só confirmar.

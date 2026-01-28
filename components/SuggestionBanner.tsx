@@ -1,3 +1,16 @@
+// Função utilitária para cor de confiança
+function getConfidenceColorClass(confidence: string) {
+  switch (confidence) {
+    case 'forte':
+      return 'text-green-400 border-green-500/40';
+    case 'moderada':
+      return 'text-amber-400 border-amber-500/40';
+    case 'fraca':
+      return 'text-red-400 border-red-500/40';
+    default:
+      return 'text-white border-white/40';
+  }
+}
 
 import React, { useEffect, useState } from 'react';
 
@@ -106,7 +119,12 @@ const SuggestionBanner: React.FC<SuggestionBannerProps> = ({ isMarketOpen, marke
   // Após 5s da abertura
   if (showSuggestion && suggestion) {
     return (
-      <div className="text-amber-400 text-[14px] md:text-[14px] sm:text-[13px] font-bold tracking-wide px-6 py-2 sm:px-2 sm:py-1 rounded bg-[#181e2a] border border-amber-500/40 w-full max-w-[420px] text-center">
+      <div
+        className={
+          `text-[14px] md:text-[14px] sm:text-[13px] font-bold tracking-wide px-6 py-2 sm:px-2 sm:py-1 rounded bg-[#181e2a] border w-full max-w-[420px] text-center ` +
+          getConfidenceColorClass(suggestion.confidence)
+        }
+      >
         <span role='img' aria-label='bot'>🤖</span> <span role='img' aria-label='luz'>💡</span> <b>{suggestion.score}</b> <b>{suggestion.bias.toUpperCase()}</b> <br />
         Confiança: <b>{suggestion.confidence.toUpperCase()}</b>
       </div>
