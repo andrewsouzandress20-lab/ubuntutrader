@@ -42,7 +42,7 @@ export const sendTelegramSignal = async (
   score: number
 ): Promise<void> => {
   if (signal === 'NEUTRO') {
-    console.log("Sinal neutro, nenhuma mensagem enviada ao Telegram.");
+    console.log(`[${new Date().toISOString()}] Sinal neutro, nenhuma mensagem enviada ao Telegram.`);
     return;
   }
 
@@ -208,13 +208,15 @@ export const sendTelegramSignal = async (
       body: JSON.stringify({ text: message }),
     });
     const data = await response.json();
+    const now = new Date().toISOString();
     if (data.ok) {
-      console.log("Sinal de abertura enviado com sucesso para o Telegram!");
+      console.log(`[${now}] Sinal de abertura enviado com sucesso para o Telegram!`, { message, response: data });
     } else {
-      console.error("Falha ao enviar sinal para o Telegram:", data.error);
+      console.error(`[${now}] Falha ao enviar sinal para o Telegram:`, data.error, { message, response: data });
     }
   } catch (error) {
-    console.error("Erro na comunicação com o backend do Telegram:", error);
+    const now = new Date().toISOString();
+    console.error(`[${now}] Erro na comunicação com o backend do Telegram:`, error, { message });
   }
 };
 
@@ -233,12 +235,14 @@ export const sendTelegramAnalysis = async (message: string): Promise<void> => {
       body: JSON.stringify({ text: message }),
     });
     const data = await response.json();
+    const now = new Date().toISOString();
     if (data.ok) {
-      console.log("Análise detalhada enviada com sucesso para o Telegram!");
+      console.log(`[${now}] Análise detalhada enviada com sucesso para o Telegram!`, { message, response: data });
     } else {
-      console.error("Falha ao enviar análise para o Telegram:", data.error);
+      console.error(`[${now}] Falha ao enviar análise para o Telegram:`, data.error, { message, response: data });
     }
   } catch (error) {
-    console.error("Erro na comunicação com o backend do Telegram:", error);
+    const now = new Date().toISOString();
+    console.error(`[${now}] Erro na comunicação com o backend do Telegram:`, error, { message });
   }
 };
