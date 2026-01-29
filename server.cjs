@@ -12,27 +12,39 @@ const CHAT_ID = process.env.VITE_TELEGRAM_CHAT_ID;
 // API Telegram
 app.post('/api/send-telegram', async (req, res) => {
   const { text } = req.body;
-  if (!text) return res.status(400).json({ error: 'Texto obrigatório' });
-  if (!BOT_TOKEN || !CHAT_ID) return res.status(500).json({ error: 'Env do Telegram não configurado' });
+  console.log('[TELEGRAM API] Recebida requisição para enviar mensagem:', text);
+  if (!text) {
+    console.error('[TELEGRAM API] Texto obrigatório não informado');
+    return res.status(400).json({ error: 'Texto obrigatório' });
+  }
+  if (!BOT_TOKEN || !CHAT_ID) {
+    console.error('[TELEGRAM API] BOT_TOKEN ou CHAT_ID não configurados:', { BOT_TOKEN, CHAT_ID });
+    return res.status(500).json({ error: 'Env do Telegram não configurado' });
+  }
 
   const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
   try {
+    console.log('[TELEGRAM API] Enviando para URL:', url);
+    const payload = {
+      chat_id: CHAT_ID,
+      text,
+      parse_mode: 'Markdown',
+    };
+    console.log('[TELEGRAM API] Payload:', payload);
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: CHAT_ID,
-        text,
-        parse_mode: 'Markdown',
-      }),
+      body: JSON.stringify(payload),
     });
     const data = await response.json();
+    console.log('[TELEGRAM API] Resposta do Telegram:', data);
     if (data.ok) {
       res.json({ ok: true });
     } else {
       res.status(500).json({ error: data.description });
     }
   } catch (err) {
+    console.error('[TELEGRAM API] Erro ao enviar mensagem:', err);
     res.status(500).json({ error: err.message });
   }
 });
