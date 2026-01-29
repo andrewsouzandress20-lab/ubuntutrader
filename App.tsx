@@ -16,6 +16,31 @@ import SuggestionBanner from './components/SuggestionBanner';
 const App: React.FC = () => {
     // ...contador de usuários online removido...
   const [isMobile, setIsMobile] = React.useState(false);
+
+  // LOG DE TESTE DE CONEXÃO TELEGRAM (apenas para debug em render)
+  React.useEffect(() => {
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || '';
+    if (!backendUrl) {
+      console.warn('[TELEGRAM TEST] VITE_BACKEND_URL não definido');
+      return;
+    }
+    fetch(`${backendUrl}/api/send-telegram`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: '[TESTE] Render App.tsx - Teste de conexão backend Telegram' })
+    })
+      .then(async res => {
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.ok) {
+          console.log('[TELEGRAM TEST] Mensagem de teste enviada com sucesso!');
+        } else {
+          console.error('[TELEGRAM TEST] Falha ao enviar mensagem de teste:', data.error || res.statusText);
+        }
+      })
+      .catch(err => {
+        console.error('[TELEGRAM TEST] Erro ao conectar backend Telegram:', err);
+      });
+  }, []);
   React.useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth <= 600);
     checkMobile();
