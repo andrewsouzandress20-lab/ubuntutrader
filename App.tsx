@@ -17,28 +17,29 @@ const App: React.FC = () => {
     // ...contador de usuários online removido...
   const [isMobile, setIsMobile] = React.useState(false);
 
-  // LOG DE TESTE DE CONEXÃO TELEGRAM (apenas para debug em render)
+  // Ao iniciar o render, envia mensagem para o Telegram informando que o bot está rodando
   React.useEffect(() => {
     const backendUrl = import.meta.env.VITE_BACKEND_URL || '';
     if (!backendUrl) {
-      console.warn('[TELEGRAM TEST] VITE_BACKEND_URL não definido');
+      console.warn('[TELEGRAM STARTUP] VITE_BACKEND_URL não definido');
       return;
     }
+    const msg = '[STARTUP] UbuntuTrader bot rodando em ' + (typeof window !== 'undefined' ? window.location.href : 'ambiente desconhecido') + ' - ' + new Date().toLocaleString();
     fetch(`${backendUrl}/api/send-telegram`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: '[TESTE] Render App.tsx - Teste de conexão backend Telegram' })
+      body: JSON.stringify({ text: msg })
     })
       .then(async res => {
         const data = await res.json().catch(() => ({}));
         if (res.ok && data.ok) {
-          console.log('[TELEGRAM TEST] Mensagem de teste enviada com sucesso!');
+          console.log('[TELEGRAM STARTUP] Mensagem de inicialização enviada para o Telegram com sucesso!');
         } else {
-          console.error('[TELEGRAM TEST] Falha ao enviar mensagem de teste:', data.error || res.statusText);
+          console.error('[TELEGRAM STARTUP] Falha ao enviar mensagem de inicialização para o Telegram:', data.error || res.statusText);
         }
       })
       .catch(err => {
-        console.error('[TELEGRAM TEST] Erro ao conectar backend Telegram:', err);
+        console.error('[TELEGRAM STARTUP] Erro ao conectar backend Telegram:', err);
       });
   }, []);
   React.useEffect(() => {
