@@ -1,12 +1,7 @@
 // Scheduler em TypeScript para envio automático de sinal de abertura
 
-
-import fetch from 'node-fetch';
-// @ts-ignore
-globalThis.fetch = fetch;
-
 import cron from 'node-cron';
-import { sendTelegramSignal } from './services/telegramService';
+import { sendTelegramSignal } from './services/telegramService.ts';
 
 console.log('==============================');
 console.log('Scheduler de sinal de abertura INICIADO!');
