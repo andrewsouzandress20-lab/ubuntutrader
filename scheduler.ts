@@ -1,57 +1,47 @@
 // Scheduler em TypeScript para envio automático de sinal de abertura
 
+
 import cron from 'node-cron';
 import { sendTelegramSignal } from './services/telegramService.ts';
+import fs from 'fs';
+import path from 'path';
 
 console.log('==============================');
 console.log('Scheduler de sinal de abertura INICIADO!');
 console.log('Data/Hora:', new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }));
 console.log('==============================');
 
-let us30Sent = false;
-let hk50Sent = false;
 
-// Consulta status dos mercados a cada 5 minutos
-cron.schedule('*/5 * * * *', async () => {
-  console.log('Verificando status dos mercados...');
-  try {
-    const res = await fetch('https://globalmarkettimes.com/api/markets/status');
-    const data = await res.json();
-    // US30 (NYSE)
-    const us30 = data.find((m: any) => m.symbol === 'NYSE');
-    if (us30 && us30.status === 'open' && !us30Sent) {
-      console.log('Abertura detectada: US30 (NYSE)');
-      await sendTelegramSignal('US30', 'COMPRA', 'FORTE', 10); // Ajuste lógica conforme necessário
-      us30Sent = true;
-    }
-    if (us30 && us30.status === 'closed') {
-      us30Sent = false;
-    }
-    // HK50 (HKEX)
-    const hk50 = data.find((m: any) => m.symbol === 'HKEX');
-    if (hk50 && hk50.status === 'open' && !hk50Sent) {
-      console.log('Abertura detectada: HK50 (HKEX)');
-      await sendTelegramSignal('HK50', 'COMPRA', 'FORTE', 10); // Ajuste lógica conforme necessário
-      hk50Sent = true;
-    }
-    if (hk50 && hk50.status === 'closed') {
-      hk50Sent = false;
-    }
-  } catch (err) {
-    console.error('Erro ao consultar status dos mercados:', err);
-  }
-});
+// Lê horários de abertura do arquivo JSON
+const MARKET_FILE = path.resolve(__dirname, 'market_open_times.json');
+function getOpenTimes() {
+  const raw = fs.readFileSync(MARKET_FILE, 'utf-8');
+  return JSON.parse(raw);
+}
 
-cron.schedule('30 11 * * 1-5', async () => {
-  console.log('------------------------------');
-  console.log('Disparando sinal de abertura automático...');
-  console.log('Data/Hora disparo:', new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }));
-  // Preencha os dados conforme sua lógica ou fonte de dados
-  const assetSymbol = 'US30';
-  const signal = 'COMPRA'; // ou 'VENDA', conforme análise
-  const strength = 'FORTE';
-  const score = 10; // Exemplo
-  await sendTelegramSignal(assetSymbol, signal, strength, score);
-  console.log('Sinal de abertura enviado!');
-  console.log('------------------------------');
-});
+
+// Agenda sinais de abertura conforme horários do arquivo JSON
+
+function scheduleSignal(assetSymbol: string, openTime: string, days: string) {
+  const [hour, minute] = openTime.split(':').map(Number);
+  cron.schedule(`${minute} ${hour} * * ${days}`, async () => {
+    console.log(`Enviando sinal de abertura para ${assetSymbol} às ${openTime} UTC`);
+    await sendTelegramSignal(assetSymbol, 'COMPRA', 'FORTE', 10); // Ajuste conforme sua lógica
+  }, {
+    timezone: 'UTC'
+  });
+  console.log(`Agendado sinal para ${assetSymbol} às ${openTime} UTC nos dias ${days}`);
+}
+
+
+function main() {
+  const times = getOpenTimes();
+  // US30: segunda (1) a sexta (5)
+  scheduleSignal('US30', times.US30.opening_time_utc, '1-5');
+  // HK50: domingo (0) a quinta (4)
+  scheduleSignal('HK50', times.HK50.opening_time_utc, '0-4');
+}
+
+main();
+
+
