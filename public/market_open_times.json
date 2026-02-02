@@ -1,0 +1,10 @@
+{
+  "US30": {
+    "opening_time": "11:30",
+    "timezone": "BRT"
+  },
+  "HK50": {
+    "opening_time": "22:30",
+    "timezone": "BRT"
+  }
+}

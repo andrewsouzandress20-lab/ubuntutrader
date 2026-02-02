@@ -1,0 +1,35 @@
+name: Coleta TradingView Agendada
+
+on:
+  schedule:
+    # US30 - 15 minutos antes e no horário da abertura (BRT = UTC-3)
+    - cron: '15 14 * * *'  # 11:15 BRT
+    - cron: '30 14 * * *'  # 11:30 BRT
+    # HK50 - 15 minutos antes e no horário da abertura (BRT = UTC-3)
+    - cron: '15 1 * * *'   # 22:15 BRT
+    - cron: '30 1 * * *'   # 22:30 BRT
+  workflow_dispatch:
+
+jobs:
+  fetch-indices:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+      - name: Instalar dependências Python
+        run: |
+          python3 -m pip install --upgrade pip
+          pip install requests beautifulsoup4
+      - name: Coletar índices TradingView
+        run: python3 fetch_indices_tradingview.py
+      - name: Coletar empresas TradingView
+        run: python3 fetch_companies_tradingview.py
+      - name: Upload arquivos de snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: snapshots
+          path: |
+            indices_snapshot.json
+            companies_snapshot.json
+            public/indices_snapshot.json
+            public/companies_snapshot.json
