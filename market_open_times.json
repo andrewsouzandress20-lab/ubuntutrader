@@ -1,0 +1,12 @@
+{
+  "US30": {
+    "exchange": "NYSE",
+    "opening_time_utc": "13:30",
+    "closing_time_utc": "20:00"
+  },
+  "HK50": {
+    "exchange": "HKEX",
+    "opening_time_utc": "01:30",
+    "closing_time_utc": "08:00"
+  }
+}
