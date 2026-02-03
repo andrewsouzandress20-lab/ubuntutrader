@@ -3,6 +3,8 @@
 
 import cron from 'node-cron';
 import { sendTelegramSignal } from './services/telegramService.ts';
+import { SUPPORTED_ASSETS, Timeframe } from './types.ts';
+import { fetchCurrentPrice, fetchCorrelationData, fetchMarketBreadth, fetchRealData, calculateVolumePressure, detectOpeningGap } from './services/dataService.ts';
 import fs from 'fs';
 import path from 'path';
 
@@ -27,11 +29,50 @@ function getOpenTimes() {
 
 // Agenda sinais de abertura conforme horários do arquivo JSON
 
+
+async function collectAndSendSignal(assetSymbol: string) {
+  try {
+    const asset = SUPPORTED_ASSETS.find(a => a.symbol === assetSymbol);
+    if (!asset) throw new Error('Ativo não suportado: ' + assetSymbol);
+
+    // Coleta candles (1m timeframe, últimos 2 dias)
+    const candles = await fetchRealData(asset, '1m');
+    // Preço atual
+    const quote = await fetchCurrentPrice(asset);
+    // Índices globais
+    const indices = await fetchCorrelationData(assetSymbol);
+    // Breadth (avanço/queda das empresas)
+    const breadth = await fetchMarketBreadth(assetSymbol);
+    // Volume
+    const volume = calculateVolumePressure(candles);
+    // Gap de abertura
+    const gap = detectOpeningGap(candles, asset);
+
+    // Score institucional (exemplo: proporção de empresas em alta)
+    const score = breadth.summary.advancing - breadth.summary.declining;
+
+    // Log para debug
+    console.log('[SINAL] Dados coletados:', {
+      quote, indices, breadth, volume, gap, score
+    });
+
+    // Envia sinal para o Telegram
+    await sendTelegramSignal(
+      assetSymbol,
+      'COMPRA', // ou lógica baseada nos dados
+      'FORTE',  // ou lógica baseada nos dados
+      score
+    );
+  } catch (err) {
+    console.error('[SINAL] Erro ao coletar/enviar sinal:', err);
+  }
+}
+
 function scheduleSignal(assetSymbol: string, openTime: string, days: string) {
   const [hour, minute] = openTime.split(':').map(Number);
   cron.schedule(`${minute} ${hour} * * ${days}`, async () => {
     console.log(`Enviando sinal de abertura para ${assetSymbol} às ${openTime} UTC`);
-    await sendTelegramSignal(assetSymbol, 'COMPRA', 'FORTE', 10); // Ajuste conforme sua lógica
+    await collectAndSendSignal(assetSymbol);
   }, {
     timezone: 'UTC'
   });
