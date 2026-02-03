@@ -33,7 +33,7 @@ async function sendSignalFromSnapshot(assetSymbol: string, label: string) {
     }
   }
   // Envia análise detalhada
-  const { sendTelegramAnalysis } = await import('./services/telegramService');
+  const { sendTelegramAnalysis } = await import('./services/telegramService.ts');
   await sendTelegramAnalysis(analysis);
   console.log(`[ANÁLISE] Análise detalhada enviada para ${assetSymbol}`);
 }
