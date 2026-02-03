@@ -82,7 +82,7 @@ def agendar_scraping(nome, exchange, script, fonte='marketstack', horarios=[]):
 
 if __name__ == '__main__':
     scheduler = BackgroundScheduler()
-    # Horários: 15 min antes e na abertura (exemplo: US30 abre 11:30 UTC, HK50 abre 01:30 UTC)
+    # Horários: 15 min antes e na abertura (produção: US30 abre 11:30 UTC, HK50 abre 01:30 UTC)
     horarios_us30 = ['11:15', '11:30']
     horarios_hk50 = ['01:15', '01:30']
     agendar_scraping('US30', 'XNYS', 'fetch_indices_tradingview.py', horarios=horarios_us30)
