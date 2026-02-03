@@ -22,8 +22,12 @@
       "@/*": [
         "./*"
       ]
-    },
-    
-    
-  }
+    }
+  },
+  "exclude": [
+    "dist",
+    "dist/scripts",
+    "dist/scripts-esm",
+    "node_modules"
+  ]
 }
