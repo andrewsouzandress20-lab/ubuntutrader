@@ -19,6 +19,23 @@ async function sendSignalFromSnapshot(assetSymbol: string, label: string) {
     score
   );
   console.log(`[SINAL] Sinal enviado para ${assetSymbol} usando snapshot ${label}`);
+
+  // Monta análise detalhada
+  let analysis = `\n[ANÁLISE DETALHADA ${assetSymbol}]\n`;
+  analysis += `Cotação: ${snapshot.quote}\n`;
+  analysis += `Gap: ${snapshot.gap}\n`;
+  analysis += `Volume: ${snapshot.volume} | Buy: ${snapshot.volumeBuy} | Sell: ${snapshot.volumeSell}\n`;
+  analysis += `Breadth: ${snapshot.breadth.summary.advancing} em alta, ${snapshot.breadth.summary.declining} em baixa\n`;
+  if (snapshot.indices) {
+    analysis += 'Índices:\n';
+    for (const [k, v] of Object.entries(snapshot.indices)) {
+      analysis += `- ${k}: ${(v as any).price ?? v}\n`;
+    }
+  }
+  // Envia análise detalhada
+  const { sendTelegramAnalysis } = await import('./services/telegramService');
+  await sendTelegramAnalysis(analysis);
+  console.log(`[ANÁLISE] Análise detalhada enviada para ${assetSymbol}`);
 }
 
 (async () => {
