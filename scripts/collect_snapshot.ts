@@ -1,7 +1,7 @@
 import 'dotenv/config';
-import { SUPPORTED_ASSETS } from './types.ts';
-import { fetchCurrentPrice, fetchCorrelationData, fetchMarketBreadth, fetchRealData, calculateVolumePressure, detectOpeningGap } from './services/dataService.ts';
-import fs from 'fs';
+import { SUPPORTED_ASSETS } from '../types.js';
+import { fetchCurrentPrice, fetchCorrelationData, fetchMarketBreadth, fetchRealData, calculateVolumePressure, detectOpeningGap } from '../services/dataService.js';
+import * as fs from 'fs';
 
 async function collectSnapshot(assetSymbol: string, label: string) {
   const asset = SUPPORTED_ASSETS.find(a => a.symbol === assetSymbol);

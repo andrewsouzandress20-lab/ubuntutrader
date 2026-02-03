@@ -1,6 +1,6 @@
 // Scheduler para enviar sinal 5 segundos após abertura dos mercados
-import fs from 'fs';
-import path from 'path';
+import * as fs from 'fs';
+import * as path from 'path';
 import cron from 'node-cron';
 import { sendTelegramSignal } from './services/telegramService';
 

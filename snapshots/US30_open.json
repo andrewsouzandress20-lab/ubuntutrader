@@ -1,0 +1,21 @@
+{
+  "quote": "39000",
+  "indices": {
+    "VIX": 15.2,
+    "DXY": 104.5,
+    "TNX": 4.1,
+    "RUT": 2000,
+    "SP500": 5000,
+    "NASDAQ": 16000
+  },
+  "volume": "12000",
+  "volumeBuy": "7000",
+  "volumeSell": "5000",
+  "breadth": {
+    "summary": {
+      "advancing": 20,
+      "declining": 10
+    }
+  },
+  "gap": 100
+}

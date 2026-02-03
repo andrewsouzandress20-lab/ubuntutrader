@@ -1,6 +1,6 @@
 // Script Node.js para atualizar o arquivo de horários de abertura diariamente
-import fs from 'fs';
-import path from 'path';
+import * as fs from 'fs';
+import * as path from 'path';
 
 const API_KEY = process.env.TWELVE_DATA_API_KEY || '';
 const OUT_PATH = path.resolve(__dirname, 'public/market_open_times.json');

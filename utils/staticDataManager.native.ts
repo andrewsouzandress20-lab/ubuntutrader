@@ -1,6 +1,6 @@
 // Versão para desktop/Electron: salva snapshot em arquivo local
-import fs from 'fs';
-import path from 'path';
+import * as fs from 'fs';
+import * as path from 'path';
 
 const STATIC_PATH = path.join(__dirname, '../indices_snapshot.json');
 const STATIC_TIMESTAMP_PATH = path.join(__dirname, '../indices_snapshot.timestamp');

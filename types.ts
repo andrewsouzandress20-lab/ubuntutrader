@@ -21,9 +21,10 @@ export interface Asset {
 export interface CorrelationData {
   symbol: string;
   name: string;
-  price: number;
-  change: number;
+  price?: number;
+  change?: number;
   correlation: 'positive' | 'negative';
+  info?: string;
 }
 
 export interface MarketBreadthSummary {

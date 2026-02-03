@@ -5,8 +5,8 @@ import cron from 'node-cron';
 import { sendTelegramSignal } from './services/telegramService.ts';
 import { SUPPORTED_ASSETS, Timeframe } from './types.ts';
 import { fetchCurrentPrice, fetchCorrelationData, fetchMarketBreadth, fetchRealData, calculateVolumePressure, detectOpeningGap } from './services/dataService.ts';
-import fs from 'fs';
-import path from 'path';
+import * as fs from 'fs';
+import * as path from 'path';
 
 console.log('==============================');
 console.log('🚦 UBUNTUTRADER SCHEDULER INICIADO!');

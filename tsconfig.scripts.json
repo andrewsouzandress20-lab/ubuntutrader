@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "outDir": "dist/scripts-esm",
+    "noEmit": false
+  },
+  "include": ["scripts/collect_snapshot.ts", "services/**/*.ts", "types.ts"]
+}
