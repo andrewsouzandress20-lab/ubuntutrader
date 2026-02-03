@@ -115,3 +115,15 @@ def main():
 
 if __name__ == '__main__':
     main()
+    # Após coletar os dados, dispara o envio do sinal para o Telegram
+    import subprocess
+    try:
+        print('Enviando sinal para o Telegram via send_signals_action.ts...')
+        result = subprocess.run([
+            'npx', 'ts-node', 'send_signals_action.ts', 'open'
+        ], capture_output=True, text=True)
+        print(result.stdout)
+        if result.stderr:
+            print('stderr:', result.stderr)
+    except Exception as e:
+        print('Erro ao tentar enviar sinal para o Telegram:', e)
