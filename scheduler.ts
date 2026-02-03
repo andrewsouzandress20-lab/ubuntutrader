@@ -7,8 +7,11 @@ import fs from 'fs';
 import path from 'path';
 
 console.log('==============================');
-console.log('Scheduler de sinal de abertura INICIADO!');
+console.log('🚦 UBUNTUTRADER SCHEDULER INICIADO!');
 console.log('Data/Hora:', new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }));
+console.log('Ambiente:', process.env.NODE_ENV || 'desconhecido');
+console.log('Backend URL:', process.env.VITE_BACKEND_URL || 'não definido');
+console.log('Telegram Chat ID:', process.env.VITE_TELEGRAM_CHAT_ID ? 'definido' : 'não definido');
 console.log('==============================');
 
 

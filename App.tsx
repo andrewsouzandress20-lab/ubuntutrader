@@ -802,7 +802,34 @@ const App: React.FC = () => {
                 </div>
               </div>
               
-              <MqlCalendarWidget />
+              {/* Widget Investing.com */}
+              <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <iframe
+                  src="https://sslecal2.investing.com?ecoDayBackground=%23000000&ecoDayFontColor=%23000000&columns=exc_flags,exc_currency,exc_importance,exc_actual,exc_forecast,exc_previous&category=_employment,_economicActivity,_inflation,_credit,_centralBanks,_confidenceIndex,_balance,_Bonds&importance=3&features=datepicker,timezone&countries=25,6,37,5,35,43,4,72&calType=day&timeZone=12&lang=12"
+                  width="320"
+                  height="467"
+                  frameBorder="0"
+                  allowTransparency={true}
+                  marginWidth="0"
+                  marginHeight="0"
+                  title="Calendário Econômico Investing.com"
+                  style={{ borderRadius: 8, background: '#000', maxWidth: '100%' }}
+                />
+                <div style={{ fontFamily: 'Arial, Helvetica, sans-serif', marginTop: 8 }}>
+                  <span style={{ fontSize: 11, color: '#333333', textDecoration: 'none' }}>
+                    Calendário Econômico fornecido por{' '}
+                    <a
+                      href="https://br.investing.com/"
+                      rel="nofollow"
+                      target="_blank"
+                      style={{ fontSize: 11, color: '#06529D', fontWeight: 'bold' }}
+                    >
+                      Investing.com Brasil
+                    </a>
+                    , o portal líder financeiro.
+                  </span>
+                </div>
+              </div>
            </div>
         </aside>
 

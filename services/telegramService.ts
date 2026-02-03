@@ -7,13 +7,8 @@ declare global {
 // Função para obter variáveis de ambiente de forma compatível (Vite ou Node.js)
 
 function getEnvVar(name: string): string | undefined {
-  // Vite
-  if (typeof import.meta !== 'undefined' && typeof import.meta.env !== 'undefined' && import.meta.env[name]) {
-    return import.meta.env[name];
-  }
-  // Node.js
+  // Node.js (prioritário para execução local e testes)
   if (typeof process !== 'undefined' && process.env) {
-    // Tenta buscar com e sem prefixo VITE_
     if (process.env[name]) return process.env[name];
     if (name.startsWith('VITE_')) {
       const noPrefix = name.replace(/^VITE_/, '');
@@ -22,6 +17,10 @@ function getEnvVar(name: string): string | undefined {
       const withPrefix = 'VITE_' + name;
       if (process.env[withPrefix]) return process.env[withPrefix];
     }
+  }
+  // Vite (browser)
+  if (typeof import.meta !== 'undefined' && typeof import.meta.env !== 'undefined' && import.meta.env[name]) {
+    return import.meta.env[name];
   }
   return undefined;
 }
@@ -199,7 +198,7 @@ export const sendTelegramSignal = async (
   }
 
   try {
-    const backendUrl = import.meta.env.VITE_BACKEND_URL || '';
+    const backendUrl = getEnvVar('VITE_BACKEND_URL') || '';
     const response = await fetch(`${backendUrl}/api/send-telegram`, {
       method: 'POST',
       headers: {
@@ -226,7 +225,7 @@ export const sendTelegramSignal = async (
  */
 export const sendTelegramAnalysis = async (message: string): Promise<void> => {
   try {
-    const backendUrl = import.meta.env.VITE_BACKEND_URL || '';
+    const backendUrl = getEnvVar('VITE_BACKEND_URL') || '';
     const response = await fetch(`${backendUrl}/api/send-telegram`, {
       method: 'POST',
       headers: {
