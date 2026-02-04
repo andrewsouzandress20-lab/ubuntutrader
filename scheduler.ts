@@ -86,6 +86,8 @@ function main() {
   scheduleSignal('HK50', times.HK50.opening_time_utc, '0-4');
 }
 
+
+export { collectAndSendSignal };
 main();
 
 

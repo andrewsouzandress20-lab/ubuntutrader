@@ -5,8 +5,15 @@ interface ErrorBoundaryState {
   error: any;
 }
 
-export class ErrorBoundary extends React.Component<{}, ErrorBoundaryState> {
-  constructor(props: {}) {
+interface ErrorBoundaryProps {
+  children?: React.ReactNode;
+}
+
+export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  declare state: ErrorBoundaryState;
+  declare props: ErrorBoundaryProps;
+
+  constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false, error: null };
   }
