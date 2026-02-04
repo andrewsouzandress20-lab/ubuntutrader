@@ -1,6 +1,6 @@
 
 import { GoogleGenAI } from "@google/genai";
-import { Candle, Asset, CorrelationData, EconomicEvent } from "../types";
+import { Candle, Asset, CorrelationData, EconomicEvent } from "../types.js";
 
 export const analyzeMarket = async (
   candles: Candle[], 

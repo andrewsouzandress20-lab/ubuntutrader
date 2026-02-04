@@ -28,6 +28,7 @@
     "dist",
     "dist/scripts",
     "dist/scripts-esm",
-    "node_modules"
+    "node_modules",
+    "legacy"
   ]
 }
