@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import * as fs from 'fs';
-import { sendTelegramSignal, sendTelegramAnalysis } from './services/telegramService';
+import { sendTelegramSignal, sendTelegramAnalysis } from './services/telegramService.js';
 
 
 async function sendSignalFromSnapshot(assetSymbol: string, label: string) {

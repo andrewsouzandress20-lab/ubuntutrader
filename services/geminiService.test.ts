@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { analyzeMarket } from '../services/geminiService';
+import { analyzeMarket } from '../services/geminiService.js';
 
 // Mock de dependências externas, se necessário
 vi.mock('../services/geminiService', () => ({
