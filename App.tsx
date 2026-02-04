@@ -6,7 +6,6 @@ import { fetchRealData, fetchCorrelationData, fetchMarketBreadth, calculateVolum
 import { fetchLocalJson } from './utils/fetchLocalJson.js';
 import { sendTelegramSignal, sendTelegramAnalysis } from './services/telegramService.js';
 import { detectSMCZones } from './utils/fvgDetector.js';
-
 import TradingChart from './components/TradingChart.js';
 import MqlCalendarWidget from './components/MqlCalendarWidget.js';
 import MacroHeaderAlert from './components/MacroHeaderAlert.js';

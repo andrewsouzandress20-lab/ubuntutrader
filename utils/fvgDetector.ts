@@ -1,4 +1,3 @@
-
 import { Candle, FVGType, SMCZone, ZoneType, IndicatorConfig } from '../types.js';
 
 export const detectSMCZones = (candles: Candle[], config: IndicatorConfig): SMCZone[] => {
