@@ -1,24 +1,21 @@
-import React from 'react';
+import React, { ReactNode } from 'react';
+
+interface ErrorBoundaryProps {
+  children?: ReactNode;
+}
 
 interface ErrorBoundaryState {
   hasError: boolean;
   error: any;
 }
 
-interface ErrorBoundaryProps {
-  children?: React.ReactNode;
-}
-
-export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  declare state: ErrorBoundaryState;
-  declare props: ErrorBoundaryProps;
-
+class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false, error: null };
   }
 
-  static getDerivedStateFromError(error: any) {
+  static getDerivedStateFromError(error: any): Partial<ErrorBoundaryState> {
     return { hasError: true, error };
   }
 
@@ -39,3 +36,5 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     return this.props.children;
   }
 }
+
+export default ErrorBoundary;

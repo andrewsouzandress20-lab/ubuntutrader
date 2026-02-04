@@ -2,9 +2,9 @@
 
 
 import cron from 'node-cron';
-import { sendTelegramSignal } from './services/telegramService';
-import { SUPPORTED_ASSETS, Timeframe } from './types';
-import { fetchCurrentPrice, fetchCorrelationData, fetchMarketBreadth, fetchRealData, calculateVolumePressure, detectOpeningGap } from './services/dataService';
+import { sendTelegramSignal } from './services/telegramService.js';
+import { SUPPORTED_ASSETS, Timeframe } from './types.js';
+import { fetchCurrentPrice, fetchCorrelationData, fetchMarketBreadth, fetchRealData, calculateVolumePressure, detectOpeningGap } from './services/dataService.js';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -28,7 +28,7 @@ function getOpenTimes() {
 // Agenda sinais de abertura conforme horários do arquivo JSON
 
 
-async function collectAndSendSignal(assetSymbol: string) {
+export async function collectAndSendSignal(assetSymbol: string) {
   try {
     const asset = SUPPORTED_ASSETS.find(a => a.symbol === assetSymbol);
     if (!asset) throw new Error('Ativo não suportado: ' + assetSymbol);
@@ -87,7 +87,6 @@ function main() {
 }
 
 
-export { collectAndSendSignal };
 main();
 
 

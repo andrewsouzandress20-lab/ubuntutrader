@@ -1,3 +1,32 @@
+## Execução de scripts TypeScript
+
+### Localmente (desenvolvimento)
+
+Você pode rodar scripts diretamente com ts-node:
+
+```
+npm run send-signals-open
+npm run send-analysis-open
+```
+
+Ou, para simular produção (igual ao Actions):
+
+```
+npx tsc --project tsconfig.scripts.json
+node dist/send_signals_action.js open
+node dist/send_signals_action.js open analysis
+```
+
+### No GitHub Actions (produção)
+
+O workflow já está configurado para:
+
+- Compilar o TypeScript (`npx tsc`)
+- Executar o arquivo .js gerado:
+   - `node dist/send_signals_action.js open`
+   - `node dist/send_signals_action.js open analysis`
+
+**Nunca use `npx ts-node ...` no GitHub Actions**, pois pode gerar erro de ES module.
 <div align="center">
 <img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
 </div>

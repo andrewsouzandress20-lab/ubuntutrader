@@ -13,7 +13,7 @@
     "types": [
       "node"
     ],
-    "moduleResolution": "bundler",
+    "moduleResolution": "node16",
     "isolatedModules": true,
     "moduleDetection": "force",
     
