@@ -1,0 +1,33 @@
+name: Pre-Open Analysis & Signal
+
+on:
+  schedule:
+    # US30: segunda a sexta, 15min antes da abertura (13:15 UTC)
+    - cron: '15 13 * * 1-5'
+    # HK50: domingo a quinta, 15min antes da abertura (01:15 UTC)
+    - cron: '15 1 * * 0-4'
+  workflow_dispatch:
+
+jobs:
+  pre-open-analysis:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: npm install
+      - name: Build TypeScript
+        run: npx tsc
+      - name: Coletar snapshot pré-abertura
+        run: node dist/scripts/collect_snapshot.js preopen
+      - name: Enviar análise para Telegram
+        run: node dist/send_signals_action.js preopen
+        env:
+          VITE_TELEGRAM_BOT_TOKEN: ${{ secrets.VITE_TELEGRAM_BOT_TOKEN }}
+          VITE_TELEGRAM_CHAT_ID: ${{ secrets.VITE_TELEGRAM_CHAT_ID }}
+          VITE_GEMINI_API_KEY: ${{ secrets.VITE_GEMINI_API_KEY }}
+          VITE_BACKEND_URL: ${{ secrets.VITE_BACKEND_URL }}
