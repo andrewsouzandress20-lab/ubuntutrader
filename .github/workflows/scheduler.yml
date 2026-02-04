@@ -22,6 +22,14 @@ jobs:
         run: npm install
       - name: Build TypeScript
         run: npx tsc
+      - name: Verificar dependência @vitejs/plugin-react
+        run: npm ls @vitejs/plugin-react || npm install @vitejs/plugin-react
+      - name: Debug tsconfig.json e package.json
+        run: |
+          echo 'tsconfig.json:'
+          cat tsconfig.json
+          echo 'package.json:'
+          cat package.json
       - name: Coletar snapshot na abertura
         run: node dist/scripts/collect_snapshot.js open
       - name: Enviar sinal usando snapshot
