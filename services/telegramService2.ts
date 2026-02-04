@@ -16,9 +16,8 @@ function getEnvVar(name: string): string | undefined {
       if (process.env[withPrefix]) return process.env[withPrefix];
     }
   }
-  if (typeof import.meta !== 'undefined' && typeof import.meta.env !== 'undefined' && import.meta.env[name]) {
-    return import.meta.env[name];
-  }
+  // Vite (browser) - ignorado no backend
+  // No backend, use apenas process.env
   return undefined;
 }
 

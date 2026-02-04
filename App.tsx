@@ -19,7 +19,7 @@ const App: React.FC = () => {
 
   // Ao iniciar o render, envia mensagem para o Telegram informando que o bot está rodando
   React.useEffect(() => {
-    const backendUrl = import.meta.env.VITE_BACKEND_URL || '';
+    const backendUrl = process.env.VITE_BACKEND_URL || '';
     if (!backendUrl) {
       console.warn('[TELEGRAM STARTUP] VITE_BACKEND_URL não definido');
       return;
