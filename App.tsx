@@ -15,9 +15,17 @@ import SuggestionBanner from './components/SuggestionBanner.js';
 const App: React.FC = () => {
     // ...contador de usuários online removido...
   const [isMobile, setIsMobile] = React.useState(false);
+  const clientSignalsEnabled = (() => {
+    // Permite habilitar manualmente o envio de mensagens pelo cliente; desligado por padrão.
+    // Precisa definir VITE_ENABLE_CLIENT_SIGNALS=true.
+    if (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_ENABLE_CLIENT_SIGNALS === 'true') return true;
+    if (typeof process !== 'undefined' && (process as any).env?.VITE_ENABLE_CLIENT_SIGNALS === 'true') return true;
+    return false;
+  })();
 
-  // Ao iniciar o render, envia mensagem para o Telegram informando que o bot está rodando
+  // Startup telegram do frontend fica desabilitado por padrão para evitar envio indevido.
   React.useEffect(() => {
+    if (!clientSignalsEnabled) return;
     const backendUrl = process.env.VITE_BACKEND_URL || '';
     if (!backendUrl) {
       console.warn('[TELEGRAM STARTUP] VITE_BACKEND_URL não definido');
@@ -40,7 +48,7 @@ const App: React.FC = () => {
       .catch(err => {
         console.error('[TELEGRAM STARTUP] Erro ao conectar backend Telegram:', err);
       });
-  }, []);
+  }, [clientSignalsEnabled]);
   React.useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth <= 600);
     checkMobile();
@@ -180,6 +188,7 @@ const App: React.FC = () => {
   }, [currentTime]);
 
   useEffect(() => {
+    if (!clientSignalsEnabled) return;
     const clockInterval = setInterval(() => {
       const now = new Date();
       setCurrentTime(now);
@@ -204,7 +213,7 @@ const App: React.FC = () => {
       }
     }, 1000);
     return () => clearInterval(clockInterval);
-  }, [selectedAsset, institutionalScore, lastAutoSignalDate]);
+  }, [selectedAsset, institutionalScore, lastAutoSignalDate, clientSignalsEnabled]);
 
   const loadData = useCallback(async (isInitialLoad = false) => {
     if (isInitialLoad) setLoading(true);

@@ -3,7 +3,7 @@
 
 import cron from 'node-cron';
 import { sendTelegramSignal } from './services/telegramService.js';
-import { SUPPORTED_ASSETS, Timeframe } from './types.js';
+import { SUPPORTED_ASSETS } from './types.js';
 import { fetchCurrentPrice, fetchCorrelationData, fetchMarketBreadth, fetchRealData, calculateVolumePressure, detectOpeningGap } from './services/dataService.js';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -12,8 +12,8 @@ console.log('==============================');
 console.log('🚦 UBUNTUTRADER SCHEDULER INICIADO!');
 console.log('Data/Hora:', new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }));
 console.log('Ambiente:', process.env.NODE_ENV || 'desconhecido');
-console.log('Backend URL:', process.env.VITE_BACKEND_URL || 'não definido');
-console.log('Telegram Chat ID:', process.env.VITE_TELEGRAM_CHAT_ID ? 'definido' : 'não definido');
+console.log('Backend URL:', process.env.BACKEND_URL || process.env.VITE_BACKEND_URL || 'não definido');
+console.log('Telegram Chat ID:', (process.env.TELEGRAM_CHAT_ID || process.env.VITE_TELEGRAM_CHAT_ID) ? 'definido' : 'não definido');
 console.log('==============================');
 
 
@@ -48,19 +48,24 @@ export async function collectAndSendSignal(assetSymbol: string) {
 
     // Score institucional (exemplo: proporção de empresas em alta)
     const score = breadth.summary.advancing - breadth.summary.declining;
+    const signal = score > 0 ? 'COMPRA' : score < 0 ? 'VENDA' : 'NEUTRO';
+    const strength = Math.abs(score) > 10 ? 'FORTE' : Math.abs(score) > 5 ? 'MODERADA' : 'FRACA';
 
     // Log para debug
     console.log('[SINAL] Dados coletados:', {
       quote, indices, breadth, volume, gap, score
     });
 
-    // Envia sinal para o Telegram
-    await sendTelegramSignal(
-      assetSymbol,
-      'COMPRA', // ou lógica baseada nos dados
-      'FORTE',  // ou lógica baseada nos dados
-      score
-    );
+    if (signal !== 'NEUTRO') {
+      await sendTelegramSignal(
+        assetSymbol,
+        signal,
+        strength,
+        score
+      );
+    } else {
+      console.log('[SINAL] Score neutro, não enviando mensagem.');
+    }
   } catch (err) {
     console.error('[SINAL] Erro ao coletar/enviar sinal:', err);
   }

@@ -1,7 +1,5 @@
 import { useEffect, useState } from 'react';
 
-const API_KEY = '94200850ee23473c98c21d8ab76db933';
-
 export interface MarketOpenTime {
   symbol: string;
   name: string;
@@ -9,23 +7,14 @@ export interface MarketOpenTime {
   timezone: string;
 }
 
-async function fetchMarketOpen(symbol: string): Promise<MarketOpenTime | null> {
-  try {
-    const url = `https://api.twelvedata.com/exchange?symbol=${symbol}&apikey=${API_KEY}`;
-    const res = await fetch(url);
-    const data = await res.json();
-    if (data && data.opening_time && data.timezone) {
-      return {
-        symbol,
-        name: data.name,
-        opening_time: data.opening_time,
-        timezone: data.timezone,
-      };
-    }
-    return null;
-  } catch (err) {
-    return null;
-  }
+/**
+ * Usa apenas o JSON local versionado (public/market_open_times.json)
+ * para evitar expor chaves de API no bundle.
+ */
+async function fetchLocalOpenTimes(): Promise<Record<string, MarketOpenTime>> {
+  const res = await fetch('/market_open_times.json');
+  if (!res.ok) throw new Error('Falha ao carregar horários locais');
+  return res.json();
 }
 
 export function useMarketOpenTimes() {
@@ -35,14 +24,16 @@ export function useMarketOpenTimes() {
 
   useEffect(() => {
     setLoading(true);
-    Promise.all([
-      fetchMarketOpen('NYSE'),
-      fetchMarketOpen('HKEX'),
-    ]).then(([nyseData, hkexData]) => {
-      setNyse(nyseData);
-      setHkex(hkexData);
-      setLoading(false);
-    });
+    fetchLocalOpenTimes()
+      .then(data => {
+        setNyse(data.NYSE || null);
+        setHkex(data.HKEX || null);
+      })
+      .catch(() => {
+        setNyse(null);
+        setHkex(null);
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   return { nyse, hkex, loading };

@@ -1,11 +1,5 @@
 import { Asset, Candle, Timeframe, CorrelationData, MarketBreadthSummary, BreadthCompanyDetails, DOW_30_TICKERS, HK_50_TICKERS, VolumePressure, GapData, EconomicEvent } from '../types.js';
 
-const PROXIES = [
-  'https://api.allorigins.win/get?url=',
-  'https://corsproxy.io/?',
-  'https://thingproxy.freeboard.io/fetch/',
-];
-
 // Dicionário simples para tradução de eventos comuns
 const EVENT_TRANSLATIONS: Record<string, string> = {
   'Unemployment Rate': 'Taxa de Desemprego',
@@ -36,57 +30,21 @@ const translateEvent = (title: string): string => {
   return title;
 };
 
-const fetchWithRetry = async (url: string, useProxy: boolean = true): Promise<any> => {
-  if (!useProxy) {
-    try {
-      const response = await fetch(url);
-      if (response.ok) return await response.json();
-    } catch (e) {
-      console.warn("Direct fetch failed, falling back to proxies...");
-    }
-  }
-
-  for (const proxy of PROXIES) {
-    try {
-      const targetUrl = proxy.includes('allorigins') ? proxy + encodeURIComponent(url) : proxy + url;
-      const response = await fetch(targetUrl);
-      if (!response.ok) continue;
-      
-      let data;
-      if (proxy.includes('allorigins')) {
-          const json = await response.json();
-          data = JSON.parse(json.contents);
-      } else {
-          data = await response.json();
-      }
-      return data;
-    } catch (error) {
-      console.warn(`Proxy ${proxy} failed for ${url}:`, error);
-    }
+const fetchWithRetry = async (url: string): Promise<any> => {
+  try {
+    const response = await fetch(url);
+    if (response.ok) return await response.json();
+    console.warn(`Request failed: ${url} -> ${response.status}`);
+  } catch (error) {
+    console.warn(`Request error for ${url}:`, error);
   }
   return null;
 };
 
 
-// Novo: busca do Yahoo via backend local
+// Simples wrapper para chamadas do Yahoo; hoje apenas requisita direto.
 const fetchFromYahoo = async (url: string): Promise<any> => {
-  // Detecta se é uma URL de cotação do Yahoo Finance
-  const match = url.match(/finance\.yahoo\.com\/v7\/finance\/quote\?symbols=([^&]+)/);
-  if (match) {
-    const symbol = match[1];
-    // Chama o backend local
-    const apiUrl = `/api/yahoo-quote?symbol=${encodeURIComponent(symbol)}`;
-    try {
-      const response = await fetch(apiUrl);
-      if (response.ok) return await response.json();
-    } catch (e) {
-      console.warn("Falha ao buscar do backend local:", e);
-    }
-    // Fallback: tenta proxy se backend falhar
-    return await fetchWithRetry(url, true);
-  }
-  // Para outras URLs, mantém proxy
-  return await fetchWithRetry(url, true);
+  return fetchWithRetry(url);
 };
 
 const fetchYahooData = async (symbol: string, interval: string, range: string = '5d'): Promise<any> => {
@@ -156,25 +114,14 @@ export const fetchCorrelationData = async (assetSymbol: string): Promise<Correla
     });
   }
 
-  if (results.length === 0) {
-    return targets.map(t => ({
-      symbol: t.symbol,
-      name: t.name,
-      price: 0,
-      change: (Math.random() - 0.5) * 2,
-      correlation: t.correlation,
-      info: (t as any).info || ''
-    }));
-  }
-
   return results;
 };
 
 export const fetchEconomicEvents = async (): Promise<EconomicEvent[]> => {
-    const calendarUrl = 'https://nfs.faireconomy.media/ff_calendar_thisweek.json';
+  const calendarUrl = 'https://nfs.faireconomy.media/ff_calendar_thisweek.json';
 
-    try {
-        const data = await fetchWithRetry(calendarUrl, true);
+  try {
+    const data = await fetchWithRetry(calendarUrl);
 
         if (!data || !Array.isArray(data)) {
             console.warn('Could not load economic calendar from primary source.');
@@ -244,24 +191,6 @@ export const fetchMarketBreadth = async (assetSymbol: string): Promise<{ summary
         status: status as 'BUY' | 'SELL'
       });
     });
-  }
-
-  if (details.length < 5) {
-    const fallbacks: BreadthCompanyDetails[] = [];
-    let adv = 0;
-    tickers.forEach(ticker => {
-      const mockChange = (Math.random() - 0.4) * 2.5;
-      fallbacks.push({
-        symbol: ticker,
-        change: mockChange,
-        status: mockChange >= 0 ? 'BUY' : 'SELL'
-      });
-      if (mockChange >= 0) adv++;
-    });
-    return {
-      summary: { advancing: adv, declining: tickers.length - adv, total: tickers.length },
-      details: fallbacks.sort((a, b) => b.change - a.change)
-    };
   }
 
   return {
