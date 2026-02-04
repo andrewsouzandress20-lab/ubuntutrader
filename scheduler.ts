@@ -17,9 +17,7 @@ console.log('Telegram Chat ID:', process.env.VITE_TELEGRAM_CHAT_ID ? 'definido' 
 console.log('==============================');
 
 
-// Lê horários de abertura do arquivo JSON (compatível ES Modules)
-const __filename = new URL(import.meta.url).pathname;
-const __dirname = path.dirname(__filename);
+// Lê horários de abertura do arquivo JSON (Node.js/ts-node CommonJS)
 const MARKET_FILE = path.resolve(__dirname, 'market_open_times.json');
 function getOpenTimes() {
   const raw = fs.readFileSync(MARKET_FILE, 'utf-8');

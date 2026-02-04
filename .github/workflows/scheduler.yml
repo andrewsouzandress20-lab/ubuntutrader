@@ -3,10 +3,8 @@ name: Scheduler Signals
 on:
   workflow_dispatch:
   schedule:
-    # US30: segunda a sexta às 13:30 UTC
-    - cron: '30 13 * * 1-5'
-    # HK50: domingo a quinta às 01:30 UTC
-    - cron: '30 1 * * 0-4'
+    - cron: '30 13 * * 1-5' # US30: segunda a sexta às 13:30 UTC
+    - cron: '30 1 * * 0-4'  # HK50: domingo a quinta às 01:30 UTC
 
 jobs:
   send-signals:
