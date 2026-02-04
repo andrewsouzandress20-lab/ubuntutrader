@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Candle, Asset, CorrelationData, EconomicEvent, SMCZone, FVGType, ZoneType } from '../types';
-import { analyzeMarket } from '../services/geminiService';
+import { Candle, Asset, CorrelationData, EconomicEvent, SMCZone, FVGType, ZoneType } from '../types.js';
 
 interface Props {
   candles: Candle[];

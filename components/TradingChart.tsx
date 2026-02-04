@@ -1,6 +1,6 @@
 
 import React, { useEffect, useRef } from 'react';
-import { Asset } from '../types';
+import { Asset } from '../types.js';
 
 interface Props {
   asset: Asset;
