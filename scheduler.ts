@@ -2,9 +2,9 @@
 
 
 import cron from 'node-cron';
-import { sendTelegramSignal } from './services/telegramService.js';
-import { SUPPORTED_ASSETS, Timeframe } from './types.js';
-import { fetchCurrentPrice, fetchCorrelationData, fetchMarketBreadth, fetchRealData, calculateVolumePressure, detectOpeningGap } from './services/dataService.js';
+import { sendTelegramSignal } from './services/telegramService';
+import { SUPPORTED_ASSETS, Timeframe } from './types';
+import { fetchCurrentPrice, fetchCorrelationData, fetchMarketBreadth, fetchRealData, calculateVolumePressure, detectOpeningGap } from './services/dataService';
 import * as fs from 'fs';
 import * as path from 'path';
 

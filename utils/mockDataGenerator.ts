@@ -1,5 +1,5 @@
 
-import { Candle, Asset, Timeframe, TIMEFRAMES } from '../types.js';
+import { Candle, Asset, Timeframe, TIMEFRAMES } from '../types';
 
 export const generateMockCandles = (count: number, asset: Asset, timeframe: Timeframe): Candle[] => {
   const candles: Candle[] = [];

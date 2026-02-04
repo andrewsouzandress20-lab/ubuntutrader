@@ -1,6 +1,6 @@
 import 'dotenv/config';
-import { SUPPORTED_ASSETS } from '../types.js';
-import { fetchCurrentPrice, fetchCorrelationData, fetchMarketBreadth, fetchRealData, calculateVolumePressure, detectOpeningGap } from '../services/dataService.js';
+import { SUPPORTED_ASSETS } from '../types';
+import { fetchCurrentPrice, fetchCorrelationData, fetchMarketBreadth, fetchRealData, calculateVolumePressure, detectOpeningGap } from '../services/dataService';
 import * as fs from 'fs';
 
 async function collectSnapshot(assetSymbol: string, label: string) {

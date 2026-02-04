@@ -2,7 +2,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import cron from 'node-cron';
-import { sendTelegramSignal } from './services/telegramService.js';
+import { sendTelegramSignal } from './services/telegramService';
 
 const MARKET_FILE = path.resolve(__dirname, 'public/market_open_times.json');
 

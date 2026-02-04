@@ -1,5 +1,5 @@
 
-import { Candle, FVGType, SMCZone, ZoneType, IndicatorConfig } from '../types.js';
+import { Candle, FVGType, SMCZone, ZoneType, IndicatorConfig } from '../types';
 
 export const detectSMCZones = (candles: Candle[], config: IndicatorConfig): SMCZone[] => {
   const zones: SMCZone[] = [];

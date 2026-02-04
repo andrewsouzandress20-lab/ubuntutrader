@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { EconomicEvent, Asset } from '../types.js';
+import { EconomicEvent, Asset } from '../types';
 
 interface Props {
   events: EconomicEvent[];

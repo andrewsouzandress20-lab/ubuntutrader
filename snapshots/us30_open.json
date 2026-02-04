@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-02-04T11:46:19.459Z",
+  "timestamp": "2026-02-04T12:02:15.501Z",
   "asset": "US30",
   "label": "open",
   "quote": null,
@@ -8,7 +8,7 @@
       "symbol": "^VIX",
       "name": "🥇 VIX (CBOE) – PRINCIPAL",
       "price": 0,
-      "change": 0.9854261027753501,
+      "change": -0.46223466778298694,
       "correlation": "negative",
       "info": "Volatilidade do S&P 500\nGatilho de risco do mercado americano\nImpacto imediato no US30"
     },
@@ -16,7 +16,7 @@
       "symbol": "^GSPC",
       "name": "🥈 S&P 500 (US500)",
       "price": 0,
-      "change": 0.19930194666726297,
+      "change": -0.5162994319743048,
       "correlation": "positive",
       "info": "Benchmark do mercado dos EUA\nDireção estrutural do dia\nConfirma viés do Dow"
     },
@@ -24,7 +24,7 @@
       "symbol": "^IXIC",
       "name": "🥉 NASDAQ (US100)",
       "price": 0,
-      "change": -0.5714980797133937,
+      "change": -0.15161607631494634,
       "correlation": "positive",
       "info": "Apetite a risco / tecnologia\nConfirma ou diverge do US30"
     },
@@ -32,7 +32,7 @@
       "symbol": "DX-Y.NYB",
       "name": "4️⃣ DXY (Índice do Dólar)",
       "price": 0,
-      "change": -0.05341199930257856,
+      "change": 0.1258746994526443,
       "correlation": "negative",
       "info": "Fluxo de capital global\nFiltro secundário (risk-off)"
     },
@@ -40,7 +40,7 @@
       "symbol": "^TNX",
       "name": "5️⃣ Treasury 10Y (US10Y)",
       "price": 0,
-      "change": 0.7373913690175553,
+      "change": -0.8626427826242766,
       "correlation": "negative",
       "info": "Custo do dinheiro\nPressão direta em ações"
     },
@@ -48,166 +48,166 @@
       "symbol": "^RUT",
       "name": "6️⃣ Russell 2000 (US2000)",
       "price": 0,
-      "change": 0.29269552439022695,
+      "change": 0.6746486051229141,
       "correlation": "positive",
       "info": "Força da economia doméstica\nConfirmação de breadth"
     }
   ],
   "breadth": {
     "summary": {
-      "advancing": 19,
-      "declining": 11,
+      "advancing": 14,
+      "declining": 16,
       "total": 30
     },
     "details": [
       {
-        "symbol": "AXP",
-        "change": 1.474049460053112,
+        "symbol": "KO",
+        "change": 1.3402968102100574,
         "status": "BUY"
       },
       {
-        "symbol": "TRV",
-        "change": 1.3963501715975588,
+        "symbol": "MCD",
+        "change": 1.325767104547598,
         "status": "BUY"
       },
       {
-        "symbol": "MSFT",
-        "change": 1.3952751399213614,
-        "status": "BUY"
-      },
-      {
-        "symbol": "UNH",
-        "change": 1.331163733278302,
-        "status": "BUY"
-      },
-      {
-        "symbol": "BA",
-        "change": 1.3058713784929623,
-        "status": "BUY"
-      },
-      {
-        "symbol": "AMGN",
-        "change": 1.3053935999843804,
-        "status": "BUY"
-      },
-      {
-        "symbol": "WMT",
-        "change": 1.1982807626208967,
+        "symbol": "CVX",
+        "change": 1.2705948997687202,
         "status": "BUY"
       },
       {
         "symbol": "CRM",
-        "change": 1.0684559425171722,
-        "status": "BUY"
-      },
-      {
-        "symbol": "V",
-        "change": 0.963469035526005,
-        "status": "BUY"
-      },
-      {
-        "symbol": "CSCO",
-        "change": 0.8510831110410338,
-        "status": "BUY"
-      },
-      {
-        "symbol": "WBA",
-        "change": 0.6165271640334504,
-        "status": "BUY"
-      },
-      {
-        "symbol": "JPM",
-        "change": 0.6147113051823638,
-        "status": "BUY"
-      },
-      {
-        "symbol": "JNJ",
-        "change": 0.6030784998786956,
-        "status": "BUY"
-      },
-      {
-        "symbol": "AMZN",
-        "change": 0.236923817317512,
-        "status": "BUY"
-      },
-      {
-        "symbol": "HON",
-        "change": 0.21180926418438467,
-        "status": "BUY"
-      },
-      {
-        "symbol": "VZ",
-        "change": 0.1719180267758849,
-        "status": "BUY"
-      },
-      {
-        "symbol": "PG",
-        "change": 0.12157789304830802,
+        "change": 1.2290480898179943,
         "status": "BUY"
       },
       {
         "symbol": "NKE",
-        "change": 0.06945472081519688,
+        "change": 1.0316318982967756,
         "status": "BUY"
       },
       {
-        "symbol": "IBM",
-        "change": 0.06475211728982355,
+        "symbol": "AMGN",
+        "change": 0.6838282919046923,
+        "status": "BUY"
+      },
+      {
+        "symbol": "UNH",
+        "change": 0.6606691467900414,
+        "status": "BUY"
+      },
+      {
+        "symbol": "MSFT",
+        "change": 0.44487926504206216,
+        "status": "BUY"
+      },
+      {
+        "symbol": "BA",
+        "change": 0.39470622065392924,
+        "status": "BUY"
+      },
+      {
+        "symbol": "JNJ",
+        "change": 0.2577807825833042,
+        "status": "BUY"
+      },
+      {
+        "symbol": "HON",
+        "change": 0.1755594638797836,
         "status": "BUY"
       },
       {
         "symbol": "SHW",
-        "change": -0.014837597810020142,
-        "status": "SELL"
+        "change": 0.1280535303740704,
+        "status": "BUY"
       },
       {
-        "symbol": "CAT",
-        "change": -0.1935735150979509,
-        "status": "SELL"
+        "symbol": "IBM",
+        "change": 0.10964335131850717,
+        "status": "BUY"
       },
       {
-        "symbol": "MCD",
-        "change": -0.20191952248316575,
-        "status": "SELL"
+        "symbol": "JPM",
+        "change": 0.053481664385110206,
+        "status": "BUY"
       },
       {
-        "symbol": "HD",
-        "change": -0.20430174877580698,
-        "status": "SELL"
-      },
-      {
-        "symbol": "KO",
-        "change": -0.34586159475277795,
-        "status": "SELL"
-      },
-      {
-        "symbol": "CVX",
-        "change": -0.6264936676137361,
-        "status": "SELL"
-      },
-      {
-        "symbol": "DIS",
-        "change": -0.8156012486123929,
-        "status": "SELL"
-      },
-      {
-        "symbol": "INTC",
-        "change": -0.8354136922919303,
+        "symbol": "GS",
+        "change": -0.22680357747428298,
         "status": "SELL"
       },
       {
         "symbol": "AAPL",
-        "change": -0.8620043820637019,
+        "change": -0.26638199386982586,
         "status": "SELL"
       },
       {
-        "symbol": "GS",
-        "change": -0.8941307537754217,
+        "symbol": "CSCO",
+        "change": -0.4174233217749426,
+        "status": "SELL"
+      },
+      {
+        "symbol": "HD",
+        "change": -0.48166416935417317,
         "status": "SELL"
       },
       {
         "symbol": "MMM",
-        "change": -0.8942973912196589,
+        "change": -0.4935082803542723,
+        "status": "SELL"
+      },
+      {
+        "symbol": "V",
+        "change": -0.5183072283680856,
+        "status": "SELL"
+      },
+      {
+        "symbol": "PG",
+        "change": -0.5342539480053393,
+        "status": "SELL"
+      },
+      {
+        "symbol": "CAT",
+        "change": -0.570722070701189,
+        "status": "SELL"
+      },
+      {
+        "symbol": "TRV",
+        "change": -0.6147723551219999,
+        "status": "SELL"
+      },
+      {
+        "symbol": "AMZN",
+        "change": -0.6919527731693995,
+        "status": "SELL"
+      },
+      {
+        "symbol": "WBA",
+        "change": -0.7487425284268778,
+        "status": "SELL"
+      },
+      {
+        "symbol": "AXP",
+        "change": -0.8404605271131529,
+        "status": "SELL"
+      },
+      {
+        "symbol": "DIS",
+        "change": -0.9017897700320815,
+        "status": "SELL"
+      },
+      {
+        "symbol": "INTC",
+        "change": -0.9198967195665144,
+        "status": "SELL"
+      },
+      {
+        "symbol": "WMT",
+        "change": -0.9527427261022497,
+        "status": "SELL"
+      },
+      {
+        "symbol": "VZ",
+        "change": -0.9584270651406455,
         "status": "SELL"
       }
     ]
