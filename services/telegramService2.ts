@@ -28,7 +28,7 @@ export const sendTelegramSignal2 = async (
   strength: string,
   score: number
 ) => {
-  // ...código original da função sendTelegramSignal...
-  // Para simplificar, apenas um log:
-  console.log(`[MOCK] Enviando sinal para ${assetSymbol} (${signal}, ${strength}, score: ${score})`);
+    // Implement the real signal sending logic here
+    // For example, you might want to send a request to a Telegram API
+    console.log(`[SINAL] Enviando sinal para ${assetSymbol} (${signal}, ${strength}, score: ${score})`);
 };

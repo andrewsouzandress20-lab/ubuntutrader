@@ -11,7 +11,7 @@ export const analyzeMarket = async (
   extraData: { score: number, bullFVG: number, bearFVG: number }
 ): Promise<{ text: string, sources?: any[] }> => {
 const ai = new GoogleGenAI({
-  apiKey: import.meta.env.VITE_GEMINI_API_KEY
+  apiKey: process.env.VITE_GEMINI_API_KEY
 });
 
 
