@@ -39,6 +39,45 @@ const INDEX_MAP_HK50: Record<string, string> = {
   'DX-Y.NYB': 'DXY'
 };
 
+// Preferir preços coletados no TradingView (coleta de 11h30) e só cair para Yahoo se faltar
+const TV_SYMBOL_MAP: Record<string, string> = {
+  'VIX': 'VIX',
+  'DXY': 'DXY',
+  'VHSI': 'VHSI',
+  'CNH=X': 'CNH',
+  'USDJPY=X': 'USDJPY',
+  '000001.SS': 'SSE',
+  'US500': 'SP500',
+  'US100': 'NASDAQ',
+  'JP225': 'NIKKEI',
+  'US30': 'US30',
+  'HK50': 'HK50',
+  '^TNX': 'TNX',
+  '^RUT': 'RUT'
+};
+
+const loadTradingViewIndices = (): Record<string, number> => {
+  const file = 'indices_snapshot.json';
+  if (!fs.existsSync(file)) return {};
+  try {
+    const raw = JSON.parse(fs.readFileSync(file, 'utf-8'));
+    const indices = raw?.indices ?? {};
+    const out: Record<string, number> = {};
+    Object.entries(indices).forEach(([sym, data]: any) => {
+      const key = TV_SYMBOL_MAP[sym];
+      if (!key) return;
+      const priceRaw = (data as any)?.price;
+      if (priceRaw === null || priceRaw === undefined) return;
+      const num = parseFloat(String(priceRaw).replace(/,/g, ''));
+      if (!Number.isNaN(num)) out[key] = num;
+    });
+    return out;
+  } catch (error) {
+    console.warn('[TV SNAPSHOT] Falha ao ler indices_snapshot.json:', error);
+    return {};
+  }
+};
+
 const mapIndices = (snapshot: Snapshot, map: Record<string, string>): Record<string, number> => {
   const out: Record<string, number> = {};
   if (!snapshot.indices) return out;
@@ -188,6 +227,7 @@ async function sendSignalFromSnapshot(assetSymbol: string, label: string) {
   }
   const snapshot: Snapshot = JSON.parse(fs.readFileSync(file, 'utf-8'));
   const indicesMap = assetSymbol === 'HK50' ? INDEX_MAP_HK50 : INDEX_MAP_US30;
+  const tvIndices = loadTradingViewIndices();
 
   const { total: score } = computeScore(assetSymbol, snapshot);
   const signal = resolveSignal(score);
@@ -205,7 +245,8 @@ async function sendSignalFromSnapshot(assetSymbol: string, label: string) {
     score,
     {
       quote: snapshot.quote ?? undefined,
-      indices: mapIndices(snapshot, indicesMap),
+        // TradingView (11h30) tem prioridade; se não vier, usamos Yahoo do snapshot atual
+        indices: { ...mapIndices(snapshot, indicesMap), ...tvIndices },
       volumeBuy: snapshot.volume?.buyPercent,
       volumeSell: snapshot.volume?.sellPercent,
       breadthAdv: snapshot.breadth?.summary?.advancing,

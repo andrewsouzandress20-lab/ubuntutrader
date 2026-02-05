@@ -1,16 +1,17 @@
 name: Pre-Open Analysis & Signal
 
 on:
-  schedule:
-    # US30: 11:30 BRT (14:30 UTC) segunda a sexta
-    - cron: '30 14 * * 1-5'
-    # HK50: 21:30 BRT (00:30 UTC) domingo a quinta
-    - cron: '30 0 * * 1-5'
+  # Dispara assim que a coleta TradingView das 11h30 BRT terminar (prioridade TradingView)
+  workflow_run:
+    workflows: ["Coleta TradingView Agendada"]
+    types: [completed]
+  # Permite disparo manual para testes
   workflow_dispatch:
 
 jobs:
   pre-open-analysis:
     runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -20,11 +21,19 @@ jobs:
           python3 -m pip install --upgrade pip
           pip install requests beautifulsoup4
 
-      - name: Coletar indices TradingView
-        run: python3 fetch_indices_tradingview.py
+      - name: Baixar snapshot TradingView da coleta
+        if: github.event_name == 'workflow_run'
+        uses: actions/download-artifact@v4
+        with:
+          name: snapshots
+          path: tradingview_snapshot
+          run-id: ${{ github.event.workflow_run.id }}
 
-      - name: Coletar empresas TradingView
-        run: python3 fetch_companies_tradingview.py
+      - name: Disponibilizar snapshot TradingView
+        if: github.event_name == 'workflow_run'
+        run: |
+          cp tradingview_snapshot/indices_snapshot.json . || true
+          cp tradingview_snapshot/companies_snapshot.json . || true
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
