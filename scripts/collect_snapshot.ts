@@ -35,18 +35,19 @@ const fallbackCorrelationFromTV = (assetSymbol: string, tv: Record<string, numbe
   };
   const list: CorrelationData[] = [];
   if (assetSymbol === 'HK50') {
-    pushIf(list, 'VHSI', 'VHSI', 'negative');
+    // Usar os mesmos símbolos esperados no restante do código (Yahoo-style)
+    pushIf(list, '^VHSI', 'VHSI', 'negative');
     pushIf(list, 'CNH=X', 'CNH', 'negative');
-    pushIf(list, 'JP225', 'Nikkei', 'positive');
+    pushIf(list, '^N225', 'Nikkei', 'positive');
     pushIf(list, '000001.SS', 'SSE', 'positive');
-    pushIf(list, 'US500', 'US500', 'positive');
+    pushIf(list, '^GSPC', 'US500', 'positive');
     pushIf(list, 'USDJPY=X', 'USDJPY', 'negative');
-    pushIf(list, 'DXY', 'DXY', 'negative');
+    pushIf(list, 'DX-Y.NYB', 'DXY', 'negative');
   } else {
-    pushIf(list, 'VIX', 'VIX', 'negative');
-    pushIf(list, 'US500', 'S&P 500', 'positive');
-    pushIf(list, 'US100', 'NASDAQ', 'positive');
-    pushIf(list, 'DXY', 'DXY', 'negative');
+    pushIf(list, '^VIX', 'VIX', 'negative');
+    pushIf(list, '^GSPC', 'S&P 500', 'positive');
+    pushIf(list, '^IXIC', 'NASDAQ', 'positive');
+    pushIf(list, 'DX-Y.NYB', 'DXY', 'negative');
     pushIf(list, '^TNX', 'TNX', 'negative');
     pushIf(list, '^RUT', 'RUT', 'positive');
   }
