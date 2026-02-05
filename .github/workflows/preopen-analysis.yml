@@ -21,6 +21,9 @@ jobs:
           python3 -m pip install --upgrade pip
           pip install requests beautifulsoup4
 
+      - name: Coletar indices TradingView (prioridade)
+        run: python3 fetch_indices_tradingview.py
+
       - name: Baixar snapshot TradingView da coleta
         if: github.event_name == 'workflow_run'
         uses: actions/download-artifact@v4
@@ -30,10 +33,9 @@ jobs:
           run-id: ${{ github.event.workflow_run.id }}
 
       - name: Disponibilizar snapshot TradingView
-        if: github.event_name == 'workflow_run'
         run: |
-          cp tradingview_snapshot/indices_snapshot.json . || true
-          cp tradingview_snapshot/companies_snapshot.json . || true
+          cp tradingview_snapshot/indices_snapshot.json . 2>/dev/null || true
+          cp tradingview_snapshot/companies_snapshot.json . 2>/dev/null || true
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
