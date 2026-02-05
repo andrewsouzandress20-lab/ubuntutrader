@@ -24,6 +24,9 @@ jobs:
       - name: Coletar indices TradingView (prioridade)
         run: python3 fetch_indices_tradingview.py
 
+      - name: Coletar empresas TradingView (breadth)
+        run: python3 fetch_companies_tradingview.py
+
       - name: Aguardar disponibilidade do artifact da coleta
         if: github.event_name == 'workflow_run'
         run: sleep 10

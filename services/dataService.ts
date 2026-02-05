@@ -72,6 +72,38 @@ const fetchYahooData = async (symbol: string, interval: string, range: string = 
   return data?.chart?.result?.[0];
 };
 
+export const fetchYahooChartPriceChange = async (symbol: string): Promise<{ price: number | null; change: number | null }> => {
+  const chartUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=5d`;
+  const data = await fetchFromYahoo(chartUrl);
+  const result = data?.chart?.result?.[0];
+  if (!result) return { price: null, change: null };
+
+  const closes = result.indicators?.quote?.[0]?.close ?? [];
+  let lastClose: number | null = null;
+  let prevClose: number | null = null;
+  for (let i = closes.length - 1; i >= 0; i--) {
+    const val = closes[i];
+    if (typeof val === 'number' && !Number.isNaN(val)) {
+      if (lastClose === null) {
+        lastClose = val;
+      } else {
+        prevClose = val;
+        break;
+      }
+    }
+  }
+
+  const metaPrice = result.meta?.regularMarketPrice;
+  const price = typeof metaPrice === 'number' ? metaPrice : lastClose;
+  const base = typeof result.meta?.chartPreviousClose === 'number' ? result.meta.chartPreviousClose : prevClose;
+  let change: number | null = null;
+  if (price !== null && base !== null && base !== 0 && !Number.isNaN(base)) {
+    change = ((price - base) / base) * 100;
+  }
+
+  return { price: price ?? null, change };
+};
+
 export const fetchCurrentPrice = async (asset: Asset): Promise<number | null> => {
   let yahooSymbol = '';
   if (asset.symbol === 'US30') yahooSymbol = '^DJI';
@@ -82,9 +114,13 @@ export const fetchCurrentPrice = async (asset: Asset): Promise<number | null> =>
   const data = await fetchFromYahoo(quoteUrl);
   
   if (data?.quoteResponse?.result && data.quoteResponse.result.length > 0) {
-    return data.quoteResponse.result[0].regularMarketPrice || null;
+    const price = data.quoteResponse.result[0].regularMarketPrice;
+    if (typeof price === 'number' && !Number.isNaN(price)) return price;
   }
-  return null;
+
+  // Fallback para o endpoint de chart (menos bloqueado por rate limit)
+  const chart = await fetchYahooChartPriceChange(yahooSymbol);
+  return chart.price;
 };
 
 export const fetchCorrelationData = async (assetSymbol: string): Promise<CorrelationData[]> => {
@@ -114,22 +150,32 @@ export const fetchCorrelationData = async (assetSymbol: string): Promise<Correla
   const symbols = targets.map(t => t.symbol).join(',');
   const quoteUrl = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbols}`;
   const data = await fetchFromYahoo(quoteUrl);
-  
-  const results: any[] = [];
 
+  const quoteMap = new Map<string, any>();
   if (data?.quoteResponse?.result && data.quoteResponse.result.length > 0) {
-    targets.forEach(target => {
-      const quote = data.quoteResponse.result.find((r: any) => r.symbol === target.symbol);
-      if (quote) {
-        results.push({
-          symbol: target.symbol,
-          name: target.name,
-          price: quote.regularMarketPrice || 0,
-          change: quote.regularMarketChangePercent || 0,
-          correlation: target.correlation,
-          info: (target as any).info || ''
-        });
-      }
+    data.quoteResponse.result.forEach((q: any) => quoteMap.set(q.symbol, q));
+  }
+
+  const results: any[] = [];
+  for (const target of targets) {
+    const quote = quoteMap.get(target.symbol);
+    let price = quote?.regularMarketPrice;
+    let change = quote?.regularMarketChangePercent;
+
+    if (price === null || price === undefined || Number.isNaN(price) || change === null || change === undefined || Number.isNaN(change)) {
+      const fallback = await fetchYahooChartPriceChange(target.symbol);
+      if (price === null || price === undefined || Number.isNaN(price)) price = fallback.price;
+      if (change === null || change === undefined || Number.isNaN(change)) change = fallback.change;
+    }
+
+    results.push({
+      symbol: target.symbol,
+      name: target.name,
+      // Se mesmo assim vier vazio, mantemos como undefined para permitir fill posterior no ensureSnapshot
+      price: (price !== null && price !== undefined && !Number.isNaN(price)) ? price : undefined as any,
+      change: (change !== null && change !== undefined && !Number.isNaN(change)) ? change : undefined as any,
+      correlation: target.correlation,
+      info: (target as any).info || ''
     });
   }
 
@@ -199,7 +245,7 @@ export const fetchMarketBreadth = async (assetSymbol: string): Promise<{ summary
       let advancing = 0;
       let declining = 0;
       companies.forEach((c: any) => {
-        const change = typeof c.changePercent === 'number' ? c.changePercent : 0;
+        const change = (typeof c.changePercent === 'number' && !Number.isNaN(c.changePercent)) ? c.changePercent : 0;
         const status = change >= 0 ? 'BUY' : 'SELL';
         if (status === 'BUY') advancing++; else declining++;
         details.push({ symbol: c.ticker, change, status: status as 'BUY' | 'SELL' });
@@ -215,7 +261,7 @@ export const fetchMarketBreadth = async (assetSymbol: string): Promise<{ summary
     // se arquivo não existir ou erro de parse, cai para Yahoo
   }
 
-  // 2) Fallback Yahoo
+  // 2) Fallback Yahoo (quote) + chart (menos bloqueado)
   const symbols = tickers.join(',');
   const quoteUrl = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbols}`;
   const data = await fetchFromYahoo(quoteUrl);
@@ -223,18 +269,39 @@ export const fetchMarketBreadth = async (assetSymbol: string): Promise<{ summary
   let advancing = 0;
   let declining = 0;
 
+  const quoteMap = new Map<string, any>();
   if (data?.quoteResponse?.result && data.quoteResponse.result.length > 0) {
-    data.quoteResponse.result.forEach((quote: any) => {
-      const change = quote.regularMarketChangePercent || 0;
-      const status = change >= 0 ? 'BUY' : 'SELL';
-      if (status === 'BUY') advancing++; else declining++;
-      details.push({ symbol: quote.symbol, change, status: status as 'BUY' | 'SELL' });
-    });
+    data.quoteResponse.result.forEach((q: any) => quoteMap.set(q.symbol, q));
   }
 
+  for (const ticker of tickers) {
+    const quote = quoteMap.get(ticker);
+    let change = quote?.regularMarketChangePercent;
+    if (change === null || change === undefined || Number.isNaN(change)) {
+      const fallback = await fetchYahooChartPriceChange(ticker);
+      change = fallback.change;
+    }
+    if (change === null || change === undefined || Number.isNaN(change)) change = 0;
+    const status = change >= 0 ? 'BUY' : 'SELL';
+    if (status === 'BUY') advancing++; else declining++;
+    details.push({ symbol: ticker, change, status: status as 'BUY' | 'SELL' });
+  }
+
+  const summary = { advancing, declining, total: details.length };
+  const sorted = details.sort((a, b) => b.change - a.change);
+  if (!Number.isFinite(summary.advancing) || !Number.isFinite(summary.declining) || summary.total === 0) {
+    return fallbackEmptyBreadth(tickers);
+  }
+
+  return { summary, details: sorted };
+};
+
+// Se tudo falhar, devolve breadth neutro com tickers conhecidos para evitar payload vazio
+export const fallbackEmptyBreadth = (tickers: string[]): { summary: MarketBreadthSummary, details: BreadthCompanyDetails[] } => {
+  const details = tickers.map(t => ({ symbol: t, change: 0, status: 'BUY' as const }));
   return {
-    summary: { advancing, declining, total: details.length },
-    details: details.sort((a, b) => b.change - a.change)
+    summary: { advancing: tickers.length, declining: 0, total: tickers.length },
+    details
   };
 };
 
