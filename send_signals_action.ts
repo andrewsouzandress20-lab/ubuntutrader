@@ -272,15 +272,20 @@ async function sendAnalysisFromSnapshot(assetSymbol: string, label: string) {
 }
 
 
-// Se o argumento for "analysis", envia análise detalhada, senão envia sinal padrão
+// Se o argumento for "analysis", envia análise detalhada; permite selecionar ativos via TARGET_ASSETS="US30,HK50"
 (async () => {
   const label = process.argv[2] || 'open';
   const mode = process.argv[3] || (label === 'preopen' ? 'analysis' : 'signal');
-  if (mode === 'analysis') {
-    await sendAnalysisFromSnapshot('US30', label);
-    await sendAnalysisFromSnapshot('HK50', label);
-  } else {
-    await sendSignalFromSnapshot('US30', label);
-    await sendSignalFromSnapshot('HK50', label);
+  const targets = (process.env.TARGET_ASSETS || 'US30,HK50')
+    .split(',')
+    .map(t => t.trim().toUpperCase())
+    .filter(Boolean);
+
+  for (const asset of targets) {
+    if (mode === 'analysis') {
+      await sendAnalysisFromSnapshot(asset, label);
+    } else {
+      await sendSignalFromSnapshot(asset, label);
+    }
   }
 })();
