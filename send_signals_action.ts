@@ -78,6 +78,13 @@ const loadTradingViewIndices = (): Record<string, number> => {
   }
 };
 
+const loadTradingViewQuote = (assetSymbol: string): number | undefined => {
+  const tv = loadTradingViewIndices();
+  const key = assetSymbol.toUpperCase();
+  const val = tv[key];
+  return typeof val === 'number' && !Number.isNaN(val) ? val : undefined;
+};
+
 const mapIndices = (snapshot: Snapshot, map: Record<string, string>): Record<string, number> => {
   const out: Record<string, number> = {};
   if (!snapshot.indices) return out;
@@ -228,6 +235,7 @@ async function sendSignalFromSnapshot(assetSymbol: string, label: string) {
   const snapshot: Snapshot = JSON.parse(fs.readFileSync(file, 'utf-8'));
   const indicesMap = assetSymbol === 'HK50' ? INDEX_MAP_HK50 : INDEX_MAP_US30;
   const tvIndices = loadTradingViewIndices();
+  const tvQuote = loadTradingViewQuote(assetSymbol);
 
   const { total: score } = computeScore(assetSymbol, snapshot);
   const signal = resolveSignal(score);
@@ -244,7 +252,7 @@ async function sendSignalFromSnapshot(assetSymbol: string, label: string) {
     strength,
     score,
     {
-      quote: snapshot.quote ?? undefined,
+        quote: snapshot.quote ?? tvQuote ?? undefined,
         // TradingView (11h30) tem prioridade; se não vier, usamos Yahoo do snapshot atual
         indices: { ...mapIndices(snapshot, indicesMap), ...tvIndices },
       volumeBuy: snapshot.volume?.buyPercent,
@@ -266,6 +274,10 @@ async function sendAnalysisFromSnapshot(assetSymbol: string, label: string) {
     return;
   }
   const snapshot: Snapshot = JSON.parse(fs.readFileSync(file, 'utf-8'));
+  if (!snapshot.quote) {
+    const tvQuote = loadTradingViewQuote(assetSymbol);
+    if (tvQuote !== undefined) snapshot.quote = tvQuote;
+  }
   const { message, score, signal, strength } = buildAnalysisMessage(assetSymbol, label, snapshot);
   await sendTelegramAnalysis(message);
   console.log(`[ANALISE] (${assetSymbol}) ${label} | sinal ${signal} ${strength} (score ${score}) enviado.`);
