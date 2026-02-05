@@ -1,4 +1,5 @@
 import { Asset, Candle, Timeframe, CorrelationData, MarketBreadthSummary, BreadthCompanyDetails, DOW_30_TICKERS, HK_50_TICKERS, VolumePressure, GapData, EconomicEvent } from '../types.js';
+import fs from 'fs';
 
 // Dicionário simples para tradução de eventos comuns
 const EVENT_TRANSLATIONS: Record<string, string> = {
@@ -31,10 +32,28 @@ const translateEvent = (title: string): string => {
 };
 
 const fetchWithRetry = async (url: string): Promise<any> => {
+  const request = async (u: string) => {
+    return fetch(u, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; ubuntutrader/1.0)'
+      }
+    });
+  };
+
   try {
-    const response = await fetch(url);
+    let response = await request(url);
     if (response.ok) return await response.json();
-    console.warn(`Request failed: ${url} -> ${response.status}`);
+
+    // Se Yahoo responder 401/403, tenta fallback em query2
+    if ((response.status === 401 || response.status === 403) && url.includes('query1.finance.yahoo.com')) {
+      const alt = url.replace('query1.finance.yahoo.com', 'query2.finance.yahoo.com');
+      console.warn(`Request failed (${response.status}), tentando fallback: ${alt}`);
+      response = await request(alt);
+      if (response.ok) return await response.json();
+      console.warn(`Fallback também falhou: ${alt} -> ${response.status}`);
+    } else {
+      console.warn(`Request failed: ${url} -> ${response.status}`);
+    }
   } catch (error) {
     console.warn(`Request error for ${url}:`, error);
   }
@@ -168,10 +187,37 @@ export const fetchEconomicEvents = async (): Promise<EconomicEvent[]> => {
 export const fetchMarketBreadth = async (assetSymbol: string): Promise<{ summary: MarketBreadthSummary, details: BreadthCompanyDetails[] }> => {
   let tickers = DOW_30_TICKERS;
   if (assetSymbol === 'HK50') tickers = HK_50_TICKERS;
-  
+
+  // 1) Tenta companies_snapshot.json do TradingView (prioridade)
+  try {
+    const file = fs.readFileSync('companies_snapshot.json', 'utf-8');
+    const snapshot = JSON.parse(file);
+    const indexKey = assetSymbol === 'HK50' ? 'HK50' : 'US30';
+    const companies = snapshot?.indices?.[indexKey];
+    if (Array.isArray(companies) && companies.length > 0) {
+      const details: BreadthCompanyDetails[] = [];
+      let advancing = 0;
+      let declining = 0;
+      companies.forEach((c: any) => {
+        const change = typeof c.changePercent === 'number' ? c.changePercent : 0;
+        const status = change >= 0 ? 'BUY' : 'SELL';
+        if (status === 'BUY') advancing++; else declining++;
+        details.push({ symbol: c.ticker, change, status: status as 'BUY' | 'SELL' });
+      });
+      if (details.length > 0) {
+        return {
+          summary: { advancing, declining, total: details.length },
+          details: details.sort((a, b) => b.change - a.change)
+        };
+      }
+    }
+  } catch (err) {
+    // se arquivo não existir ou erro de parse, cai para Yahoo
+  }
+
+  // 2) Fallback Yahoo
   const symbols = tickers.join(',');
   const quoteUrl = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbols}`;
-  
   const data = await fetchFromYahoo(quoteUrl);
   const details: BreadthCompanyDetails[] = [];
   let advancing = 0;
@@ -181,24 +227,13 @@ export const fetchMarketBreadth = async (assetSymbol: string): Promise<{ summary
     data.quoteResponse.result.forEach((quote: any) => {
       const change = quote.regularMarketChangePercent || 0;
       const status = change >= 0 ? 'BUY' : 'SELL';
-      
-      if (status === 'BUY') advancing++;
-      else declining++;
-
-      details.push({
-        symbol: quote.symbol,
-        change: change,
-        status: status as 'BUY' | 'SELL'
-      });
+      if (status === 'BUY') advancing++; else declining++;
+      details.push({ symbol: quote.symbol, change, status: status as 'BUY' | 'SELL' });
     });
   }
 
   return {
-    summary: {
-      advancing,
-      declining,
-      total: details.length
-    },
+    summary: { advancing, declining, total: details.length },
     details: details.sort((a, b) => b.change - a.change)
   };
 };

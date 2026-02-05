@@ -72,7 +72,7 @@ const fallbackCorrelationFromTV = (assetSymbol: string, tv: Record<string, numbe
 
 const tvSnapshot = loadTradingViewSnapshot();
 
-async function collectSnapshot(assetSymbol: string, label: string) {
+export async function collectSnapshot(assetSymbol: string, label: string) {
   const asset = SUPPORTED_ASSETS.find(a => a.symbol === assetSymbol);
   if (!asset) throw new Error('Ativo não suportado: ' + assetSymbol);
 
@@ -105,8 +105,11 @@ async function collectSnapshot(assetSymbol: string, label: string) {
   console.log(`[SNAPSHOT] Dados salvos em ${outPath}`);
 }
 
-(async () => {
-  const label = process.argv[2] || 'open';
-  await collectSnapshot('US30', label);
-  await collectSnapshot('HK50', label);
-})();
+// Executa somente quando chamado diretamente via CLI (não em import)
+if (process.argv[1] && process.argv[1].includes('collect_snapshot')) {
+  (async () => {
+    const label = process.argv[2] || 'open';
+    await collectSnapshot('US30', label);
+    await collectSnapshot('HK50', label);
+  })();
+}

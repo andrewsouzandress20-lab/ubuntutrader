@@ -1,6 +1,10 @@
 import 'dotenv/config';
 import * as fs from 'fs';
 import { sendTelegramSignal, sendTelegramAnalysis } from './services/telegramService.js';
+import { collectSnapshot } from './scripts/collect_snapshot.js';
+import { fetchCorrelationData, fetchMarketBreadth, fetchRealData, calculateVolumePressure, detectOpeningGap, fetchCurrentPrice } from './services/dataService.js';
+import { SUPPORTED_ASSETS } from './types.js';
+import { spawnSync } from 'child_process';
 
 
 type Snapshot = {
@@ -9,6 +13,102 @@ type Snapshot = {
   volume?: { buyPercent?: number; sellPercent?: number };
   breadth?: { summary?: { advancing?: number; declining?: number } };
   gap?: { percent?: number };
+};
+
+const ensureSnapshotData = async (assetSymbol: string, snapshot: Snapshot, snapshotPath?: string): Promise<Snapshot> => {
+  const asset = SUPPORTED_ASSETS.find(a => a.symbol === assetSymbol);
+  if (!asset) return snapshot;
+
+  let tvIndices = loadTradingViewIndices();
+  let tvQuote = loadTradingViewQuote(assetSymbol);
+  if (!tvIndices || Object.keys(tvIndices).length === 0 || tvQuote === undefined) {
+    ensureTvSnapshot();
+    tvIndices = loadTradingViewIndices();
+    tvQuote = loadTradingViewQuote(assetSymbol);
+  }
+  let changed = false;
+
+  if (!snapshot.indices || snapshot.indices.length === 0) {
+    // Prioridade: TradingView
+    const tvFallback = buildTvCorrelation(assetSymbol, tvIndices);
+    if (tvFallback.length > 0) {
+      snapshot.indices = tvFallback as any;
+      changed = true;
+    } else {
+      // Somente se TV estiver vazio, tenta Yahoo
+      let indices: Snapshot['indices'] = [];
+      try {
+        indices = await fetchCorrelationData(assetSymbol);
+      } catch (err) {
+        console.warn('[SNAPSHOT] Falha ao buscar indices Yahoo:', err);
+      }
+      if (indices && indices.length > 0) {
+        snapshot.indices = indices;
+        changed = true;
+      }
+    }
+  }
+
+  if (!snapshot.breadth || !snapshot.breadth.summary) {
+    try {
+      const breadth = await fetchMarketBreadth(assetSymbol);
+      snapshot.breadth = breadth as any;
+      changed = true;
+    } catch (err) {
+      console.warn('[SNAPSHOT] Falha ao buscar breadth:', err);
+    }
+  }
+
+  const needVolume = !snapshot.volume || snapshot.volume.buyPercent === undefined || snapshot.volume.sellPercent === undefined;
+  const needGap = !snapshot.gap || snapshot.gap.percent === undefined;
+  if (needVolume || needGap) {
+    try {
+      const candles = await fetchRealData(asset, '1m');
+      if (needVolume) {
+        snapshot.volume = calculateVolumePressure(candles) as any;
+        changed = true;
+      }
+      if (needGap) {
+        const gapData = detectOpeningGap(candles, asset);
+        snapshot.gap = { percent: gapData.percent } as any;
+        changed = true;
+      }
+    } catch (err) {
+      console.warn('[SNAPSHOT] Falha ao buscar candles para volume/gap:', err);
+    }
+  }
+
+  if (snapshot.quote === undefined || snapshot.quote === null) {
+    // Prioridade: TradingView
+    let quote = tvQuote;
+    if (quote === undefined || quote === null) {
+      try {
+        quote = await fetchCurrentPrice(asset);
+      } catch (err) {
+        console.warn('[SNAPSHOT] Falha ao buscar cotação Yahoo:', err);
+      }
+      // Ainda vazio? tenta refazer TV uma vez
+      if (quote === null || quote === undefined) {
+        ensureTvSnapshot();
+        tvQuote = loadTradingViewQuote(assetSymbol);
+        quote = tvQuote ?? quote;
+      }
+    }
+    if (quote !== null && quote !== undefined) {
+      snapshot.quote = quote;
+      changed = true;
+    }
+  }
+
+  if (changed && snapshotPath) {
+    try {
+      fs.writeFileSync(snapshotPath, JSON.stringify(snapshot, null, 2));
+    } catch (err) {
+      console.warn('[SNAPSHOT] Falha ao atualizar snapshot enriquecido:', err);
+    }
+  }
+
+  return snapshot;
 };
 
 type ScoreBreakdown = {
@@ -56,6 +156,58 @@ const TV_SYMBOL_MAP: Record<string, string> = {
   '^RUT': 'RUT'
 };
 
+const SYMBOL_TO_TV_KEY: Record<string, string> = {
+  '^VIX': 'VIX',
+  'DX-Y.NYB': 'DXY',
+  '^VHSI': 'VHSI',
+  'CNH=X': 'CNH',
+  'USDJPY=X': 'USDJPY',
+  '000001.SS': 'SSE',
+  '^GSPC': 'SP500',
+  '^IXIC': 'NASDAQ',
+  '^RUT': 'RUT',
+  '^TNX': 'TNX',
+  '^N225': 'NIKKEI'
+};
+
+const buildTvCorrelation = (assetSymbol: string, tv: Record<string, number>) => {
+  const get = (key: string) => {
+    const val = tv[key];
+    return typeof val === 'number' && !Number.isNaN(val) ? val : undefined;
+  };
+  if (assetSymbol === 'HK50') {
+    return [
+      { symbol: '^VHSI', price: get('VHSI') },
+      { symbol: 'CNH=X', price: get('CNH') },
+      { symbol: '^N225', price: get('NIKKEI') },
+      { symbol: '000001.SS', price: get('SSE') },
+      { symbol: '^GSPC', price: get('SP500') },
+      { symbol: 'USDJPY=X', price: get('USDJPY') },
+      { symbol: 'DX-Y.NYB', price: get('DXY') }
+    ].filter(e => e.price !== undefined);
+  }
+  return [
+    { symbol: '^VIX', price: get('VIX') },
+    { symbol: '^GSPC', price: get('SP500') },
+    { symbol: '^IXIC', price: get('NASDAQ') },
+    { symbol: 'DX-Y.NYB', price: get('DXY') },
+    { symbol: '^TNX', price: get('TNX') },
+    { symbol: '^RUT', price: get('RUT') }
+  ].filter(e => e.price !== undefined);
+};
+
+let tvFetched = false;
+const ensureTvSnapshot = () => {
+  if (tvFetched) return;
+  tvFetched = true;
+  try {
+    const res = spawnSync('python3', ['fetch_indices_tradingview.py'], { stdio: 'inherit' });
+    if (res.status !== 0) console.warn('[TV] fetch_indices_tradingview.py retornou status', res.status);
+  } catch (err) {
+    console.warn('[TV] Falha ao executar fetch_indices_tradingview.py:', err);
+  }
+};
+
 const loadTradingViewIndices = (): Record<string, number> => {
   const file = 'indices_snapshot.json';
   if (!fs.existsSync(file)) return {};
@@ -85,12 +237,17 @@ const loadTradingViewQuote = (assetSymbol: string): number | undefined => {
   return typeof val === 'number' && !Number.isNaN(val) ? val : undefined;
 };
 
-const mapIndices = (snapshot: Snapshot, map: Record<string, string>): Record<string, number> => {
-  const out: Record<string, number> = {};
+const mapIndices = (snapshot: Snapshot, map: Record<string, string>): Record<string, number | string> => {
+  const out: Record<string, number | string> = {};
   if (!snapshot.indices) return out;
   snapshot.indices.forEach(entry => {
     const key = map[entry.symbol];
-    if (key && typeof entry.price === 'number') out[key] = entry.price;
+    if (!key) return;
+    if (typeof entry.change === 'number') {
+      out[key] = entry.change; // usar variação percentual quando disponível
+    } else if (typeof entry.price === 'number') {
+      out[key] = entry.price; // fallback para preço se não houver change
+    }
   });
   return out;
 };
@@ -101,9 +258,23 @@ const getChange = (snapshot: Snapshot, symbols: string | string[]): number | nul
   return typeof found?.change === 'number' ? found.change : null;
 };
 
+const tvPriceForSymbol = (symbol: string, tv: Record<string, number>): number | undefined => {
+  const key = SYMBOL_TO_TV_KEY[symbol];
+  const val = key ? tv[key] : undefined;
+  return typeof val === 'number' && !Number.isNaN(val) ? val : undefined;
+};
+
 const formatPercent = (value: number | null | undefined): string => {
   if (value === null || value === undefined || Number.isNaN(value)) return '-';
   return `${value.toFixed(2)}%`;
+};
+
+const formatPercentOrPrice = (symbol: string, change: number | null, tv: Record<string, number>): string => {
+  if (change !== null && change !== undefined && !Number.isNaN(change)) {
+    return `${change.toFixed(2)}%`;
+  }
+  const price = tvPriceForSymbol(symbol, tv);
+  return price !== undefined ? `${price}` : '-';
 };
 
 const resolveSignal = (score: number): 'COMPRA' | 'VENDA' | 'NEUTRO' => {
@@ -169,7 +340,7 @@ const computeScore = (assetSymbol: string, snapshot: Snapshot): { total: number;
   };
 };
 
-const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snapshot) => {
+const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snapshot, tvIndices: Record<string, number>) => {
   const { total, parts } = computeScore(assetSymbol, snapshot);
   const signal = resolveSignal(total);
   const strength = resolveStrength(total);
@@ -180,9 +351,9 @@ const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snap
   const dec = snapshot.breadth?.summary?.declining ?? 0;
   const gapPercent = snapshot.gap?.percent ?? null;
   const dxyChange = getChange(snapshot, 'DX-Y.NYB');
-  const volIndexChange = assetSymbol === 'HK50'
-    ? getChange(snapshot, '^VHSI')
-    : getChange(snapshot, '^VIX');
+  const volIndexSymbol = assetSymbol === 'HK50' ? '^VHSI' : '^VIX';
+  const volIndexChange = getChange(snapshot, volIndexSymbol);
+  const volIndexPrice = tvPriceForSymbol(volIndexSymbol, tvIndices);
   const labelText = label === 'preopen' ? 'PRÉ-ABERTURA' : label.toUpperCase();
 
   const headerAsset = assetSymbol === 'HK50' ? '🇭🇰 HK50' : '🇺🇸 US30';
@@ -195,9 +366,11 @@ const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snap
     let pos = 0; let neg = 0; const labels: string[] = [];
     relevant.forEach(sym => {
       const change = getChange(snapshot, sym);
-      if (change === null) return;
-      if (change > 0) pos += 1; else if (change < 0) neg += 1;
-      labels.push(`${sym}: ${formatPercent(change)}`);
+      if (change !== null) {
+        if (change > 0) pos += 1; else if (change < 0) neg += 1;
+      }
+      const rendered = formatPercentOrPrice(sym, change, tvIndices);
+      labels.push(`${sym}: ${rendered}`);
     });
     const direction = pos === neg ? '⚖️ Neutro' : pos > neg ? '🟢 Risk-on' : '🔴 Risk-off';
     return `${direction} (${pos}↑ / ${neg}↓) | ${labels.join(' · ')}`;
@@ -210,10 +383,10 @@ const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snap
     '',
     'Checklist rápido:',
     `- Volume: ${volumeBuy !== null && volumeSell !== null ? `${volumeBuy.toFixed(1)}% compra vs ${volumeSell.toFixed(1)}% venda` : 'dados indisponíveis'} ${parts.volume > 0 ? '🟢' : parts.volume < 0 ? '🔴' : '⚖️'}`,
-    `- ${volIndexName}: ${formatPercent(volIndexChange)} ${parts.volIndex > 0 ? '😌 Queda favorece compra' : parts.volIndex < 0 ? '⚠️ Alta pressiona venda' : 'sem dado'}`,
+    `- ${volIndexName}: ${formatPercentOrPrice(volIndexSymbol, volIndexChange, tvIndices)} ${parts.volIndex > 0 ? '😌 Queda favorece compra' : parts.volIndex < 0 ? '⚠️ Alta pressiona venda' : volIndexPrice !== undefined ? 'preço via TV' : 'sem dado'}`,
     `- Breadth: ${adv} alta x ${dec} baixa ${parts.breadth > 0 ? '🟢' : parts.breadth < 0 ? '🔴' : '⚖️'}`,
     `- Índices chave: ${indexSummary()}`,
-    `- DXY: ${formatPercent(dxyChange)} ${parts.dxy > 0 ? '🟢 Risk-on' : parts.dxy < 0 ? '🔴 Risk-off' : 'sem dado'}`,
+    `- DXY: ${formatPercentOrPrice('DX-Y.NYB', dxyChange, tvIndices)} ${parts.dxy > 0 ? '🟢 Risk-on' : parts.dxy < 0 ? '🔴 Risk-off' : tvPriceForSymbol('DX-Y.NYB', tvIndices) !== undefined ? 'preço via TV' : 'sem dado'}`,
     `- Gap de abertura: ${gapPercent !== null ? formatPercent(gapPercent) : '-'} ${parts.gap === 0 ? '⚖️ neutro' : parts.gap > 0 ? '🟢 a favor de compra' : '🔴 a favor de venda'}`,
     '',
     'Decisão:',
@@ -229,10 +402,15 @@ const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snap
 async function sendSignalFromSnapshot(assetSymbol: string, label: string) {
   const file = `snapshots/${assetSymbol.toLowerCase()}_${label}.json`;
   if (!fs.existsSync(file)) {
-    console.error(`[SNAPSHOT] Arquivo não encontrado: ${file}`);
+    console.warn(`[SNAPSHOT] Arquivo não encontrado (${file}); coletando agora...`);
+    await collectSnapshot(assetSymbol, label);
+  }
+  if (!fs.existsSync(file)) {
+    console.error(`[SNAPSHOT] Ainda não foi possível criar o snapshot: ${file}`);
     return;
   }
-  const snapshot: Snapshot = JSON.parse(fs.readFileSync(file, 'utf-8'));
+  let snapshot: Snapshot = JSON.parse(fs.readFileSync(file, 'utf-8'));
+  snapshot = await ensureSnapshotData(assetSymbol, snapshot, file);
   const indicesMap = assetSymbol === 'HK50' ? INDEX_MAP_HK50 : INDEX_MAP_US30;
   const tvIndices = loadTradingViewIndices();
   const tvQuote = loadTradingViewQuote(assetSymbol);
@@ -270,15 +448,21 @@ async function sendSignalFromSnapshot(assetSymbol: string, label: string) {
 async function sendAnalysisFromSnapshot(assetSymbol: string, label: string) {
   const file = `snapshots/${assetSymbol.toLowerCase()}_${label}.json`;
   if (!fs.existsSync(file)) {
-    console.error(`[SNAPSHOT] Arquivo não encontrado: ${file}`);
+    console.warn(`[SNAPSHOT] Arquivo não encontrado (${file}); coletando agora...`);
+    await collectSnapshot(assetSymbol, label);
+  }
+  if (!fs.existsSync(file)) {
+    console.error(`[SNAPSHOT] Ainda não foi possível criar o snapshot: ${file}`);
     return;
   }
-  const snapshot: Snapshot = JSON.parse(fs.readFileSync(file, 'utf-8'));
+  let snapshot: Snapshot = JSON.parse(fs.readFileSync(file, 'utf-8'));
+  snapshot = await ensureSnapshotData(assetSymbol, snapshot, file);
+  const tvIndices = loadTradingViewIndices();
   if (!snapshot.quote) {
     const tvQuote = loadTradingViewQuote(assetSymbol);
     if (tvQuote !== undefined) snapshot.quote = tvQuote;
   }
-  const { message, score, signal, strength } = buildAnalysisMessage(assetSymbol, label, snapshot);
+  const { message, score, signal, strength } = buildAnalysisMessage(assetSymbol, label, snapshot, tvIndices);
   await sendTelegramAnalysis(message);
   console.log(`[ANALISE] (${assetSymbol}) ${label} | sinal ${signal} ${strength} (score ${score}) enviado.`);
 }

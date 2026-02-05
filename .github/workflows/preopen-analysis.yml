@@ -31,6 +31,7 @@ jobs:
       - name: Baixar snapshot TradingView da coleta
         if: github.event_name == 'workflow_run'
         uses: actions/download-artifact@v4
+        continue-on-error: true # se o artifact expirar ou não existir, seguimos com a coleta local
         with:
           name: snapshots
           path: tradingview_snapshot

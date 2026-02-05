@@ -6,8 +6,8 @@ from datetime import datetime
 
 # URLs das páginas de componentes dos índices no TradingView
 INDEX_COMPONENTS = {
-        'US30': 'https://www.tradingview.com/symbols/DJI/components/',
-        'HK50': 'https://www.tradingview.com/symbols/HKEX-HSI/components/'
+    'US30': 'https://www.tradingview.com/symbols/DJI/components/',
+    'HK50': 'https://www.tradingview.com/symbols/HKEX-HSI/components/'
 }
 
 # Fallback: listas completas dos tickers (do types.ts)
@@ -29,30 +29,54 @@ HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 }
 
+
+def parse_number(text):
+    if text is None:
+        return None
+    t = text.replace('%', '').replace(',', '').strip()
+    try:
+        return float(t)
+    except Exception:
+        return None
+
+
+def scrape_table(table):
+    rows = []
+    for row in table.find_all('tr')[1:]:
+        cols = row.find_all('td')
+        if len(cols) >= 5:
+            ticker = cols[0].text.strip()
+            name = cols[1].text.strip()
+            price = parse_number(cols[2].text)
+            change_abs = parse_number(cols[3].text)
+            change_pct = parse_number(cols[4].text)
+            rows.append({
+                'ticker': ticker,
+                'name': name,
+                'price': price,
+                'change': change_abs,
+                'changePercent': change_pct
+            })
+    return rows
+
 def fetch_companies(url, fallback_tickers):
     companies = []
     try:
         resp = requests.get(url, headers=HEADERS, timeout=10)
-        from bs4 import BeautifulSoup
         soup = BeautifulSoup(resp.text, 'html.parser')
         table = soup.find('table')
         if table:
-            for row in table.find_all('tr')[1:]:
-                cols = row.find_all('td')
-                if len(cols) >= 3:
-                    ticker = cols[0].text.strip()
-                    name = cols[1].text.strip()
-                    sector = cols[2].text.strip() if len(cols) > 2 else ''
-                    companies.append({'ticker': ticker, 'name': name, 'sector': sector})
+            companies = scrape_table(table)
     except Exception as e:
         print(f'Erro ao buscar empresas em {url}: {e}')
-    # Se não conseguiu coletar ou lista incompleta, usa fallback
+
+    # Se lista incompleta, usa fallback de tickers mas mantém estrutura com price/change None
+    tickers_set = set([c['ticker'] for c in companies])
     if len(companies) < len(fallback_tickers):
         print(f'Usando fallback para completar lista de {len(fallback_tickers)} tickers.')
-        tickers_set = set([c['ticker'] for c in companies])
         for t in fallback_tickers:
             if t not in tickers_set:
-                companies.append({'ticker': t, 'name': '', 'sector': ''})
+                companies.append({'ticker': t, 'name': '', 'sector': '', 'price': None, 'change': None, 'changePercent': None})
     return companies
 
 def main():
