@@ -45,7 +45,8 @@ const fallbackCorrelationFromTV = (assetSymbol: string, tv: Record<string, numbe
   const pushIf = (list: CorrelationData[], sym: string, name: string, corr: 'positive' | 'negative') => {
     const val = tvLookup(tv, sym);
     if (typeof val === 'number' && !Number.isNaN(val)) {
-      list.push({ symbol: sym, name, price: val, change: 0, correlation: corr });
+      // sem variação disponível no snapshot do TradingView; deixa change indefinido
+      list.push({ symbol: sym, name, price: val, change: undefined as any, correlation: corr });
     }
   };
   const list: CorrelationData[] = [];
