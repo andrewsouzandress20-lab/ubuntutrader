@@ -2,10 +2,10 @@ name: Pre-Open Analysis & Signal
 
 on:
   schedule:
-    # US30: segunda a sexta, 15min antes da abertura (13:15 UTC)
-    - cron: '15 13 * * 1-5'
-    # HK50: domingo a quinta, 15min antes da abertura (01:15 UTC)
-    - cron: '15 1 * * 0-4'
+    # US30: 11:30 BRT (14:30 UTC) segunda a sexta
+    - cron: '30 14 * * 1-5'
+    # HK50: 21:30 BRT (00:30 UTC) domingo a quinta
+    - cron: '30 0 * * 1-5'
   workflow_dispatch:
 
 jobs:
@@ -14,18 +14,34 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+
+      - name: Instalar dependencias Python (TradingView)
+        run: |
+          python3 -m pip install --upgrade pip
+          pip install requests beautifulsoup4
+
+      - name: Coletar indices TradingView
+        run: python3 fetch_indices_tradingview.py
+
+      - name: Coletar empresas TradingView
+        run: python3 fetch_companies_tradingview.py
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+
       - name: Install dependencies
         run: npm install
+
       - name: Build TypeScript
         run: npx tsc
+
       - name: Coletar snapshot pré-abertura
         run: node dist/scripts/collect_snapshot.js preopen
+
       - name: Enviar análise para Telegram
-        run: node dist/send_signals_action.js preopen
+        run: node dist/send_signals_action.js preopen analysis
         env:
           VITE_TELEGRAM_BOT_TOKEN: ${{ secrets.VITE_TELEGRAM_BOT_TOKEN }}
           VITE_TELEGRAM_CHAT_ID: ${{ secrets.VITE_TELEGRAM_CHAT_ID }}

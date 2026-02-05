@@ -2,12 +2,10 @@ name: Coleta TradingView Agendada
 
 on:
   schedule:
-    # US30 - 15 minutos antes e no horário da abertura (BRT = UTC-3)
-    - cron: '15 14 * * *'  # 11:15 BRT
-    - cron: '30 14 * * *'  # 11:30 BRT
-    # HK50 - 15 minutos antes e no horário da abertura (BRT = UTC-3)
-    - cron: '15 1 * * *'   # 22:15 BRT
-    - cron: '30 1 * * *'   # 22:30 BRT
+    # US30 - 11:30 BRT (14:30 UTC) segunda a sexta
+    - cron: '30 14 * * 1-5'
+    # HK50 - 21:30 BRT (00:30 UTC) segunda a sexta
+    - cron: '30 0 * * 1-5'
   workflow_dispatch:
 
 jobs:
