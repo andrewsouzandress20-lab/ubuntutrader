@@ -244,13 +244,17 @@ export const fetchMarketBreadth = async (assetSymbol: string): Promise<{ summary
       const details: BreadthCompanyDetails[] = [];
       let advancing = 0;
       let declining = 0;
+      let valid = 0;
       companies.forEach((c: any) => {
-        const change = (typeof c.changePercent === 'number' && !Number.isNaN(c.changePercent)) ? c.changePercent : 0;
-        const status = change >= 0 ? 'BUY' : 'SELL';
-        if (status === 'BUY') advancing++; else declining++;
-        details.push({ symbol: c.ticker, change, status: status as 'BUY' | 'SELL' });
+        if (typeof c.changePercent === 'number' && !Number.isNaN(c.changePercent)) {
+          const change = c.changePercent;
+          const status = change >= 0 ? 'BUY' : 'SELL';
+          if (status === 'BUY') advancing++; else declining++;
+          details.push({ symbol: c.ticker, change, status: status as 'BUY' | 'SELL' });
+          valid++;
+        }
       });
-      if (details.length > 0) {
+      if (valid > 0 && details.length > 0) {
         return {
           summary: { advancing, declining, total: details.length },
           details: details.sort((a, b) => b.change - a.change)
