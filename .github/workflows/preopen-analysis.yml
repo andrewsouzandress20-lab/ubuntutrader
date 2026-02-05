@@ -56,10 +56,10 @@ jobs:
       - name: Coletar snapshot pré-abertura
         run: node dist/scripts/collect_snapshot.js preopen
 
-      - name: Enviar análise para Telegram
+      - name: Enviar sinal (formatação final) para Telegram
         env:
           TARGET_ASSETS: US30
           VITE_TELEGRAM_BOT_TOKEN: ${{ secrets.VITE_TELEGRAM_BOT_TOKEN }}
           VITE_TELEGRAM_CHAT_ID: ${{ secrets.VITE_TELEGRAM_CHAT_ID }}
           VITE_BACKEND_URL: ${{ secrets.VITE_BACKEND_URL }}
-        run: node dist/send_signals_action.js preopen analysis
+        run: node dist/send_signals_action.js preopen signal
