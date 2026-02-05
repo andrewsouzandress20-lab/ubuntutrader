@@ -1,0 +1,47 @@
+name: Pre-Open Analysis HK50
+
+on:
+  schedule:
+    # HK50 - 21:30 BRT (00:30 UTC) domingo a quinta
+    - cron: '30 0 * * 1-5'
+  workflow_dispatch:
+
+jobs:
+  pre-open-analysis-hk50:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Instalar dependencias Python (TradingView)
+        run: |
+          python3 -m pip install --upgrade pip
+          pip install requests beautifulsoup4
+
+      - name: Coletar indices TradingView (prioridade)
+        run: python3 fetch_indices_tradingview.py
+
+      - name: Coletar empresas TradingView (breadth)
+        run: python3 fetch_companies_tradingview.py
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build TypeScript
+        run: npx tsc
+
+      - name: Coletar snapshot pré-abertura HK50
+        run: node dist/scripts/collect_snapshot.js preopen
+
+      - name: Enviar sinal HK50 para Telegram
+        env:
+          TARGET_ASSETS: HK50
+          VITE_TELEGRAM_BOT_TOKEN: ${{ secrets.VITE_TELEGRAM_BOT_TOKEN }}
+          VITE_TELEGRAM_CHAT_ID: ${{ secrets.VITE_TELEGRAM_CHAT_ID }}
+          VITE_BACKEND_URL: ${{ secrets.VITE_BACKEND_URL }}
+        run: node dist/send_signals_action.js preopen signal
