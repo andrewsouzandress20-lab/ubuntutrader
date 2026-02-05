@@ -272,16 +272,41 @@ async function sendAnalysisFromSnapshot(assetSymbol: string, label: string) {
 }
 
 
+const inferAssetsByTime = (): string[] => {
+  const now = new Date();
+  const fmt = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'America/Sao_Paulo',
+    hour12: false,
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+  const parts = fmt.format(now).split(':');
+  const hour = parseInt(parts[0], 10);
+  const minute = parseInt(parts[1], 10);
+  const minutesOfDay = hour * 60 + minute;
+
+  // Janela HK50: 21:00-23:59 e 00:00-02:00 BRT
+  const inHkNight = minutesOfDay >= 21 * 60 || minutesOfDay < 2 * 60;
+  // Janela US30: 10:30-13:30 BRT (abrange pré 11h30)
+  const inUsMorning = minutesOfDay >= 10 * 60 + 30 && minutesOfDay <= 13 * 60 + 30;
+
+  if (inHkNight && !inUsMorning) return ['HK50'];
+  if (inUsMorning && !inHkNight) return ['US30'];
+  if (inUsMorning && inHkNight) return ['US30', 'HK50'];
+  return ['US30']; // fallback seguro
+};
+
 // Se o argumento for "analysis", envia análise detalhada; permite selecionar ativos via TARGET_ASSETS="US30,HK50"
 (async () => {
   const label = process.argv[2] || 'open';
   const mode = process.argv[3] || (label === 'preopen' ? 'analysis' : 'signal');
-  const targets = (process.env.TARGET_ASSETS || 'US30,HK50')
+  const targets = (process.env.TARGET_ASSETS || '')
     .split(',')
     .map(t => t.trim().toUpperCase())
     .filter(Boolean);
+  const assets = targets.length ? targets : inferAssetsByTime();
 
-  for (const asset of targets) {
+  for (const asset of assets) {
     if (mode === 'analysis') {
       await sendAnalysisFromSnapshot(asset, label);
     } else {
