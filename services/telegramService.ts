@@ -36,7 +36,16 @@ export const sendTelegramSignal = async (
   assetSymbol: string,
   signal: string,
   strength: string,
-  score: number
+  score: number,
+  context?: {
+    quote?: number | string | null;
+    indices?: Record<string, number | string>;
+    volumeBuy?: number | string;
+    volumeSell?: number | string;
+    breadthAdv?: number | string;
+    breadthDec?: number | string;
+    gap?: number | string;
+  }
 ): Promise<void> => {
   if (signal === 'NEUTRO') {
     console.log(`[${new Date().toISOString()}] Sinal neutro, nenhuma mensagem enviada ao Telegram.`);
@@ -45,64 +54,74 @@ export const sendTelegramSignal = async (
 
 
   // Buscar dados extras para a mensagem (cotação, índices, volume, breadth, gap)
-  let quote = '-';
+  let quote: string | number | null = '-';
   let indices: any = {};
   let volume = '-';
-  let volumeBuy = '-';
-  let volumeSell = '-';
-  let breadthAdv = '-';
-  let breadthDec = '-';
-  let gap = '-';
+  let volumeBuy: any = '-';
+  let volumeSell: any = '-';
+  let breadthAdv: any = '-';
+  let breadthDec: any = '-';
+  let gap: any = '-';
+
+  if (context) {
+    quote = context.quote ?? quote;
+    indices = context.indices ?? indices;
+    volumeBuy = context.volumeBuy ?? volumeBuy;
+    volumeSell = context.volumeSell ?? volumeSell;
+    breadthAdv = context.breadthAdv ?? breadthAdv;
+    breadthDec = context.breadthDec ?? breadthDec;
+    gap = context.gap ?? gap;
+  }
 
   // Índices globais para US30
-  let vix = '-';
-  let dxy = '-';
-  let tnx = '-';
-  let russell = '-';
-  let sp500 = '-';
-  let nasdaq = '-';
+  let vix: string | number = '-';
+  let dxy: string | number = '-';
+  let tnx: string | number = '-';
+  let russell: string | number = '-';
+  let sp500: string | number = '-';
+  let nasdaq: string | number = '-';
   let vixEmoji = '';
 
   // Índices globais para HK50
-  let vhsi = '-';
-  let cnh = '-';
-  let nikkei = '-';
-  let sse = '-';
-  let us500 = '-';
-  let usdjpy = '-';
-  let dxy_hk = '-';
+  let vhsi: string | number = '-';
+  let cnh: string | number = '-';
+  let nikkei: string | number = '-';
+  let sse: string | number = '-';
+  let us500: string | number = '-';
+  let usdjpy: string | number = '-';
+  let dxy_hk: string | number = '-';
   let vhsiEmoji = '';
 
   if (typeof window !== 'undefined' && window.__UBUNTU_TRADER_SIGNAL_DATA__) {
     const data = window.__UBUNTU_TRADER_SIGNAL_DATA__;
-    quote = data.quote || '-';
-    indices = data.indices || {};
-    volume = data.volume || '-';
-    volumeBuy = data.volumeBuy || '-';
-    volumeSell = data.volumeSell || '-';
-    breadthAdv = data.breadthAdv || '-';
-    breadthDec = data.breadthDec || '-';
-    gap = data.gap || '-';
-
-    // US30
-    vix = indices.VIX !== undefined ? indices.VIX : '-';
-    dxy = indices.DXY !== undefined ? indices.DXY : '-';
-    tnx = indices.TNX !== undefined ? indices.TNX : '-';
-    russell = indices.RUT !== undefined ? indices.RUT : '-';
-    sp500 = indices.SP500 !== undefined ? indices.SP500 : '-';
-    nasdaq = indices.NASDAQ !== undefined ? indices.NASDAQ : '-';
-    vixEmoji = parseFloat(String(vix)) < 0 ? '😌' : '⚠️';
-
-    // HK50
-    vhsi = indices.VHSI !== undefined ? indices.VHSI : '-';
-    cnh = indices.CNH !== undefined ? indices.CNH : '-';
-    nikkei = indices.NIKKEI !== undefined ? indices.NIKKEI : '-';
-    sse = indices.SSE !== undefined ? indices.SSE : '-';
-    us500 = indices.US500 !== undefined ? indices.US500 : '-';
-    usdjpy = indices.USDJPY !== undefined ? indices.USDJPY : '-';
-    dxy_hk = indices.DXY !== undefined ? indices.DXY : '-';
-    vhsiEmoji = parseFloat(String(vhsi)) < 0 ? '😱' : '⚠️';
+    quote = quote === '-' ? data.quote || quote : quote;
+    indices = Object.keys(indices).length === 0 ? data.indices || indices : indices;
+    volume = volume === '-' ? data.volume || volume : volume;
+    volumeBuy = volumeBuy === '-' ? data.volumeBuy || volumeBuy : volumeBuy;
+    volumeSell = volumeSell === '-' ? data.volumeSell || volumeSell : volumeSell;
+    breadthAdv = breadthAdv === '-' ? data.breadthAdv || breadthAdv : breadthAdv;
+    breadthDec = breadthDec === '-' ? data.breadthDec || breadthDec : breadthDec;
+    gap = gap === '-' ? data.gap || gap : gap;
   }
+
+  // US30
+  vix = indices.VIX !== undefined ? indices.VIX : '-';
+  dxy = indices.DXY !== undefined ? indices.DXY : '-';
+  tnx = indices.TNX !== undefined ? indices.TNX : '-';
+  russell = indices.RUT !== undefined ? indices.RUT : '-';
+  sp500 = indices.SP500 !== undefined ? indices.SP500 : '-';
+  nasdaq = indices.NASDAQ !== undefined ? indices.NASDAQ : '-';
+  vixEmoji = parseFloat(String(vix)) < 0 ? '😌' : '⚠️';
+
+  // HK50
+  vhsi = indices.VHSI !== undefined ? indices.VHSI : '-';
+  cnh = indices.CNH !== undefined ? indices.CNH : '-';
+  nikkei = indices.NIKKEI !== undefined ? indices.NIKKEI : '-';
+  sse = indices.SSE !== undefined ? indices.SSE : '-';
+  us500 = indices.US500 !== undefined ? indices.US500 : '-';
+  usdjpy = indices.USDJPY !== undefined ? indices.USDJPY : '-';
+  dxy_hk = indices.DXY !== undefined ? indices.DXY : '-';
+  vhsiEmoji = parseFloat(String(vhsi)) < 0 ? '😱' : '⚠️';
 
   let message = '';
   // Função utilitária para positivo/negativo
