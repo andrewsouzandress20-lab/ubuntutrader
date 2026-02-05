@@ -252,9 +252,9 @@ async function sendSignalFromSnapshot(assetSymbol: string, label: string) {
     strength,
     score,
     {
-        quote: snapshot.quote ?? tvQuote ?? undefined,
-        // TradingView (11h30) tem prioridade; se não vier, usamos Yahoo do snapshot atual
-        indices: { ...mapIndices(snapshot, indicesMap), ...tvIndices },
+        // Prioridade: TradingView (coleta 11h30) -> Yahoo do snapshot atual
+        quote: tvQuote ?? snapshot.quote ?? undefined,
+        indices: { ...tvIndices, ...mapIndices(snapshot, indicesMap) },
       volumeBuy: snapshot.volume?.buyPercent,
       volumeSell: snapshot.volume?.sellPercent,
       breadthAdv: snapshot.breadth?.summary?.advancing,

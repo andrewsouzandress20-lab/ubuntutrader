@@ -66,10 +66,10 @@ async function collectSnapshot(assetSymbol: string, label: string) {
   const volume = calculateVolumePressure(candles);
   const gap = detectOpeningGap(candles, asset);
 
-  const quote = quoteYahoo ?? fallbackQuoteFromTV(assetSymbol, tvSnapshot);
-  const indices = indicesYahoo && indicesYahoo.length > 0
-    ? indicesYahoo
-    : fallbackCorrelationFromTV(assetSymbol, tvSnapshot);
+  const tvQuote = fallbackQuoteFromTV(assetSymbol, tvSnapshot);
+  const quote = tvQuote ?? quoteYahoo;
+  const indicesTV = fallbackCorrelationFromTV(assetSymbol, tvSnapshot);
+  const indices = indicesTV.length > 0 ? indicesTV : (indicesYahoo && indicesYahoo.length > 0 ? indicesYahoo : []);
 
   const snapshot = {
     timestamp: new Date().toISOString(),
