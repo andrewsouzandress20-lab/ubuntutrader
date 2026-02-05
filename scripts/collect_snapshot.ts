@@ -21,6 +21,21 @@ const loadTradingViewSnapshot = (): Record<string, number> => {
   }
 };
 
+const tvLookup = (tv: Record<string, number>, sym: string): number | undefined => {
+  if (sym in tv) return tv[sym];
+  if (sym.startsWith('^') && sym.slice(1) in tv) return tv[sym.slice(1)];
+  const alt: Record<string, string> = {
+    '^GSPC': 'US500',
+    '^IXIC': 'US100',
+    'DX-Y.NYB': 'DXY',
+    '^N225': 'JP225',
+    '^VHSI': 'VHSI'
+  };
+  const mapped = alt[sym];
+  if (mapped && mapped in tv) return tv[mapped];
+  return undefined;
+};
+
 const fallbackQuoteFromTV = (assetSymbol: string, tv: Record<string, number>): number | null => {
   const val = tv[assetSymbol];
   return typeof val === 'number' && !Number.isNaN(val) ? val : null;
@@ -28,7 +43,7 @@ const fallbackQuoteFromTV = (assetSymbol: string, tv: Record<string, number>): n
 
 const fallbackCorrelationFromTV = (assetSymbol: string, tv: Record<string, number>): CorrelationData[] => {
   const pushIf = (list: CorrelationData[], sym: string, name: string, corr: 'positive' | 'negative') => {
-    const val = tv[sym];
+    const val = tvLookup(tv, sym);
     if (typeof val === 'number' && !Number.isNaN(val)) {
       list.push({ symbol: sym, name, price: val, change: 0, correlation: corr });
     }
