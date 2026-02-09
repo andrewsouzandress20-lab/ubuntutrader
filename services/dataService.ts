@@ -1,5 +1,26 @@
 import { Asset, Candle, Timeframe, CorrelationData, MarketBreadthSummary, BreadthCompanyDetails, DOW_30_TICKERS, HK_50_TICKERS, VolumePressure, GapData, EconomicEvent } from '../types.js';
 
+// Resolve backend base URL (Render/localhost) for proxying external calls and avoiding CORS
+const BACKEND_URL = (() => {
+  if (typeof process !== 'undefined') {
+    if (process.env.BACKEND_URL) return process.env.BACKEND_URL;
+    if (process.env.VITE_BACKEND_URL) return process.env.VITE_BACKEND_URL;
+  }
+  try {
+    // @ts-ignore – Vite env at build time
+    if (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_BACKEND_URL) return (import.meta as any).env.VITE_BACKEND_URL;
+  } catch (_) {
+    // ignore when not running in Vite/browser
+  }
+  return '';
+})();
+
+const buildYahooUrl = (raw: string): string => {
+  if (!BACKEND_URL) return raw;
+  const pathOnly = raw.replace(/^https?:\/\/query[0-9]\.finance\.yahoo\.com\//, '');
+  return `${BACKEND_URL.replace(/\/$/, '')}/api/yahoo/${pathOnly}`;
+};
+
 // Dicionário simples para tradução de eventos comuns
 const EVENT_TRANSLATIONS: Record<string, string> = {
   'Unemployment Rate': 'Taxa de Desemprego',
@@ -60,9 +81,10 @@ const fetchWithRetry = async (url: string): Promise<any> => {
 };
 
 
-// Simples wrapper para chamadas do Yahoo; hoje apenas requisita direto.
+// Wrapper para chamadas do Yahoo; se BACKEND_URL estiver definido, usa proxy (/api/yahoo/*) para evitar CORS no navegador.
 const fetchFromYahoo = async (url: string): Promise<any> => {
-  return fetchWithRetry(url);
+  const proxied = buildYahooUrl(url);
+  return fetchWithRetry(proxied);
 };
 
 const fetchYahooData = async (symbol: string, interval: string, range: string = '5d'): Promise<any> => {
@@ -182,7 +204,9 @@ export const fetchCorrelationData = async (assetSymbol: string): Promise<Correla
 };
 
 export const fetchEconomicEvents = async (): Promise<EconomicEvent[]> => {
-  const calendarUrl = 'https://nfs.faireconomy.media/ff_calendar_thisweek.json';
+  const calendarUrl = BACKEND_URL
+    ? `${BACKEND_URL.replace(/\/$/, '')}/api/calendar`
+    : 'https://nfs.faireconomy.media/ff_calendar_thisweek.json';
 
   try {
     const data = await fetchWithRetry(calendarUrl);

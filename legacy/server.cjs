@@ -6,6 +6,15 @@ require('dotenv').config();
 const app = express();
 app.use(bodyParser.json());
 
+// Permitir requisições do frontend estático (Render) e testes locais
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  if (req.method === 'OPTIONS') return res.sendStatus(200);
+  next();
+});
+
 const BOT_TOKEN = process.env.VITE_TELEGRAM_BOT_TOKEN;
 const CHAT_ID = process.env.VITE_TELEGRAM_CHAT_ID;
 
@@ -46,6 +55,33 @@ app.post('/api/send-telegram', async (req, res) => {
   } catch (err) {
     console.error('[TELEGRAM API] Erro ao enviar mensagem:', err);
     res.status(500).json({ error: err.message });
+  }
+});
+
+// Proxy simples para Yahoo Finance (evita CORS no navegador)
+app.get('/api/yahoo/*', async (req, res) => {
+  const targetPath = req.originalUrl.replace(/^\/api\/yahoo\//, '');
+  const url = `https://query1.finance.yahoo.com/${targetPath}`;
+  try {
+    const response = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; ubuntutrader/1.0)' } });
+    const data = await response.json();
+    res.json(data);
+  } catch (err) {
+    console.error('[YAHOO PROXY] Erro ao buscar', url, err);
+    res.status(502).json({ error: 'Failed to fetch Yahoo Finance' });
+  }
+});
+
+// Proxy simples para calendário econômico (FF Calendar)
+app.get('/api/calendar', async (_req, res) => {
+  const url = 'https://nfs.faireconomy.media/ff_calendar_thisweek.json';
+  try {
+    const response = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; ubuntutrader/1.0)' } });
+    const data = await response.json();
+    res.json(data);
+  } catch (err) {
+    console.error('[CALENDAR PROXY] Erro ao buscar calendário', err);
+    res.status(502).json({ error: 'Failed to fetch calendar' });
   }
 });
 

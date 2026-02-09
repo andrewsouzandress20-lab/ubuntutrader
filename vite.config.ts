@@ -20,6 +20,8 @@ export default defineConfig(({ mode }) => {
         host: '0.0.0.0',
         proxy: {
           '/api/send-telegram': 'http://localhost:3001',
+          '/api/yahoo': 'http://localhost:3001',
+          '/api/calendar': 'http://localhost:3001',
         },
       },
     };

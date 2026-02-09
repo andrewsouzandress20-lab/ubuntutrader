@@ -529,18 +529,21 @@ const App: React.FC = () => {
               <div style={{fontWeight:'bold',fontSize:'1.1rem',marginBottom:8}}>DNA DO ÍNDICE: {selectedAsset.symbol}</div>
               <div style={{fontSize:'0.8rem',color:'#b3b3c6',marginBottom:12}}>Correlação Técnica por Ativo</div>
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
-                {breadthDetails.map((company) => (
+                {breadthDetails.map((company) => {
+                  const change = typeof company.change === 'number' && !Number.isNaN(company.change) ? company.change : 0;
+                  const status = company.status || (change >= 0 ? 'ALTA' : 'BAIXA');
+                  return (
                   <div 
                     key={company.symbol} 
-                    style={{padding:10,borderRadius:10,border:'1px solid #23243a',background:company.change>=0?'#22d3ee22':'#f8717122',display:'flex',flexDirection:'column',gap:4}}
+                    style={{padding:10,borderRadius:10,border:'1px solid #23243a',background:change>=0?'#22d3ee22':'#f8717122',display:'flex',flexDirection:'column',gap:4}}
                   >
                     <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                       <span style={{fontSize:'0.95rem',fontWeight:'bold',color:'#fff'}}>{company.symbol.split('.')[0]}</span>
-                      <span style={{fontSize:'0.7rem',fontWeight:'bold',padding:'2px 6px',borderRadius:6,background:company.change>=0?'#4ade80':'#f87171',color:'#23243a'}}>{company.status}</span>
+                      <span style={{fontSize:'0.7rem',fontWeight:'bold',padding:'2px 6px',borderRadius:6,background:change>=0?'#4ade80':'#f87171',color:'#23243a'}}>{status}</span>
                     </div>
-                    <div style={{fontSize:'1rem',fontWeight:'bold',color:company.change>=0?'#4ade80':'#f87171'}}>{company.change>=0?'+':''}{company.change.toFixed(2)}%</div>
+                    <div style={{fontSize:'1rem',fontWeight:'bold',color:change>=0?'#4ade80':'#f87171'}}>{change>=0?'+':''}{change.toFixed(2)}%</div>
                   </div>
-                ))}
+                );})}
               </div>
               <div style={{marginTop:16,textAlign:'right'}}>
                 <button style={{padding:'8px 18px',background:'#4f46e5',color:'#fff',border:'none',borderRadius:8,fontWeight:'bold',fontSize:'0.9rem',cursor:'pointer'}} onClick={()=>setIsBreadthModalOpen(false)}>FECHAR</button>
@@ -555,7 +558,9 @@ const App: React.FC = () => {
             <span style={{color:'#4f46e5',fontSize:'1.1rem'}}><i className="fas fa-globe"></i></span>
           </div>
           {correlations && correlations.length > 0 ? (
-            getOrderedCorrelations(correlations, selectedAsset.symbol).map((corr, idx) => (
+            getOrderedCorrelations(correlations, selectedAsset.symbol).map((corr, idx) => {
+              const change = typeof corr.change === 'number' && !Number.isNaN(corr.change) ? corr.change : 0;
+              return (
               <div className="card-mobile" key={corr.symbol}
                 style={{margin:'12px 12px 0 12px',background:'#181a20',border:'1.5px solid #23243a',boxShadow:'0 1.5px 6px #0002',cursor:'pointer'}}
                 onClick={() => setModalInfo((corr as any).info || 'Sem descrição.')}
@@ -564,9 +569,9 @@ const App: React.FC = () => {
                   <div style={{fontWeight:700}}>{corr.name}</div>
                   <div style={{fontSize:'0.8rem',color:'#b3b3c6'}}>{corr.correlation === 'positive' ? 'DIRETA' : 'INVERSA'}</div>
                 </div>
-                <span style={{color:corr.change < 0 ? '#f87171' : '#4ade80',fontWeight:700,fontSize:'1.1rem'}}>{corr.change >= 0 ? '+' : ''}{corr.change.toFixed(2)}%</span>
+                <span style={{color:change < 0 ? '#f87171' : '#4ade80',fontWeight:700,fontSize:'1.1rem'}}>{change >= 0 ? '+' : ''}{change.toFixed(2)}%</span>
               </div>
-            ))
+            );})
           ) : (
             <div style={{color:'#b3b3c6',textAlign:'center',margin:'24px 0',fontWeight:600}}>Nenhum dado disponível para o fluxo global.</div>
           )}
