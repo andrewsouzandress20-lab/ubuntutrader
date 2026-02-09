@@ -50,7 +50,8 @@ app.post('/api/send-telegram', async (req, res) => {
 });
 
 // Servir build do React
-const buildPath = path.join(__dirname, 'dist');
+// Serve the Vite build located at repo root (/dist). On Render, __dirname is /opt/render/project/src/legacy.
+const buildPath = path.join(__dirname, '..', 'dist');
 app.use(express.static(buildPath));
 // Fallback: serve index.html para qualquer rota que não comece com /api
 app.use((req, res, next) => {
