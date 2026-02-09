@@ -59,8 +59,8 @@ app.post('/api/send-telegram', async (req, res) => {
 });
 
 // Proxy simples para Yahoo Finance (evita CORS no navegador)
-app.get('/api/yahoo/*', async (req, res) => {
-  const targetPath = req.originalUrl.replace(/^\/api\/yahoo\//, '');
+app.get('/api/yahoo/:path(*)', async (req, res) => {
+  const targetPath = req.params.path || '';
   const url = `https://query1.finance.yahoo.com/${targetPath}`;
   try {
     const response = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; ubuntutrader/1.0)' } });
