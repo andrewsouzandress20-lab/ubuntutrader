@@ -59,10 +59,9 @@ app.post('/api/send-telegram', async (req, res) => {
 });
 
 // Proxy simples para Yahoo Finance (evita CORS no navegador)
-// Express 5 usa path-to-regexp v8: pattern precisa de regex válido
-// para capturar qualquer sufixo. Usamos (.*) para pegar o restante do caminho.
-app.get('/api/yahoo/:path(.*)', async (req, res) => {
-  const targetPath = req.params.path || '';
+// Usa wildcard simples para evitar erros do path-to-regexp em Express 5.
+app.get('/api/yahoo/*', async (req, res) => {
+  const targetPath = req.params[0] || '';
   const url = `https://query1.finance.yahoo.com/${targetPath}`;
   try {
     const response = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; ubuntutrader/1.0)' } });
