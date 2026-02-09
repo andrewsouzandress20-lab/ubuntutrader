@@ -5,7 +5,6 @@ declare global {
   }
 }
 
-import * as fs from 'fs';
 
 function getEnvVar(name: string): string | undefined {
   if (typeof process !== 'undefined' && process.env) {
@@ -33,20 +32,8 @@ const resolveTelegramCreds = () => {
   return { botToken, chatId };
 };
 
-const resolveMessagePath = (): string => {
-  const p = getEnvVar('SIGNAL_TEXT_PATH') || getEnvVar('VITE_SIGNAL_TEXT_PATH');
-  return p && p.trim().length > 0 ? p : 'signal_message.txt';
-};
-
-const writeMessageToFile = (message: string): string => {
-  const path = resolveMessagePath();
-  try {
-    fs.writeFileSync(path, message, 'utf-8');
-  } catch (err) {
-    console.warn('[TELEGRAM] Falha ao gravar mensagem em txt:', err);
-  }
-  return path;
-};
+// In browser builds we avoid filesystem access; in server/CLI we don't need TXT persistence.
+const writeMessageToFile = (_message: string): string | null => null;
 
 const fmtPct = (v: any) => {
   const num = parseFloat(String(v));
@@ -218,12 +205,7 @@ export const sendTelegramSignal = async (
   }
 
   try {
-    const messageFile = writeMessageToFile(message);
-    try {
-      message = fs.readFileSync(messageFile, 'utf-8');
-    } catch (err) {
-      console.warn('[TELEGRAM] Não foi possível reler o TXT, usando mensagem em memória:', err);
-    }
+    writeMessageToFile(message);
 
     const backendUrl = resolveBackendUrl();
     const { botToken, chatId } = resolveTelegramCreds();
@@ -292,12 +274,7 @@ export const sendTelegramSignal = async (
  */
 export const sendTelegramAnalysis = async (message: string): Promise<void> => {
   try {
-    const messageFile = writeMessageToFile(message);
-    try {
-      message = fs.readFileSync(messageFile, 'utf-8');
-    } catch (err) {
-      console.warn('[TELEGRAM] Não foi possível reler o TXT (analysis), usando mensagem em memória:', err);
-    }
+    writeMessageToFile(message);
 
     const backendUrl = resolveBackendUrl();
     const { botToken, chatId } = resolveTelegramCreds();
