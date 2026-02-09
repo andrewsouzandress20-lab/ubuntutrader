@@ -2,8 +2,8 @@ name: Pre-Open Analysis HK50
 
 on:
   schedule:
-    # HK50 - 21:30 BRT (00:30 UTC) domingo a quinta
-    - cron: '30 0 * * 1-5'
+    # HK50 - 10:30 Manaus (14:30 UTC) domingo a quinta
+    - cron: '30 14 * * 1-5'
   workflow_dispatch:
 
 jobs:
