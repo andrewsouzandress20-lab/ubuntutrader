@@ -1,5 +1,4 @@
 import { Asset, Candle, Timeframe, CorrelationData, MarketBreadthSummary, BreadthCompanyDetails, DOW_30_TICKERS, HK_50_TICKERS, VolumePressure, GapData, EconomicEvent } from '../types.js';
-import fs from 'fs';
 
 // Dicionário simples para tradução de eventos comuns
 const EVENT_TRANSLATIONS: Record<string, string> = {
@@ -234,36 +233,7 @@ export const fetchMarketBreadth = async (assetSymbol: string): Promise<{ summary
   let tickers = DOW_30_TICKERS;
   if (assetSymbol === 'HK50') tickers = HK_50_TICKERS;
 
-  // 1) Tenta companies_snapshot.json do TradingView (prioridade)
-  try {
-    const file = fs.readFileSync('companies_snapshot.json', 'utf-8');
-    const snapshot = JSON.parse(file);
-    const indexKey = assetSymbol === 'HK50' ? 'HK50' : 'US30';
-    const companies = snapshot?.indices?.[indexKey];
-    if (Array.isArray(companies) && companies.length > 0) {
-      const details: BreadthCompanyDetails[] = [];
-      let advancing = 0;
-      let declining = 0;
-      let valid = 0;
-      companies.forEach((c: any) => {
-        if (typeof c.changePercent === 'number' && !Number.isNaN(c.changePercent)) {
-          const change = c.changePercent;
-          const status = change >= 0 ? 'BUY' : 'SELL';
-          if (status === 'BUY') advancing++; else declining++;
-          details.push({ symbol: c.ticker, change, status: status as 'BUY' | 'SELL' });
-          valid++;
-        }
-      });
-      if (valid > 0 && details.length > 0) {
-        return {
-          summary: { advancing, declining, total: details.length },
-          details: details.sort((a, b) => b.change - a.change)
-        };
-      }
-    }
-  } catch (err) {
-    // se arquivo não existir ou erro de parse, cai para Yahoo
-  }
+  // 1) (removido) leitura local de snapshot TradingView com fs para compatibilidade com build web; seguimos direto para fallback Yahoo.
 
   // 2) Fallback Yahoo (quote) + chart (menos bloqueado)
   const symbols = tickers.join(',');
