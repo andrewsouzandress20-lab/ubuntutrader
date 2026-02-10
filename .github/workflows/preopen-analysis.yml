@@ -1,7 +1,7 @@
 name: Pre-Open Analysis & Signal
 
 on:
-  # 14:30 UTC → 10:30 Manaus (UTC-4 atual) / 11:30 BRT. Alinha ao horário solicitado para envio.
+  # 14:30 UTC → 10:30 Manaus (UTC-4 atual) / 11:30 BRT. Apenas dias úteis (seg–sex).
   schedule:
     - cron: '30 14 * * 1-5'
   # Permite disparo manual para testes
