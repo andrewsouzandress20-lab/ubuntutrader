@@ -2,7 +2,7 @@
   "timestamp": "2026-02-04T12:03:07.736Z",
   "asset": "HK50",
   "label": "open",
-  "quote": null,
+  "quote": 26885.24,
   "indices": [
     {
       "symbol": "^VHSI",

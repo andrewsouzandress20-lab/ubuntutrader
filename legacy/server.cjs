@@ -78,6 +78,20 @@ app.get('/api/calendar', async (_req, res) => {
   const url = 'https://nfs.faireconomy.media/ff_calendar_thisweek.json';
   try {
     const response = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; ubuntutrader/1.0)' } });
+    const contentType = response.headers.get('content-type') || '';
+
+    if (!response.ok) {
+      const text = await response.text();
+      console.error('[CALENDAR PROXY] HTTP error', response.status, text.slice(0, 200));
+      return res.status(502).json({ error: 'Failed to fetch calendar', status: response.status });
+    }
+
+    if (!contentType.includes('application/json')) {
+      const text = await response.text();
+      console.error('[CALENDAR PROXY] Unexpected content-type', contentType, text.slice(0, 200));
+      return res.status(502).json({ error: 'Upstream returned non-JSON calendar' });
+    }
+
     const data = await response.json();
     res.json(data);
   } catch (err) {
