@@ -53,6 +53,12 @@ const fmtInt = (v: any) => {
   return num.toFixed(0);
 };
 
+const fmtOneDec = (v: any) => {
+  const num = parseFloat(String(v));
+  if (Number.isNaN(num)) return String(v ?? '-');
+  return num.toFixed(1);
+};
+
 export const sendTelegramSignal = async (
   assetSymbol: string,
   signal: string,
@@ -144,6 +150,8 @@ export const sendTelegramSignal = async (
         : ' (neutro)';
   const gapResumo = `🕳️ Gap de abertura: ${fmtPct(gap)}${gapBias}`;
 
+  const siteUrl = getEnvVar('VITE_SITE_URL') || getEnvVar('SITE_URL') || 'https://ubuntutrader.onrender.com/';
+
   const quoteLine = quoteChange !== undefined && quoteChange !== null && quoteChange !== ''
     ? `Cotação: ${fmtNum(quote)} (${fmtPct(quoteChange)})`
     : `Cotação: ${fmtNum(quote)}`;
@@ -154,8 +162,12 @@ export const sendTelegramSignal = async (
   const signalText = `${arrow} ${signal}`;
 
   if (assetSymbol === 'HK50') {
+    const hkVolumeLine = isBuy
+      ? `- 📈 Volume comprador dominante (${fmtOneDec(volumeBuy)}% compra)`
+      : `- 📉 Volume vendedor dominante (${fmtOneDec(volumeSell)}% venda)`;
+
     message = [
-      '🕒 ABERTURA',
+      '🧠 PRÉ-ABERTURA',
       '',
       `🇭🇰 HK50: Sinal de ${signalText} ${strength}`,
       `Score institucional: ${score > 0 ? '+' : ''}${score}`,
@@ -171,16 +183,24 @@ export const sendTelegramSignal = async (
       `💵 DXY: ${fmtPct(dxyHK)} ${impact(dxyHK, !isBuy)} ${impactText(dxyHK, !isBuy, isBuy)}`,
       '',
       '📊 Resumo:',
-      `- ${volumeResumo}`,
+      hkVolumeLine,
       `- ${vixResumo}`,
       `- ${breadthResumo}`,
       `- ${gapResumo}`,
       '',
-      '⚡️ Siga as zonas SMC/FGV para melhor entrada.'
+      '⚡️ Siga as zonas SMC/FVG para melhor entrada.',
+      '',
+      `Acesse: ${siteUrl}`,
+      '',
+      'Para ver os dados detalhadamente!'
     ].join('\n');
   } else {
+    const volumeLine = isBuy
+      ? `- 📈 Volume comprador dominante (${fmtOneDec(volumeBuy)}% compra)`
+      : `- 📉 Volume vendedor dominante (${fmtOneDec(volumeSell)}% venda)`;
+
     message = [
-      '🕒 ABERTURA',
+      '🧠 PRÉ-ABERTURA',
       '',
       `🇺🇸 US30: Sinal de ${signalText} ${strength}`,
       `Score institucional: ${score > 0 ? '+' : ''}${score}`,
@@ -195,12 +215,16 @@ export const sendTelegramSignal = async (
       `🇺🇸 Russell 2000: ${fmtPct(russell)} ${impact(russell, isBuy)} ${impactText(russell, isBuy, isBuy)}`,
       '',
       '📊 Resumo:',
-      `- ${volumeResumo}`,
+      volumeLine,
       `- ${vixResumo}`,
       `- ${breadthResumo}`,
       `- ${gapResumo}`,
       '',
-      '⚡️ Siga as zonas SMC/FGV para melhor entrada.'
+      '⚡️ Siga as zonas SMC/FVG para melhor entrada.',
+      '',
+      `Acesse: ${siteUrl}`,
+      '',
+      'Para ver os dados detalhadamente!'
     ].join('\n');
   }
 
