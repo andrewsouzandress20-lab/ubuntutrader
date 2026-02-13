@@ -414,7 +414,7 @@ const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snap
   const dec = snapshot.breadth?.summary?.declining ?? 0;
   const gapPercent = snapshot.gap?.percent ?? null;
   const volIndexSymbol = assetSymbol === 'HK50' ? '^VHSI' : '^VIX';
-  const labelText = label === 'preopen' ? 'PRÉ-ABERTURA' : 'ABERTURA';
+  const labelText = 'ABERTURA';
   const headerAsset = assetSymbol === 'HK50' ? '🇭🇰 HK50' : '🇺🇸 US30';
 
   const fmtPct = (value: number | null | undefined) => {
@@ -466,7 +466,8 @@ const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snap
     if (volumeBuy === null || volumeSell === null) return 'Volume indisponível';
     const dom = volumeBuy > volumeSell ? 'comprador' : 'vendedor';
     const pct = volumeBuy > volumeSell ? volumeBuy : volumeSell;
-    return `Volume ${dom} dominante (${pct.toFixed(1)}% ${dom === 'comprador' ? 'compra' : 'venda'})`;
+    const arrow = dom === 'comprador' ? '📈' : '📉';
+    return `${arrow} Volume ${dom} dominante (${pct.toFixed(1)}% ${dom === 'comprador' ? 'compra' : 'venda'})`;
   };
 
   const breadthSummary = () => {
@@ -481,7 +482,7 @@ const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snap
     return `Gap de abertura: ${fmtPct(gapPercent)} (${bias})`;
   };
 
-  const headerLine = label === 'preopen' ? '🧠 PRÉ-ABERTURA' : '🕒 ABERTURA';
+  const headerLine = '🧠 ABERTURA';
   const lines = [
     `${headerLine}`,
     '',
@@ -493,7 +494,7 @@ const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snap
     ...indicatorLines,
     '',
     '📊 Resumo:',
-    `- 📈 ${volumeSummary()}`,
+    `- ${volumeSummary()}`,
     `- ⚠️ ${volIndexSymbol === '^VIX' ? 'VIX' : 'VHSI'}: ${fmtPct(getChange(snapshot, volIndexSymbol))}`,
     `- ${breadthSummary()}`,
     `- 🕳️ ${gapSummary()}`,

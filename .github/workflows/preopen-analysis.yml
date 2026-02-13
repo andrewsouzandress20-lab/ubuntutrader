@@ -1,12 +1,9 @@
 name: Pre-Open Analysis & Signal
 
 on:
-  # 14:30 UTC → 10:30 Manaus (UTC-4 atual) / 11:30 BRT. Apenas dias úteis (seg–sex).
-  schedule:
-    - cron: '30 14 * * 1-5'
-  # Permite disparo manual para testes
+  # Disparo manual
   workflow_dispatch:
-  # Permite disparo externo via repository_dispatch (cron externo: cron-job.org, Workers)
+  # Disparo externo via repository_dispatch (cron externo: cron-job.org, Workers)
   repository_dispatch:
     types: [preopen-trigger]
 
