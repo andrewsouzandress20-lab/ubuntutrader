@@ -404,7 +404,7 @@ const computeScore = (assetSymbol: string, snapshot: Snapshot): { total: number;
 };
 
 const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snapshot, tvIndices: Record<string, number>) => {
-  const { total, parts } = computeScore(assetSymbol, snapshot);
+  const { total } = computeScore(assetSymbol, snapshot);
   const signal = resolveSignal(total);
   const strength = resolveStrength(total);
 
@@ -413,49 +413,91 @@ const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snap
   const adv = snapshot.breadth?.summary?.advancing ?? 0;
   const dec = snapshot.breadth?.summary?.declining ?? 0;
   const gapPercent = snapshot.gap?.percent ?? null;
-  const dxyChange = getChange(snapshot, 'DX-Y.NYB');
   const volIndexSymbol = assetSymbol === 'HK50' ? '^VHSI' : '^VIX';
-  const volIndexChange = getChange(snapshot, volIndexSymbol);
-  const volIndexPrice = tvPriceForSymbol(volIndexSymbol, tvIndices);
-  const labelText = label === 'preopen' ? 'PRÉ-ABERTURA' : label.toUpperCase();
-
+  const labelText = label === 'preopen' ? 'PRÉ-ABERTURA' : 'ABERTURA';
   const headerAsset = assetSymbol === 'HK50' ? '🇭🇰 HK50' : '🇺🇸 US30';
-  const volIndexName = assetSymbol === 'HK50' ? 'VHSI' : 'VIX';
 
-  const indexSummary = () => {
-    const relevant = assetSymbol === 'HK50'
-      ? ['^N225', '000001.SS', '^GSPC']
-      : ['^GSPC', '^IXIC', '^RUT'];
-    let pos = 0; let neg = 0; const labels: string[] = [];
-    relevant.forEach(sym => {
-      const change = getChange(snapshot, sym);
-      if (change !== null) {
-        if (change > 0) pos += 1; else if (change < 0) neg += 1;
-      }
-      const rendered = formatPercentOrPrice(sym, change, tvIndices);
-      labels.push(`${sym}: ${rendered}`);
-    });
-    const direction = pos === neg ? '⚖️ Neutro' : pos > neg ? '🟢 Risk-on' : '🔴 Risk-off';
-    return `${direction} (${pos}↑ / ${neg}↓) | ${labels.join(' · ')}`;
+  const fmtPct = (value: number | null | undefined) => {
+    if (value === null || value === undefined || Number.isNaN(value)) return '-';
+    return `${value.toFixed(2).replace('.', ',')}%`;
   };
 
+  const fmtPrice = (value: number | null | undefined) => {
+    if (value === null || value === undefined || Number.isNaN(value)) return '-';
+    return value.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 2 });
+  };
+
+  const changeOrPrice = (symbol: string) => {
+    const change = getChange(snapshot, symbol);
+    if (change !== null) return fmtPct(change);
+    const price = tvPriceForSymbol(symbol, tvIndices);
+    if (price !== undefined) return `${fmtPrice(price)} (preço)`;
+    return '-';
+  };
+
+  const favorability = (symbol: string, prefer: 'pos' | 'neg') => {
+    const change = getChange(snapshot, symbol);
+    if (change === null || Number.isNaN(change)) return '⚠️ dado ausente';
+    const desiredPos = prefer === 'pos';
+    const ok = desiredPos ? change > 0 : change < 0;
+    const check = ok ? '✅' : '❌';
+    const word = ok ? 'favorável' : 'desfavorável';
+    return `${check} (${word} para ${signal === 'NEUTRO' ? 'NEUTRO' : signal})`;
+  };
+
+  const indicators = [
+    { label: '🥇 VIX', symbol: volIndexSymbol, preferCompra: 'neg', caution: true },
+    { label: '🇺🇸 S&P 500', symbol: '^GSPC', preferCompra: 'pos' },
+    { label: '🇺🇸 NASDAQ', symbol: '^IXIC', preferCompra: 'pos' },
+    { label: '💵 DXY', symbol: 'DX-Y.NYB', preferCompra: 'neg' },
+    { label: '🇺🇸 10Y', symbol: '^TNX', preferCompra: 'neg' },
+    { label: '🇺🇸 Russell 2000', symbol: '^RUT', preferCompra: 'pos' }
+  ];
+
+  const indicatorLines = indicators.map(({ label, symbol, preferCompra, caution }) => {
+    const prefer = signal === 'VENDA' ? (preferCompra === 'pos' ? 'neg' : 'pos') : preferCompra;
+    const value = changeOrPrice(symbol);
+    const fav = favorability(symbol, prefer as 'pos' | 'neg');
+    const prefix = caution && fav.startsWith('❌') ? '⚠️ ' : '';
+    return `${label}: ${value} ${prefix}${fav}`;
+  });
+
+  const volumeSummary = () => {
+    if (volumeBuy === null || volumeSell === null) return 'Volume indisponível';
+    const dom = volumeBuy > volumeSell ? 'comprador' : 'vendedor';
+    const pct = volumeBuy > volumeSell ? volumeBuy : volumeSell;
+    return `Volume ${dom} dominante (${pct.toFixed(1)}% ${dom === 'comprador' ? 'compra' : 'venda'})`;
+  };
+
+  const breadthSummary = () => {
+    if (!adv && !dec) return 'Breadth indisponível';
+    const pos = adv > dec;
+    return `${pos ? '🟢 Breadth positivo' : adv === dec ? '⚖️ Breadth neutro' : '🔴 Breadth negativo'} (${adv} alta, ${dec} baixa)`;
+  };
+
+  const gapSummary = () => {
+    if (gapPercent === null) return 'Gap de abertura: -';
+    const bias = gapPercent > 0 ? 'favorável à compra' : gapPercent < 0 ? 'favorável à venda' : 'neutro';
+    return `Gap de abertura: ${fmtPct(gapPercent)} (${bias})`;
+  };
+
+  const headerLine = label === 'preopen' ? '🧠 PRÉ-ABERTURA' : '🕒 ABERTURA';
   const lines = [
-    `🧠 ${labelText} • ${headerAsset}`,
-    `Sinal institucional: ${signal === 'NEUTRO' ? '⚖️ NEUTRO' : signal === 'COMPRA' ? '🔺 COMPRA' : '🔻 VENDA'} ${strength} (score ${total > 0 ? '+' : ''}${total})`,
-    snapshot.quote ? `Cotação: ${snapshot.quote}` : 'Cotação: -',
+    `${headerLine}`,
     '',
-    'Checklist rápido:',
-    `- Volume: ${volumeBuy !== null && volumeSell !== null ? `${volumeBuy.toFixed(1)}% compra vs ${volumeSell.toFixed(1)}% venda` : 'dados indisponíveis'} ${parts.volume > 0 ? '🟢' : parts.volume < 0 ? '🔴' : '⚖️'}`,
-    `- ${volIndexName}: ${formatPercentOrPrice(volIndexSymbol, volIndexChange, tvIndices)} ${parts.volIndex > 0 ? '😌 Queda favorece compra' : parts.volIndex < 0 ? '⚠️ Alta pressiona venda' : volIndexPrice !== undefined ? 'preço via TV' : 'sem dado'}`,
-    `- Breadth: ${adv} alta x ${dec} baixa ${parts.breadth > 0 ? '🟢' : parts.breadth < 0 ? '🔴' : '⚖️'}`,
-    `- Índices chave: ${indexSummary()}`,
-    `- DXY: ${formatPercentOrPrice('DX-Y.NYB', dxyChange, tvIndices)} ${parts.dxy > 0 ? '🟢 Risk-on' : parts.dxy < 0 ? '🔴 Risk-off' : tvPriceForSymbol('DX-Y.NYB', tvIndices) !== undefined ? 'preço via TV' : 'sem dado'}`,
-    `- Gap de abertura: ${gapPercent !== null ? formatPercent(gapPercent) : '-'} ${parts.gap === 0 ? '⚖️ neutro' : parts.gap > 0 ? '🟢 a favor de compra' : '🔴 a favor de venda'}`,
+    `${headerAsset}: Sinal de ${signal === 'NEUTRO' ? '⚖️ NEUTRO' : signal === 'COMPRA' ? '🔺 COMPRA' : '🔻 VENDA'} ${strength}`,
+    `Score institucional: ${total > 0 ? '+' : ''}${total}`,
+    `Cotação: ${fmtPrice(snapshot.quote ?? null)}`,
     '',
-    'Decisão:',
-    signal === 'NEUTRO'
-      ? '⚖️ Neutro — aguarde confirmação de preço/volume.'
-      : `${signal === 'COMPRA' ? '🔺 Fluxo comprador alinhado' : '🔻 Fluxo vendedor alinhado'} | Força: ${strength}`,
+    '🌎 Índices globais:',
+    ...indicatorLines,
+    '',
+    '📊 Resumo:',
+    `- 📈 ${volumeSummary()}`,
+    `- ⚠️ ${volIndexSymbol === '^VIX' ? 'VIX' : 'VHSI'}: ${fmtPct(getChange(snapshot, volIndexSymbol))}`,
+    `- ${breadthSummary()}`,
+    `- 🕳️ ${gapSummary()}`,
+    '',
     '⚡️ Siga as zonas SMC/FVG para melhor entrada.'
   ];
 
