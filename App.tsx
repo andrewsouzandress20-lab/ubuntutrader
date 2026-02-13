@@ -9,8 +9,6 @@ import { detectSMCZones } from './utils/fvgDetector.js';
 import TradingChart from './components/TradingChart.js';
 import MqlCalendarWidget from './components/MqlCalendarWidget.js';
 import MacroHeaderAlert from './components/MacroHeaderAlert.js';
-import GeminiSignalHeader from './components/GeminiSignalHeader.js';
-import SuggestionBanner from './components/SuggestionBanner.js';
 
 const App: React.FC = () => {
     // ...contador de usuários online removido...
@@ -319,37 +317,6 @@ const App: React.FC = () => {
       setLoading(false);
     }
   }, [selectedAsset, timeframe]);
-
-  // Dados agregados para sugestão
-  const suggestionData = useMemo(() => {
-    const lastCandle = candles.length > 0 ? candles[candles.length - 1] : { open: 0, close: 0, volume: 0 };
-    // VIX e DXY
-    const vix = correlations.find(c => c.symbol === '^VIX' || c.symbol === 'VIX');
-    const dxy = correlations.find(c => c.symbol === 'DXY' || c.symbol === 'DX-Y.NYB');
-    // Breadth
-    const breadthAdv = breadthSummary.advancing || 0;
-    const breadthDec = breadthSummary.declining || 0;
-    // Indices
-    const indices = {
-      US500: correlations.find(c => c.symbol === '^GSPC')?.change || 0,
-      US100: correlations.find(c => c.symbol === '^IXIC')?.change || 0,
-      '^RUT': correlations.find(c => c.symbol === '^RUT')?.change || 0,
-      JP225: correlations.find(c => c.symbol === 'JP225')?.change || 0,
-      HK50: correlations.find(c => c.symbol === 'HK50')?.change || 0,
-    };
-    return {
-      volume: lastCandle.volume,
-      open: lastCandle.open,
-      close: lastCandle.close,
-      vix: vix?.change ?? 0,
-      dxyChange: dxy?.change ?? 0,
-      breadthAdv,
-      breadthDec,
-      indices,
-      gap: gap.value,
-      // outros campos se necessário
-    };
-  }, [candles, gap, breadthSummary, correlations]);
 
   // Detecta abertura do mercado do ativo selecionado
   const isMarketOpen = useMemo(() => {
@@ -667,23 +634,7 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        {/* SUGESTÃO IA CENTRALIZADA NO HEADER */}
-        <div className="flex flex-1 justify-center px-2 md:px-6 lg:px-10 min-w-0">
-          <div className="flex w-full justify-center items-center min-w-0">
-            <SuggestionBanner isMarketOpen={isMarketOpen} marketData={suggestionData} />
-          </div>
-        </div>
-        {/* Se quiser manter o GeminiSignalHeader, pode deixar abaixo ou remover */}
-        {/*
-        <GeminiSignalHeader 
-          candles={candles}
-          asset={selectedAsset}
-          correlations={correlations}
-          events={events}
-          smcZones={smcZones}
-          institutionalScore={institutionalScore.score}
-        />
-        */}
+        {/* Espaço central removido (banner de sugestão) */}
 
         <div className="flex items-center gap-6">
           <div className="flex bg-[#050814] p-1 rounded-lg border border-slate-800">
