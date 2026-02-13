@@ -1,10 +1,16 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const path = require('path');
+const fs = require('fs');
 require('dotenv').config();
 
 const app = express();
 app.use(bodyParser.json());
+
+// Cache simples para o calendário (reduz 429 e fornece fallback)
+let calendarCache = { data: null, fetchedAt: 0 };
+const CALENDAR_TTL_MS = 5 * 60 * 1000;
+const calendarFallbackPath = path.join(__dirname, '..', 'public', 'economic_events.json');
 
 // Permitir requisições do frontend estático (Render) e testes locais
 app.use((req, res, next) => {
@@ -76,6 +82,23 @@ app.get(/^\/api\/yahoo\/(.*)/, async (req, res) => {
 // Proxy simples para calendário econômico (FF Calendar)
 app.get('/api/calendar', async (_req, res) => {
   const url = 'https://nfs.faireconomy.media/ff_calendar_thisweek.json';
+
+  const now = Date.now();
+  if (calendarCache.data && now - calendarCache.fetchedAt < CALENDAR_TTL_MS) {
+    return res.json(calendarCache.data);
+  }
+
+  const loadFallback = () => {
+    if (calendarCache.data) return calendarCache.data;
+    try {
+      const raw = fs.readFileSync(calendarFallbackPath, 'utf-8');
+      return JSON.parse(raw);
+    } catch (err) {
+      console.error('[CALENDAR PROXY] Fallback file unavailable', err);
+      return null;
+    }
+  };
+
   try {
     const response = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; ubuntutrader/1.0)' } });
     const contentType = response.headers.get('content-type') || '';
@@ -83,19 +106,26 @@ app.get('/api/calendar', async (_req, res) => {
     if (!response.ok) {
       const text = await response.text();
       console.error('[CALENDAR PROXY] HTTP error', response.status, text.slice(0, 200));
+      const fallback = loadFallback();
+      if (fallback) return res.json(fallback);
       return res.status(502).json({ error: 'Failed to fetch calendar', status: response.status });
     }
 
     if (!contentType.includes('application/json')) {
       const text = await response.text();
       console.error('[CALENDAR PROXY] Unexpected content-type', contentType, text.slice(0, 200));
+      const fallback = loadFallback();
+      if (fallback) return res.json(fallback);
       return res.status(502).json({ error: 'Upstream returned non-JSON calendar' });
     }
 
     const data = await response.json();
+    calendarCache = { data, fetchedAt: Date.now() };
     res.json(data);
   } catch (err) {
     console.error('[CALENDAR PROXY] Erro ao buscar calendário', err);
+    const fallback = loadFallback();
+    if (fallback) return res.json(fallback);
     res.status(502).json({ error: 'Failed to fetch calendar' });
   }
 });
