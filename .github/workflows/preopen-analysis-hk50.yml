@@ -4,7 +4,10 @@ on:
   schedule:
     # HK50 - 21:30 Manaus (01:30 UTC) domingo a quinta → UTC segunda a sexta
     - cron: '30 1 * * 1-5'
+  # Permite disparo manual ou externo via repository_dispatch
   workflow_dispatch:
+  repository_dispatch:
+    types: [preopen-hk50-trigger]
 
 jobs:
   pre-open-analysis-hk50:
