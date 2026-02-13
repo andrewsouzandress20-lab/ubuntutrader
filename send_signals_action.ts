@@ -483,6 +483,8 @@ const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snap
   };
 
   const headerLine = '🧠 ABERTURA';
+  const siteUrl = process.env.VITE_SITE_URL || process.env.SITE_URL || 'https://ubuntutrader.onrender.com/';
+
   const lines = [
     `${headerLine}`,
     '',
@@ -499,7 +501,11 @@ const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snap
     `- ${breadthSummary()}`,
     `- 🕳️ ${gapSummary()}`,
     '',
-    '⚡️ Siga as zonas SMC/FVG para melhor entrada.'
+    '⚡️ Siga as zonas SMC/FVG para melhor entrada.',
+    '',
+    `Acesse: ${siteUrl}`,
+    '',
+    'Para ver os dados detalhadamente!'
   ];
 
   return { message: lines.join('\n'), signal, strength, score: total };
