@@ -167,7 +167,7 @@ export const sendTelegramSignal = async (
       : `- 📉 Volume vendedor dominante (${fmtOneDec(volumeSell)}% venda)`;
 
     message = [
-      '🧠 PRÉ-ABERTURA',
+      '🧠 ABERTURA',
       '',
       `🇭🇰 HK50: Sinal de ${signalText} ${strength}`,
       `Score institucional: ${score > 0 ? '+' : ''}${score}`,
@@ -200,7 +200,7 @@ export const sendTelegramSignal = async (
       : `- 📉 Volume vendedor dominante (${fmtOneDec(volumeSell)}% venda)`;
 
     message = [
-      '🧠 PRÉ-ABERTURA',
+      '🧠 ABERTURA',
       '',
       `🇺🇸 US30: Sinal de ${signalText} ${strength}`,
       `Score institucional: ${score > 0 ? '+' : ''}${score}`,
