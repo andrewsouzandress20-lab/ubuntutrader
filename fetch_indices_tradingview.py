@@ -1,3 +1,4 @@
+import os
 import requests
 from bs4 import BeautifulSoup
 import json
@@ -5,6 +6,107 @@ from datetime import datetime
 import sys
 sys.path.append('utils')
 from fallback_finance import fetch_google_finance, fetch_yahoo_finance
+
+
+BACKEND_URL = os.getenv('BACKEND_URL') or os.getenv('VITE_BACKEND_URL')
+
+def build_yahoo_url(raw: str) -> str:
+    if not BACKEND_URL:
+        return raw
+    path_only = raw.replace('https://query1.finance.yahoo.com/', '')
+    return f"{BACKEND_URL.rstrip('/')}/api/yahoo/{path_only}"
+
+
+def fetch_yahoo_quote(symbol: str):
+    url = f'https://query1.finance.yahoo.com/v7/finance/quote?symbols={symbol}'
+    proxied = build_yahoo_url(url)
+    try:
+        resp = requests.get(proxied, headers=HEADERS, timeout=10)
+        if resp.status_code != 200 and 'query1.finance.yahoo.com' in url:
+            alt = build_yahoo_url(url.replace('query1.finance.yahoo.com', 'query2.finance.yahoo.com'))
+            resp = requests.get(alt, headers=HEADERS, timeout=10)
+        if resp.status_code != 200:
+            return None
+        data = resp.json()
+        result = data.get('quoteResponse', {}).get('result', [])
+        if not result:
+            return None
+        return result[0].get('regularMarketPrice')
+    except Exception as exc:
+        print(f'[LOG] Falha no fallback quote Yahoo para {symbol}: {exc}')
+        return None
+
+
+def fetch_investing_vhsi():
+    """Tenta coletar VHSI direto da página do Investing.com (scraping leve).
+
+    Procura o elemento de preço com atributo data-test="instrument-price-last".
+    """
+    urls = [
+        'https://www.investing.com/indices/volatility-hk',
+        'https://www.investing.com/indices/hang-seng-volatility',
+        'https://www.investing.com/indices/hong-kong-volatility',
+        'https://m.investing.com/indices/volatility-hk',
+        'https://m.investing.com/indices/hang-seng-volatility'
+    ]
+    for url in urls:
+        try:
+            resp = requests.get(url, headers={**HEADERS, 'Accept-Language': 'en-US,en;q=0.9'}, timeout=12)
+            if resp.status_code != 200:
+                print(f'[LOG] Investing.com VHSI HTTP {resp.status_code} ({url})')
+                continue
+            soup = BeautifulSoup(resp.text, 'html.parser')
+            price_tag = soup.find(attrs={'data-test': 'instrument-price-last'})
+            if price_tag and price_tag.text:
+                raw = price_tag.text.strip().replace('\xa0', '').replace(',', '')
+                try:
+                    return float(raw)
+                except ValueError:
+                    pass
+            # fallback: regex direto no HTML
+            import re
+            match = re.search(r'data-test="instrument-price-last"[^>]*>([^<]+)<', resp.text)
+            if match:
+                raw = match.group(1).strip().replace('\xa0', '').replace(',', '')
+                try:
+                    return float(raw)
+                except ValueError:
+                    pass
+        except Exception as exc:
+            print(f'[LOG] Falha no fallback Investing VHSI ({url}): {exc}')
+    return None
+
+
+def fetch_yahoo_chart_price(symbol: str):
+    """Fallback para pegar último preço pelo endpoint de chart do Yahoo.
+
+    Retorna regularMarketPrice ou, se ausente, o último close válido.
+    """
+    try:
+        url = f'https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?interval=1d&range=5d'
+        proxied = build_yahoo_url(url)
+        resp = requests.get(proxied, headers=HEADERS, timeout=10)
+        if resp.status_code != 200 and 'query1.finance.yahoo.com' in url:
+            alt = build_yahoo_url(url.replace('query1.finance.yahoo.com', 'query2.finance.yahoo.com'))
+            resp = requests.get(alt, headers=HEADERS, timeout=10)
+        if resp.status_code != 200:
+            return None
+        data = resp.json()
+        result = data.get('chart', {}).get('result', [])
+        if not result:
+            return None
+        meta = result[0].get('meta', {})
+        price = meta.get('regularMarketPrice')
+        if price is not None:
+            return price
+        closes = result[0].get('indicators', {}).get('quote', [{}])[0].get('close', [])
+        for val in reversed(closes):
+            if isinstance(val, (int, float)):
+                return val
+        return None
+    except Exception as exc:
+        print(f'[LOG] Falha no fallback chart Yahoo para {symbol}: {exc}')
+        return None
 
 
 # Lista completa de índices e ativos usados no projeto
@@ -30,6 +132,53 @@ INDICES = {
 HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 }
+
+
+def fetch_vhsi_from_hsi_official():
+    """Busca VHSI direto do site oficial (HSI) via JSON estático.
+
+    Usa o arquivo chart-rebased para pegar o último valor disponível
+    (previousClose) e, se possível, o último ponto da curva rebased.
+    """
+    url = 'https://www.hsi.com.hk/data/eng/index-series/volatilityindex/chart-rebased.json'
+    try:
+        resp = requests.get(url, headers=HEADERS, timeout=12)
+        if resp.status_code != 200:
+            print(f'[LOG] VHSI HSI oficial HTTP {resp.status_code}')
+            return None
+        data = resp.json()
+        series_list = data.get('indexSeriesList') or []
+        if not series_list:
+            return None
+        idx = series_list[0].get('indexList') or []
+        if not idx:
+            return None
+        item = idx[0]
+
+        # Primeiro tenta previousClose; se não existir, tenta indexValue ou último ponto do índice rebased
+        price = item.get('previousClose')
+        if price is None:
+            price = item.get('indexValue')
+
+        # Usa último ponto das curvas rebased como fallback final
+        if price is None:
+            for key in ('indexLevels-1m', 'indexLevels-3m', 'indexLevels-6m', 'indexLevels-1y'):
+                levels = item.get(key)
+                if levels:
+                    last = levels[-1]
+                    if isinstance(last, (list, tuple)) and len(last) >= 2:
+                        price = last[1]
+                        break
+
+        if price is None:
+            return None
+        try:
+            return float(str(price).replace(',', ''))
+        except ValueError:
+            return None
+    except Exception as exc:
+        print(f'[LOG] Falha no VHSI via HSI oficial: {exc}')
+        return None
 
 def fetch_index_price(url):
     try:
@@ -68,6 +217,8 @@ def main():
         'JP225': 'N225:INDEXNIKKEI',
         'GOLD': 'XAUUSD:CUR',
         'WTI': 'CL.1:NYM',
+        # Google nem sempre tem VHSI; mantemos só para eventual disponibilidade
+        'VHSI': 'VHSI:INDEXHANGSENG',
     }
     yahoo_map = {
         'US30': '^DJI',
@@ -79,10 +230,20 @@ def main():
         'JP225': '^N225',
         'GOLD': 'GC=F',
         'WTI': 'CL=F',
+        'VHSI': '^VHSI',
     }
     for name, url in INDICES.items():
         print(f'Coletando {name}...')
-        price = fetch_index_price(url)
+        price = None
+
+        # VHSI: tenta primeiro fonte oficial (mais confiável que TV)
+        if name == 'VHSI':
+            price = fetch_vhsi_from_hsi_official()
+            if price is not None:
+                print(f'[LOG] Preço encontrado no HSI oficial (VHSI): {price}')
+
+        if price is None:
+            price = fetch_index_price(url)
         if price is None:
             gsym = google_map.get(name)
             if gsym:
@@ -96,11 +257,31 @@ def main():
             ysym = yahoo_map.get(name)
             if ysym:
                 print(f'[LOG] Tentando buscar preço no Yahoo Finance para {name} ({ysym})...')
-                price = fetch_yahoo_finance(ysym)
+                price = fetch_yahoo_quote(ysym)
                 if price is not None:
                     print(f'[LOG] Preço encontrado no Yahoo Finance: {price}')
                 else:
                     print(f'[LOG] Não foi possível encontrar preço no Yahoo Finance para {name}.')
+
+        # Fallback final: endpoint de chart do Yahoo (pega regularMarketPrice ou último close)
+        if price is None and name in ('VHSI', 'HK50', 'JP225'):
+            ysym = yahoo_map.get(name)
+            if ysym:
+                print(f'[LOG] Tentando buscar preço no Yahoo Chart para {name} ({ysym})...')
+                price = fetch_yahoo_chart_price(ysym)
+                if price is not None:
+                    print(f'[LOG] Preço encontrado no Yahoo Chart: {price}')
+                else:
+                    print(f'[LOG] Não foi possível encontrar preço no Yahoo Chart para {name}.')
+
+        # Fallback específico para VHSI via Investing.com (scraping leve)
+        if price is None and name == 'VHSI':
+            print('[LOG] Tentando buscar preço no Investing.com para VHSI...')
+            price = fetch_investing_vhsi()
+            if price is not None:
+                print(f'[LOG] Preço encontrado no Investing.com (VHSI): {price}')
+            else:
+                print('[LOG] Não foi possível encontrar preço no Investing.com para VHSI.')
         snapshot['indices'][name] = {'price': price, 'url': url}
     # Salva na raiz e na pasta pública do frontend
     with open('indices_snapshot.json', 'w') as f:
