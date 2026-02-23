@@ -150,7 +150,7 @@ export const sendTelegramSignal = async (
         : ' (neutro)';
   const gapResumo = `🕳️ Gap de abertura: ${fmtPct(gap)}${gapBias}`;
 
-  const siteUrl = getEnvVar('VITE_SITE_URL') || getEnvVar('SITE_URL') || 'https://ubuntutrader.onrender.com/';
+  const siteUrl = getEnvVar('VITE_SITE_URL') || getEnvVar('SITE_URL') || 'https://ubuntutrader.com.br/';
 
   const quoteLine = quoteChange !== undefined && quoteChange !== null && quoteChange !== ''
     ? `Cotação: ${fmtNum(quote)} (${fmtPct(quoteChange)})`

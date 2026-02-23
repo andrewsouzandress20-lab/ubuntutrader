@@ -483,7 +483,7 @@ const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snap
   };
 
   const headerLine = '🧠 ABERTURA';
-  const siteUrl = process.env.VITE_SITE_URL || process.env.SITE_URL || 'https://ubuntutrader.onrender.com/';
+  const siteUrl = process.env.VITE_SITE_URL || process.env.SITE_URL || 'https://ubuntutrader.com.br/';
 
   const lines = [
     `${headerLine}`,
