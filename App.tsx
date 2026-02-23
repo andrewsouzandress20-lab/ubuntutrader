@@ -1,3 +1,4 @@
+import './tailwind.css';
 import { io } from 'socket.io-client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
@@ -98,7 +99,7 @@ const App: React.FC = () => {
     pesoTotal += 5;
     if (volScore > 0) scoreCompra += volScore; else scoreVenda += Math.abs(volScore);
     msg += `🔹 🥇 1️⃣ VOLUME - FLUXO COMPRADOR/VENDEDOR\n\n`;
-    msg += `⚖️ VOLUME COMPRADOR/VENDEDOR\nAbertura = ${candles.length > 0 ? candles[candles.length-1].open.toFixed(2) : '--'}, Fechamento = ${candles.length > 0 ? candles[candles.length-1].close.toFixed(2) : '--'}, Var = ${volVar.toFixed(2)}%\n`;
+    msg += `⚖️ VOLUME COMPRADOR/VENDEDOR\nAbertura = ${candles.length > 0 && candles[candles.length-1].open !== undefined ? candles[candles.length-1].open.toFixed(2) : '--'}, Fechamento = ${candles.length > 0 && candles[candles.length-1].close !== undefined ? candles[candles.length-1].close.toFixed(2) : '--'}, Var = ${volVar !== undefined ? volVar.toFixed(2) : '--'}%\n`;
     msg += `${volPressao === 'COMPRADOR' ? '🟢' : '🔴'} Pressão: ${volPressao} (Volume = ${candles.length > 0 ? candles[candles.length-1].volume : '--'})\n`;
     msg += `💡 Fechou acima da abertura = ${volPressao === 'COMPRADOR' ? 'Compradores dominando = COMPRA US30' : 'Vendedores dominando = VENDA US30'}\n`;
     msg += `📊 Score Parcial [VOLUME]: ${volPressao === 'COMPRADOR' ? '+5.0 COMPRA' : '-5.0 VENDA'}\n\n`;
@@ -155,12 +156,12 @@ const App: React.FC = () => {
       gapScore = gap.percent > 0 ? 2 : -2;
       pesoTotal += 2;
       if (gapScore > 0) scoreCompra += gapScore; else scoreVenda += Math.abs(gapScore);
-      msg += `🔹 6️⃣ GAP - SÓ SE GRANDE (>1%)\nGAP DE ABERTURA – DOW JONES\nAbertura = ${gap.openPrice?.toFixed(2) || '--'}, Fechamento ontem = ${gap.prevClose?.toFixed(2) || '--'}, Gap = ${gap.percent?.toFixed(2) || '--'}%\n`;
-      msg += `💡 GAP ${gap.percent > 0 ? 'POSITIVO' : 'NEGATIVO'} (${gap.percent?.toFixed(2)}%)\n`;
+      msg += `🔹 6️⃣ GAP - SÓ SE GRANDE (>1%)\nGAP DE ABERTURA – DOW JONES\nAbertura = ${gap.openPrice !== undefined ? gap.openPrice.toFixed(2) : '--'}, Fechamento ontem = ${gap.prevClose !== undefined ? gap.prevClose.toFixed(2) : '--'}, Gap = ${gap.percent !== undefined ? gap.percent.toFixed(2) : '--'}%\n`;
+      msg += `💡 GAP ${gap.percent > 0 ? 'POSITIVO' : 'NEGATIVO'} (${gap.percent !== undefined ? gap.percent.toFixed(2) : '--'}%)\n`;
       msg += `📊 Score Parcial [GAP]: ${gapScore > 0 ? '+2.0 COMPRA' : '-2.0 VENDA'}\n\n`;
     } else {
-      msg += `🔹 6️⃣ GAP - SÓ SE GRANDE (>1%)\nGAP DE ABERTURA – DOW JONES\nAbertura = ${gap.openPrice?.toFixed(2) || '--'}, Fechamento ontem = ${gap.prevClose?.toFixed(2) || '--'}, Gap = ${gap.percent?.toFixed(2) || '--'}%\n`;
-      msg += `💡 GAP NEUTRO (${gap.percent?.toFixed(2) || '--'}%) = Sem direção clara\n`;
+      msg += `🔹 6️⃣ GAP - SÓ SE GRANDE (>1%)\nGAP DE ABERTURA – DOW JONES\nAbertura = ${gap.openPrice !== undefined ? gap.openPrice.toFixed(2) : '--'}, Fechamento ontem = ${gap.prevClose !== undefined ? gap.prevClose.toFixed(2) : '--'}, Gap = ${gap.percent !== undefined ? gap.percent.toFixed(2) : '--'}%\n`;
+      msg += `💡 GAP NEUTRO (${gap.percent !== undefined ? gap.percent.toFixed(2) : '--'}%) = Sem direção clara\n`;
       msg += `📊 Score Parcial [GAP]: NEUTRO\n\n`;
     }
 
@@ -168,7 +169,7 @@ const App: React.FC = () => {
     const totalScore = scoreCompra - scoreVenda;
     const pctCompra = pesoTotal > 0 ? (scoreCompra / pesoTotal) * 100 : 0;
     const pctVenda = pesoTotal > 0 ? (scoreVenda / pesoTotal) * 100 : 0;
-    msg += `🔹 ⚡ FINALIZAÇÃO - DECISÃO SCALPING\nScore Ponderado: COMPRA=${scoreCompra.toFixed(1)} (${pctCompra.toFixed(1)}%) | VENDA=${scoreVenda.toFixed(1)} (${pctVenda.toFixed(1)}%)\nPeso Total: ${pesoTotal.toFixed(1)} | Margem Mínima: 10.0%\n🎯 DECISÃO FINAL: ${totalScore > 0 ? 'COMPRA' : totalScore < 0 ? 'VENDA' : 'NEUTRO'}\n💪 SINAL ${Math.abs(totalScore) > 5 ? 'FORTE' : 'FRACO'} (${Math.max(pctCompra, pctVenda).toFixed(1)}% de diferença)\n\n━━━━━━━━━━━━━━━━━━\n🚀 SINAL FINAL: ${totalScore > 0 ? '🔺 COMPRA' : totalScore < 0 ? '🔻 VENDA' : '⚖️ NEUTRO'}\n━━━━━━━━━━━━━━━━━━\n`;
+    msg += `🔹 ⚡ FINALIZAÇÃO - DECISÃO SCALPING\nScore Ponderado: COMPRA=${scoreCompra !== undefined ? scoreCompra.toFixed(1) : '--'} (${pctCompra !== undefined ? pctCompra.toFixed(1) : '--'}%) | VENDA=${scoreVenda !== undefined ? scoreVenda.toFixed(1) : '--'} (${pctVenda !== undefined ? pctVenda.toFixed(1) : '--'}%)\nPeso Total: ${pesoTotal !== undefined ? pesoTotal.toFixed(1) : '--'} | Margem Mínima: 10.0%\n🎯 DECISÃO FINAL: ${totalScore > 0 ? 'COMPRA' : totalScore < 0 ? 'VENDA' : 'NEUTRO'}\n💪 SINAL ${Math.abs(totalScore) > 5 ? 'FORTE' : 'FRACO'} (${Math.max(pctCompra, pctVenda) !== undefined ? Math.max(pctCompra, pctVenda).toFixed(1) : '--'}% de diferença)\n\n━━━━━━━━━━━━━━━━━━\n🚀 SINAL FINAL: ${totalScore > 0 ? '🔺 COMPRA' : totalScore < 0 ? '🔻 VENDA' : '⚖️ NEUTRO'}\n━━━━━━━━━━━━━━━━━━\n`;
 
     // Retorna score e mensagem
     return { score: totalScore, msg };
@@ -668,7 +669,7 @@ const App: React.FC = () => {
                     <span className="text-[8px] font-bold text-slate-500 uppercase">{c.correlation === 'positive' ? 'Direta' : 'Inversa'}</span>
                   </div>
                   <div className={`text-[11px] font-black jetbrains ${c.change >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}> 
-                    {c.change >= 0 ? '+' : ''}{c.change.toFixed(2)}%
+                    {c.change !== undefined && c.change !== null ? (c.change >= 0 ? '+' : '') + c.change.toFixed(2) + '%' : '--'}
                   </div>
                 </div>
               ))}
