@@ -1,12 +1,10 @@
 {
   "US30": {
-    "exchange": "NYSE",
-    "opening_time_utc": "13:30",
-    "closing_time_utc": "20:00"
+    "opening_time": "11:30",
+    "timezone": "BRT"
   },
   "HK50": {
-    "exchange": "HKEX",
-    "opening_time_utc": "01:30",
-    "closing_time_utc": "08:00"
+    "opening_time": "22:30",
+    "timezone": "BRT"
   }
 }
