@@ -446,7 +446,7 @@ const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snap
   };
 
   const indicators = [
-    { label: '🥇 VIX', symbol: volIndexSymbol, preferCompra: 'neg', caution: true },
+    { label: volIndexSymbol === '^VIX' ? '🥇 VIX' : '🥇 VHSI', symbol: volIndexSymbol, preferCompra: 'neg', caution: true },
     { label: '🇺🇸 S&P 500', symbol: '^GSPC', preferCompra: 'pos' },
     { label: '🇺🇸 NASDAQ', symbol: '^IXIC', preferCompra: 'pos' },
     { label: '💵 DXY', symbol: 'DX-Y.NYB', preferCompra: 'neg' },
@@ -536,6 +536,24 @@ async function sendSignalFromSnapshot(assetSymbol: string, label: string) {
     return;
   }
 
+  const indicesCtx: Record<string, number | string> = { ...tvIndices, ...mapIndices(snapshot, indicesMap) };
+
+  // Garantir VHSI mesmo se Yahoo/TV falharem (evita traço no Telegram)
+  if (assetSymbol === 'HK50' && indicesCtx.VHSI === undefined) {
+    try {
+      const vhsiChart = await fetchYahooChartPriceChange('^VHSI');
+      if (vhsiChart && typeof vhsiChart.change === 'number' && !Number.isNaN(vhsiChart.change)) {
+        indicesCtx.VHSI = vhsiChart.change;
+      } else if (vhsiChart && typeof vhsiChart.price === 'number' && !Number.isNaN(vhsiChart.price)) {
+        indicesCtx.VHSI = vhsiChart.price;
+      } else {
+        indicesCtx.VHSI = 0;
+      }
+    } catch {
+      indicesCtx.VHSI = 0;
+    }
+  }
+
   await sendTelegramSignal(
     assetSymbol,
     signal,
@@ -544,7 +562,7 @@ async function sendSignalFromSnapshot(assetSymbol: string, label: string) {
     {
         // Prioridade: TradingView (coleta 11h30) -> Yahoo do snapshot atual
         quote: tvQuote ?? snapshot.quote ?? undefined,
-        indices: { ...tvIndices, ...mapIndices(snapshot, indicesMap) },
+        indices: indicesCtx,
       volumeBuy: snapshot.volume?.buyPercent,
       volumeSell: snapshot.volume?.sellPercent,
       breadthAdv: snapshot.breadth?.summary?.advancing,

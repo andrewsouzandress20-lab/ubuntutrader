@@ -6,6 +6,8 @@ export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
     return {
       plugins: [react()],
+      // Use repo path on GitHub Pages so assets resolve under /ubuntutrader/
+      base: mode === 'production' ? '/ubuntutrader/' : '/',
       define: {
         'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
         'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
