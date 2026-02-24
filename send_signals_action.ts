@@ -430,6 +430,11 @@ const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snap
   const changeOrPrice = (symbol: string) => {
     const change = getChange(snapshot, symbol);
     if (change !== null) return fmtPct(change);
+    // Busca preço diretamente no snapshot.indices
+    if (snapshot.indices && Array.isArray(snapshot.indices)) {
+      const idx = snapshot.indices.find((i: any) => i.symbol === symbol);
+      if (idx && typeof idx.price === 'number') return `${fmtPrice(idx.price)} (preço)`;
+    }
     const price = tvPriceForSymbol(symbol, tvIndices);
     if (price !== undefined) return `${fmtPrice(price)} (preço)`;
     return '-';
