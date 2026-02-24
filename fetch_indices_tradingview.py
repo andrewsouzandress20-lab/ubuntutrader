@@ -113,7 +113,12 @@ def main():
         else:
             price = fetch_index_price(url)
         if price is not None:
-            snapshot['indices'][name] = price
+            # Sempre grava como número
+            try:
+                price_num = float(str(price).replace(',', ''))
+            except Exception:
+                price_num = price
+            snapshot['indices'][name] = price_num
         else:
             print(f'[LOG] Não foi possível coletar preço real para {name} no TradingView. Não será salvo.')
 
