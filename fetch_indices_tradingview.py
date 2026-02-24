@@ -122,30 +122,7 @@ def main():
     with open('public/indices_snapshot.json', 'w') as f:
         json.dump(snapshot, f, indent=2)
     print('Dados salvos em indices_snapshot.json')
-    # Removido bloco extra mal indentado
 
-        # VHSI: tenta primeiro fonte oficial (mais confiável que TV)
-        if name == 'VHSI':
-            price = fetch_vhsi_from_hsi_official()
-            if price is not None:
-                print(f'[LOG] Preço encontrado no HSI oficial (VHSI): {price}')
-
-        if price is None:
-            price = fetch_index_price(url)
-
-
-
-        snapshot['indices'][name] = {'price': price, 'url': url}
-    # Salva na raiz e na pasta pública do frontend
-    with open('indices_snapshot.json', 'w') as f:
-        json.dump(snapshot, f, indent=2)
-    try:
-        import shutil
-        shutil.copyfile('indices_snapshot.json', 'public/indices_snapshot.json')
-        print('Snapshot também salvo em public/indices_snapshot.json')
-    except Exception as e:
-        print('Aviso: não foi possível salvar em public/indices_snapshot.json:', e)
-    print('Dados salvos em indices_snapshot.json')
-
+   
 if __name__ == '__main__':
     main()
