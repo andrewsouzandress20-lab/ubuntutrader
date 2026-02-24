@@ -210,10 +210,11 @@ const loadTradingViewIndices = (): Record<string, number> => {
     Object.entries(indices).forEach(([sym, data]: any) => {
       const key = TV_SYMBOL_MAP[sym];
       if (!key) return;
-      const priceRaw = (data as any)?.price;
+      let priceRaw = (data as any)?.price;
       if (priceRaw === null || priceRaw === undefined) return;
-      const num = parseFloat(String(priceRaw).replace(/,/g, ''));
-      if (!Number.isNaN(num)) out[key] = num;
+      // Corrige: converte string para número
+      if (typeof priceRaw === 'string') priceRaw = parseFloat(priceRaw.replace(/,/g, ''));
+      if (typeof priceRaw === 'number' && !Number.isNaN(priceRaw)) out[key] = priceRaw;
     });
     return out;
   } catch (error) {
