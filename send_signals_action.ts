@@ -450,14 +450,18 @@ const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snap
     return `${check} (${word} para ${signal === 'NEUTRO' ? 'NEUTRO' : signal})`;
   };
 
-  const indicators = [
-    { label: volIndexSymbol === '^VIX' ? '🥇 VIX' : '🥇 VHSI', symbol: volIndexSymbol, preferCompra: 'neg', caution: true },
-    { label: '🇺🇸 S&P 500', symbol: '^GSPC', preferCompra: 'pos' },
-    { label: '🇺🇸 NASDAQ', symbol: '^IXIC', preferCompra: 'pos' },
-    { label: '💵 DXY', symbol: 'DX-Y.NYB', preferCompra: 'neg' },
-    { label: '🇺🇸 10Y', symbol: '^TNX', preferCompra: 'neg' },
-    { label: '🇺🇸 Russell 2000', symbol: '^RUT', preferCompra: 'pos' }
-  ];
+  // Só exibe índices presentes no snapshot, sem buscar Yahoo ou ativos não relacionados
+  const relevantSymbols = assetSymbol === 'US30'
+    ? ['^VIX', '^GSPC', '^IXIC', 'DX-Y.NYB', '^TNX', '^RUT']
+    : ['^VHSI', '^N225', '000001.SS', '^GSPC', 'USDJPY=X', 'DX-Y.NYB'];
+  const indicators = snapshot.indices
+    .filter((idx: any) => relevantSymbols.includes(idx.symbol))
+    .map((idx: any) => ({
+      label: idx.name,
+      symbol: idx.symbol,
+      preferCompra: 'pos',
+      caution: false
+    }));
 
   const indicatorLines = indicators.map(({ label, symbol, preferCompra, caution }) => {
     const prefer = signal === 'VENDA' ? (preferCompra === 'pos' ? 'neg' : 'pos') : preferCompra;
