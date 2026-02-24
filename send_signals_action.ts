@@ -586,11 +586,11 @@ async function sendAnalysisFromSnapshot(assetSymbol: string, label: string) {
     return;
   }
   let snapshot: Snapshot = JSON.parse(fs.readFileSync(file, 'utf-8'));
-  snapshot = await ensureSnapshotData(assetSymbol, snapshot, file);
-  const tvIndices = loadTradingViewIndices();
+  // Não busca Yahoo, usa apenas TradingView do snapshot
+  const tvIndices = snapshot.indices;
   if (!snapshot.quote) {
-    const tvQuote = loadTradingViewQuote(assetSymbol);
-    if (tvQuote !== undefined) snapshot.quote = tvQuote;
+    // Usa cotação do TradingView se disponível
+    snapshot.quote = snapshot.quote;
   }
   const { message, score, signal, strength } = buildAnalysisMessage(assetSymbol, label, snapshot, tvIndices);
   await sendTelegramAnalysis(message);
