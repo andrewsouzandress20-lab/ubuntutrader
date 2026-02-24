@@ -2,7 +2,7 @@ import os
 import requests
 from bs4 import BeautifulSoup
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 
@@ -102,12 +102,26 @@ def fetch_index_price(url):
         return None
 
 def main():
-    snapshot = {'timestamp': datetime.utcnow().isoformat() + 'Z', 'indices': {}}
-    # Mapas para fallback
+    snapshot = {'timestamp': datetime.now(timezone.utc).isoformat(), 'indices': {}}
 
     for name, url in INDICES.items():
         print(f'Coletando {name}...')
         price = None
+        # Busca preço apenas no TradingView, sem fallback
+        if name == 'VHSI':
+            price = fetch_vhsi_from_hsi_official()
+        else:
+            price = fetch_index_price(url)
+        if price is not None:
+            snapshot['indices'][name] = price
+        else:
+            print(f'[LOG] Não foi possível coletar preço real para {name} no TradingView. Não será salvo.')
+
+    with open('indices_snapshot.json', 'w') as f:
+        json.dump(snapshot, f, indent=2)
+    with open('public/indices_snapshot.json', 'w') as f:
+        json.dump(snapshot, f, indent=2)
+    print('Dados salvos em indices_snapshot.json')
 
         # VHSI: tenta primeiro fonte oficial (mais confiável que TV)
         if name == 'VHSI':

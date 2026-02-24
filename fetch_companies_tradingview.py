@@ -1,7 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 # URLs das páginas de componentes dos índices no TradingView
@@ -70,21 +70,14 @@ def fetch_companies(url, fallback_tickers):
     except Exception as e:
         print(f'Erro ao buscar empresas em {url}: {e}')
 
-    # Se lista incompleta, usa fallback de tickers mas mantém estrutura com price/change None
-    tickers_set = set([c['ticker'] for c in companies])
-    if len(companies) < len(fallback_tickers):
-        print(f'Usando fallback para completar lista de {len(fallback_tickers)} tickers.')
-        for t in fallback_tickers:
-            if t not in tickers_set:
-                companies.append({'ticker': t, 'name': '', 'sector': '', 'price': None, 'change': None, 'changePercent': None})
+    # Não usa fallback: salva apenas empresas realmente coletadas do TradingView
     return companies
 
 def main():
-    snapshot = {'timestamp': datetime.utcnow().isoformat() + 'Z', 'indices': {}}
+    snapshot = {'timestamp': datetime.now(timezone.utc).isoformat(), 'indices': {}}
     for index, url in INDEX_COMPONENTS.items():
         print(f'Coletando empresas do {index}...')
-        fallback = DOW_30_TICKERS if index == 'US30' else HK_50_TICKERS
-        companies = fetch_companies(url, fallback)
+        companies = fetch_companies(url, [])
         snapshot['indices'][index] = companies
     with open('companies_snapshot.json', 'w') as f:
         json.dump(snapshot, f, indent=2)
