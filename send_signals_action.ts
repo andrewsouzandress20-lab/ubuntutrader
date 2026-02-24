@@ -383,14 +383,19 @@ const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snap
   const relevantSymbols = assetSymbol === 'US30'
     ? ['^VIX', '^GSPC', '^IXIC', 'DX-Y.NYB', '^TNX', '^RUT']
     : ['^VHSI', '^N225', '000001.SS', '^GSPC', 'USDJPY=X', 'DX-Y.NYB'];
-  const indicators = snapshot.indices
-    .filter((idx: any) => relevantSymbols.includes(idx.symbol))
-    .map((idx: any) => ({
-      label: idx.name,
-      symbol: idx.symbol,
+
+  // Garante que todos os índices relevantes sejam exibidos, mesmo se ausentes no snapshot
+  const indicators = relevantSymbols.map(symbol => {
+    const idx = snapshot.indices?.find((i: any) => i.symbol === symbol);
+    let label = idx?.name || INDEX_MAP_US30[symbol] || symbol;
+    if (assetSymbol === 'HK50') label = idx?.name || INDEX_MAP_HK50[symbol] || symbol;
+    return {
+      label,
+      symbol,
       preferCompra: 'pos',
       caution: false
-    }));
+    };
+  });
 
   const indicatorLines = indicators.map(({ label, symbol, preferCompra, caution }) => {
     const prefer = signal === 'VENDA' ? (preferCompra === 'pos' ? 'neg' : 'pos') : preferCompra;
