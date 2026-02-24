@@ -3,37 +3,10 @@ import requests
 from bs4 import BeautifulSoup
 import json
 from datetime import datetime
-import sys
-sys.path.append('utils')
-from fallback_finance import fetch_google_finance
 
-
-
-
+                    return float(raw)
     """Tenta coletar VHSI direto da página do Investing.com (scraping leve)."""
     pass
-
-    Procura o elemento de preço com atributo data-test="instrument-price-last".
-    """
-    urls = [
-        'https://www.investing.com/indices/volatility-hk',
-        'https://www.investing.com/indices/hang-seng-volatility',
-        'https://www.investing.com/indices/hong-kong-volatility',
-        'https://m.investing.com/indices/volatility-hk',
-        'https://m.investing.com/indices/hang-seng-volatility'
-    ]
-    for url in urls:
-        try:
-            resp = requests.get(url, headers={**HEADERS, 'Accept-Language': 'en-US,en;q=0.9'}, timeout=12)
-            if resp.status_code != 200:
-                print(f'[LOG] Investing.com VHSI HTTP {resp.status_code} ({url})')
-                continue
-            soup = BeautifulSoup(resp.text, 'html.parser')
-            price_tag = soup.find(attrs={'data-test': 'instrument-price-last'})
-            if price_tag and price_tag.text:
-                raw = price_tag.text.strip().replace('\xa0', '').replace(',', '')
-                try:
-                    return float(raw)
                 except ValueError:
                     pass
             # fallback: regex direto no HTML
