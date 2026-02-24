@@ -85,14 +85,13 @@ export async function collectSnapshot(assetSymbol: string, label: string) {
 
 
   const candles = await fetchRealData(asset, '1m');
-  const quoteYahoo = await fetchCurrentPrice(asset);
   const breadth = await fetchMarketBreadth(assetSymbol);
   const volume = calculateVolumePressure(candles);
   const gap = detectOpeningGap(candles, asset);
 
-  // Força uso do TradingView para índices e cotação
+  // Só usa TradingView para índices e cotação
   const tvQuote = fallbackQuoteFromTV(assetSymbol, tvSnapshot);
-  const quote = tvQuote ?? quoteYahoo;
+  const quote = tvQuote;
   const indices = fallbackCorrelationFromTV(assetSymbol, tvSnapshot);
 
   const snapshot = {
