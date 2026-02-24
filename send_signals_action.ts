@@ -587,9 +587,16 @@ async function sendAnalysisFromSnapshot(assetSymbol: string, label: string) {
   }
   let snapshot: Snapshot = JSON.parse(fs.readFileSync(file, 'utf-8'));
   // Não busca Yahoo, usa apenas TradingView do snapshot
-  const tvIndices = snapshot.indices;
+  // Converte array de índices para Record<string, number>
+  const tvIndices: Record<string, number> = {};
+  if (Array.isArray(snapshot.indices)) {
+    snapshot.indices.forEach((idx: any) => {
+      if (idx.symbol && typeof idx.price === 'number') {
+        tvIndices[idx.symbol] = idx.price;
+      }
+    });
+  }
   if (!snapshot.quote) {
-    // Usa cotação do TradingView se disponível
     snapshot.quote = snapshot.quote;
   }
   const { message, score, signal, strength } = buildAnalysisMessage(assetSymbol, label, snapshot, tvIndices);
