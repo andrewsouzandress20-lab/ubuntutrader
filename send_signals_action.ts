@@ -545,23 +545,8 @@ async function sendSignalFromSnapshot(assetSymbol: string, label: string) {
     return;
   }
 
-  const indicesCtx: Record<string, number | string> = { ...tvIndices, ...mapIndices(snapshot, indicesMap) };
-
-  // Garantir VHSI mesmo se Yahoo/TV falharem (evita traço no Telegram)
-  if (assetSymbol === 'HK50' && indicesCtx.VHSI === undefined) {
-    try {
-      const vhsiChart = await fetchYahooChartPriceChange('^VHSI');
-      if (vhsiChart && typeof vhsiChart.change === 'number' && !Number.isNaN(vhsiChart.change)) {
-        indicesCtx.VHSI = vhsiChart.change;
-      } else if (vhsiChart && typeof vhsiChart.price === 'number' && !Number.isNaN(vhsiChart.price)) {
-        indicesCtx.VHSI = vhsiChart.price;
-      } else {
-        indicesCtx.VHSI = 0;
-      }
-    } catch {
-      indicesCtx.VHSI = 0;
-    }
-  }
+  // Só envia TradingView: descarta qualquer fallback ou mesclagem
+  const indicesCtx: Record<string, number | string> = { ...tvIndices };
 
   await sendTelegramSignal(
     assetSymbol,
@@ -569,9 +554,8 @@ async function sendSignalFromSnapshot(assetSymbol: string, label: string) {
     strength,
     score,
     {
-        // Prioridade: TradingView (coleta 11h30) -> Yahoo do snapshot atual
-        quote: tvQuote ?? snapshot.quote ?? undefined,
-        indices: indicesCtx,
+      quote: tvQuote ?? snapshot.quote ?? undefined,
+      indices: indicesCtx,
       volumeBuy: snapshot.volume?.buyPercent,
       volumeSell: snapshot.volume?.sellPercent,
       breadthAdv: snapshot.breadth?.summary?.advancing,
