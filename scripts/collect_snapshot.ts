@@ -108,7 +108,7 @@ export async function collectSnapshot(assetSymbol: string, label: string) {
   const outPath = `snapshots/${assetSymbol.toLowerCase()}_${label}.json`;
   fs.mkdirSync('snapshots', { recursive: true });
   fs.writeFileSync(outPath, JSON.stringify(snapshot, null, 2));
-  console.log(`[SNAPSHOT] Dados salvos em ${outPath}`);
+  // Mensagem removida conforme solicitado
 }
 
 // Executa somente quando chamado diretamente via CLI (não em import)
