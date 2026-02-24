@@ -126,22 +126,7 @@ export const fetchYahooChartPriceChange = async (symbol: string): Promise<{ pric
 };
 
 export const fetchCurrentPrice = async (asset: Asset): Promise<number | null> => {
-  let yahooSymbol = '';
-  if (asset.symbol === 'US30') yahooSymbol = '^DJI';
-  else if (asset.symbol === 'HK50') yahooSymbol = '^HSI';
-  else yahooSymbol = asset.symbol;
 
-  const quoteUrl = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(yahooSymbol)}`;
-  const data = await fetchFromYahoo(quoteUrl);
-  
-  if (data?.quoteResponse?.result && data.quoteResponse.result.length > 0) {
-    const price = data.quoteResponse.result[0].regularMarketPrice;
-    if (typeof price === 'number' && !Number.isNaN(price)) return price;
-  }
-
-  // Fallback para o endpoint de chart (menos bloqueado por rate limit)
-  const chart = await fetchYahooChartPriceChange(yahooSymbol);
-  return chart.price;
 };
 
 export const fetchCorrelationData = async (assetSymbol: string): Promise<CorrelationData[]> => {
@@ -168,36 +153,7 @@ export const fetchCorrelationData = async (assetSymbol: string): Promise<Correla
     ];
   }
 
-  const symbols = targets.map(t => t.symbol).join(',');
-  const quoteUrl = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbols}`;
-  const data = await fetchFromYahoo(quoteUrl);
 
-  const quoteMap = new Map<string, any>();
-  if (data?.quoteResponse?.result && data.quoteResponse.result.length > 0) {
-    data.quoteResponse.result.forEach((q: any) => quoteMap.set(q.symbol, q));
-  } else {
-    console.warn('[fetchCorrelationData] Yahoo não retornou resultados para:', symbols, data);
-  }
-
-  const results: any[] = [];
-  for (const target of targets) {
-    const quote = quoteMap.get(target.symbol);
-    let price = quote?.regularMarketPrice;
-    let change = quote?.regularMarketChangePercent;
-
-    if (price === null || price === undefined || Number.isNaN(price) || change === null || change === undefined || Number.isNaN(change)) {
-      console.warn(`[fetchCorrelationData] Dados ausentes para ${target.symbol} | price:`, price, '| change:', change, '| quote:', quote);
-      const fallback = await fetchYahooChartPriceChange(target.symbol);
-      if (price === null || price === undefined || Number.isNaN(price)) price = fallback.price;
-      if (change === null || change === undefined || Number.isNaN(change)) change = fallback.change;
-      console.warn(`[fetchCorrelationData] Fallback chart para ${target.symbol} | price:`, price, '| change:', change);
-    }
-
-    results.push({
-      symbol: target.symbol,
-      name: target.name,
-      // Se mesmo assim vier vazio, mantemos como undefined para permitir fill posterior no ensureSnapshot
-      price: (price !== null && price !== undefined && !Number.isNaN(price)) ? price : undefined as any,
       change: (change !== null && change !== undefined && !Number.isNaN(change)) ? change : undefined as any,
       correlation: target.correlation,
       info: (target as any).info || ''
@@ -370,26 +326,7 @@ export const detectOpeningGap = (candles: Candle[], asset: Asset): GapData => {
 };
 
 export const fetchRealData = async (asset: Asset, timeframe: Timeframe): Promise<Candle[]> => {
-  let yahooSymbol = '';
-  if (asset.symbol === 'US30') yahooSymbol = '^DJI';
-  else if (asset.symbol === 'HK50') yahooSymbol = '^HSI';
-  
-  if (yahooSymbol) {
-    const result = await fetchYahooData(yahooSymbol, timeframe, '5d');
-    if (!result) return [];
-    
-    const timestamps = result.timestamp;
-    const quote = result.indicators.quote[0];
-    const { open, high, low, close, volume } = quote;
-    
-    return timestamps.map((t: number, i: number) => ({
-      time: t,
-      open: open[i],
-      high: high[i],
-      low: low[i],
-      close: close[i],
-      volume: volume ? volume[i] : 0
-    })).filter((c: any) => c.open !== null && c.close !== null);
-  }
+
+  // Removido Yahoo: agora só TradingView/local
   return [];
 };

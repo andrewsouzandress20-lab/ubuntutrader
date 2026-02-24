@@ -5,36 +5,14 @@ import json
 from datetime import datetime
 import sys
 sys.path.append('utils')
-from fallback_finance import fetch_google_finance, fetch_yahoo_finance
+from fallback_finance import fetch_google_finance
 
-
-BACKEND_URL = os.getenv('BACKEND_URL') or os.getenv('VITE_BACKEND_URL')
 
 def build_yahoo_url(raw: str) -> str:
-    if not BACKEND_URL:
-        return raw
-    path_only = raw.replace('https://query1.finance.yahoo.com/', '')
-    return f"{BACKEND_URL.rstrip('/')}/api/yahoo/{path_only}"
 
 
-def fetch_yahoo_quote(symbol: str):
-    url = f'https://query1.finance.yahoo.com/v7/finance/quote?symbols={symbol}'
-    proxied = build_yahoo_url(url)
-    try:
-        resp = requests.get(proxied, headers=HEADERS, timeout=10)
-        if resp.status_code != 200 and 'query1.finance.yahoo.com' in url:
-            alt = build_yahoo_url(url.replace('query1.finance.yahoo.com', 'query2.finance.yahoo.com'))
-            resp = requests.get(alt, headers=HEADERS, timeout=10)
-        if resp.status_code != 200:
-            return None
-        data = resp.json()
-        result = data.get('quoteResponse', {}).get('result', [])
-        if not result:
-            return None
-        return result[0].get('regularMarketPrice')
-    except Exception as exc:
-        print(f'[LOG] Falha no fallback quote Yahoo para {symbol}: {exc}')
-        return None
+
+
 
 
 def fetch_investing_vhsi():
@@ -77,27 +55,7 @@ def fetch_investing_vhsi():
     return None
 
 
-def fetch_yahoo_chart_price(symbol: str):
-    """Fallback para pegar último preço pelo endpoint de chart do Yahoo.
 
-    Retorna regularMarketPrice ou, se ausente, o último close válido.
-    """
-    try:
-        url = f'https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?interval=1d&range=5d'
-        proxied = build_yahoo_url(url)
-        resp = requests.get(proxied, headers=HEADERS, timeout=10)
-        if resp.status_code != 200 and 'query1.finance.yahoo.com' in url:
-            alt = build_yahoo_url(url.replace('query1.finance.yahoo.com', 'query2.finance.yahoo.com'))
-            resp = requests.get(alt, headers=HEADERS, timeout=10)
-        if resp.status_code != 200:
-            return None
-        data = resp.json()
-        result = data.get('chart', {}).get('result', [])
-        if not result:
-            return None
-        meta = result[0].get('meta', {})
-        price = meta.get('regularMarketPrice')
-        if price is not None:
             return price
         closes = result[0].get('indicators', {}).get('quote', [{}])[0].get('close', [])
         for val in reversed(closes):

@@ -58,7 +58,7 @@ const fallbackCorrelationFromTV = (assetSymbol: string, tv: Record<string, numbe
   };
   const list: CorrelationData[] = [];
   if (assetSymbol === 'HK50') {
-    // Usar os mesmos símbolos esperados no restante do código (Yahoo-style)
+
     pushIf(list, '^VHSI', 'VHSI', 'negative');
     pushIf(list, 'CNH=X', 'CNH', 'negative');
     pushIf(list, '^N225', 'Nikkei', 'positive');
