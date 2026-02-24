@@ -122,6 +122,7 @@ def main():
     with open('public/indices_snapshot.json', 'w') as f:
         json.dump(snapshot, f, indent=2)
     print('Dados salvos em indices_snapshot.json')
+    # Removido bloco extra mal indentado
 
         # VHSI: tenta primeiro fonte oficial (mais confiável que TV)
         if name == 'VHSI':
