@@ -386,9 +386,8 @@ const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snap
 
   // Garante que todos os índices relevantes sejam exibidos, mesmo se ausentes no snapshot
   const indicators = relevantSymbols.map(symbol => {
-    const idx = snapshot.indices?.find((i: any) => i.symbol === symbol);
-    let label = idx?.name || INDEX_MAP_US30[symbol] || symbol;
-    if (assetSymbol === 'HK50') label = idx?.name || INDEX_MAP_HK50[symbol] || symbol;
+    let label = assetSymbol === 'HK50' ? INDEX_MAP_HK50[symbol] : INDEX_MAP_US30[symbol];
+    if (!label) label = symbol;
     return {
       label,
       symbol,
