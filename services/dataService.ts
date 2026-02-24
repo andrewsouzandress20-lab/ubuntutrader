@@ -130,7 +130,9 @@ export const fetchCurrentPrice = async (asset: Asset): Promise<number | null> =>
 };
 
 export const fetchCorrelationData = async (assetSymbol: string): Promise<CorrelationData[]> => {
+
   let targets: { symbol: string, name: string, correlation: 'positive' | 'negative', info?: string }[] = [];
+  let results: any[] = [];
 
   if (assetSymbol === 'HK50') {
     targets = [
@@ -155,10 +157,12 @@ export const fetchCorrelationData = async (assetSymbol: string): Promise<Correla
   }
 
   for (const target of targets) {
-    // ...existing code...
-    change: (change !== null && change !== undefined && !Number.isNaN(change)) ? change : undefined as any,
-    correlation: target.correlation,
-    info: (target as any).info || ''
+    results.push({
+      // ...existing code...
+      change: (change !== null && change !== undefined && !Number.isNaN(change)) ? change : undefined as any,
+      correlation: target.correlation,
+      info: (target as any).info || ''
+    });
   }
   return results;
 }
