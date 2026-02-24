@@ -28,86 +28,15 @@ const ensureSnapshotData = async (assetSymbol: string, snapshot: Snapshot, snaps
   }
   let changed = false;
 
+
   if (!snapshot.indices || snapshot.indices.length === 0) {
     // Prioridade: TradingView
     const tvFallback = buildTvCorrelation(assetSymbol, tvIndices);
     if (tvFallback.length > 0) {
       snapshot.indices = tvFallback as any;
       changed = true;
-    } else {
-      // Somente se TV estiver vazio, tenta Yahoo
-      let indices: Snapshot['indices'] = [];
-      try {
-        indices = await fetchCorrelationData(assetSymbol);
-      } catch (err) {
-        console.warn('[SNAPSHOT] Falha ao buscar indices Yahoo:', err);
-      }
-      if (indices && indices.length > 0) {
-        snapshot.indices = indices;
-        changed = true;
-      }
     }
-  } else {
-    // Se temos índices mas sem change (apenas preço TV), tenta mesclar Yahoo para obter variação
-    const hasChange = snapshot.indices.some(i => typeof i.change === 'number');
-    if (!hasChange) {
-      try {
-        const yahooIndices = await fetchCorrelationData(assetSymbol);
-        if (yahooIndices && yahooIndices.length > 0) {
-          const merged: Snapshot['indices'] = [];
-          const bySymbol = new Map<string, any>();
-          yahooIndices.forEach(i => bySymbol.set(i.symbol, i));
-          snapshot.indices.forEach(i => {
-            const y = bySymbol.get(i.symbol);
-            merged.push(y ? { ...i, ...y } : i);
-            if (y) bySymbol.delete(i.symbol);
-          });
-          bySymbol.forEach(v => merged.push(v));
-          snapshot.indices = merged;
-          changed = true;
-        }
-      } catch (err) {
-        console.warn('[SNAPSHOT] Falha ao mesclar indices Yahoo para change:', err);
-      }
-
-      // Fallback extra: se ainda não veio change, tentar chart por símbolo individual
-      const missing = snapshot.indices?.filter(i => typeof i.change !== 'number') || [];
-      for (const idx of missing) {
-        try {
-          const chart = await fetchYahooChartPriceChange(idx.symbol);
-          if (chart && typeof chart.change === 'number' && !Number.isNaN(chart.change)) {
-            idx.change = chart.change;
-            changed = true;
-          }
-        } catch (err) {
-          console.warn('[SNAPSHOT] Falha no fallback chart para', idx.symbol, err);
-        }
-      }
-    }
-  }
-
-  // Garantir presença mínima de símbolos críticos (ex.: ^RUT) mesmo se Yahoo falhar
-  const required = assetSymbol === 'HK50'
-    ? ['^VHSI', 'CNH=X', '^N225', '000001.SS', '^GSPC', 'USDJPY=X', 'DX-Y.NYB']
-    : ['^VIX', '^GSPC', '^IXIC', 'DX-Y.NYB', '^TNX', '^RUT'];
-  const present = new Set(snapshot.indices?.map(i => i.symbol));
-  for (const sym of required) {
-    if (!present.has(sym)) {
-      try {
-        const chart = await fetchYahooChartPriceChange(sym);
-        snapshot.indices = snapshot.indices || [];
-        const change = (chart.change !== null && chart.change !== undefined && !Number.isNaN(chart.change))
-          ? chart.change
-          : 0; // mantém visível mesmo sem variação confiável
-        const price = (chart.price !== null && chart.price !== undefined && !Number.isNaN(chart.price))
-          ? chart.price
-          : undefined;
-        snapshot.indices.push({ symbol: sym, price, change } as any);
-        changed = true;
-      } catch (err) {
-        console.warn('[SNAPSHOT] Falha ao garantir símbolo mínimo', sym, err);
-      }
-    }
+    // Não faz fallback para Yahoo, nem mescla, nem busca change externo
   }
 
   const breadthSummary = snapshot.breadth?.summary;
