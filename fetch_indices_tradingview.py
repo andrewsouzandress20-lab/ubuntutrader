@@ -8,16 +8,9 @@ sys.path.append('utils')
 from fallback_finance import fetch_google_finance
 
 
-def build_yahoo_url(raw: str) -> str:
 
 
-
-
-
-
-
-def fetch_investing_vhsi():
-    """Tenta coletar VHSI direto da página do Investing.com (scraping leve).
+    """Tenta coletar VHSI direto da página do Investing.com (scraping leve)."""
     pass
 
     Procura o elemento de preço com atributo data-test="instrument-price-last".
