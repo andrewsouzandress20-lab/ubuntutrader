@@ -126,7 +126,8 @@ export const fetchYahooChartPriceChange = async (symbol: string): Promise<{ pric
 };
 
 export const fetchCurrentPrice = async (asset: Asset): Promise<number | null> => {
-
+  // Função desativada, retorna null
+  return null;
 };
 
 export const fetchCorrelationData = async (assetSymbol: string): Promise<CorrelationData[]> => {
@@ -157,8 +158,9 @@ export const fetchCorrelationData = async (assetSymbol: string): Promise<Correla
   }
 
   for (const target of targets) {
+    // Exemplo: change pode ser obtido de algum lugar, aqui deixo como null
+    const change = null;
     results.push({
-      // ...existing code...
       change: (change !== null && change !== undefined && !Number.isNaN(change)) ? change : undefined as any,
       correlation: target.correlation,
       info: (target as any).info || ''
