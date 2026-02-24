@@ -11,9 +11,16 @@ const loadTradingViewSnapshot = (): Record<string, number> => {
     const out: Record<string, number> = {};
     Object.entries(raw?.indices ?? {}).forEach(([sym, data]: any) => {
       const priceRaw = (data as any)?.price;
-      if (priceRaw === null || priceRaw === undefined) return;
+      // Ignora valores nulos, undefined, string vazia ou '0', ou NaN
+      if (
+        priceRaw === null ||
+        priceRaw === undefined ||
+        priceRaw === '' ||
+        priceRaw === '0' ||
+        priceRaw === 0
+      ) return;
       const num = parseFloat(String(priceRaw).replace(/,/g, ''));
-      if (!Number.isNaN(num)) out[sym] = num;
+      if (!Number.isNaN(num) && num !== 0) out[sym] = num;
     });
     return out;
   } catch {
@@ -76,17 +83,17 @@ export async function collectSnapshot(assetSymbol: string, label: string) {
   const asset = SUPPORTED_ASSETS.find(a => a.symbol === assetSymbol);
   if (!asset) throw new Error('Ativo não suportado: ' + assetSymbol);
 
+
   const candles = await fetchRealData(asset, '1m');
   const quoteYahoo = await fetchCurrentPrice(asset);
-  const indicesYahoo = await fetchCorrelationData(assetSymbol);
   const breadth = await fetchMarketBreadth(assetSymbol);
   const volume = calculateVolumePressure(candles);
   const gap = detectOpeningGap(candles, asset);
 
+  // Força uso do TradingView para índices e cotação
   const tvQuote = fallbackQuoteFromTV(assetSymbol, tvSnapshot);
   const quote = tvQuote ?? quoteYahoo;
-  const indicesTV = fallbackCorrelationFromTV(assetSymbol, tvSnapshot);
-  const indices = indicesTV.length > 0 ? indicesTV : (indicesYahoo && indicesYahoo.length > 0 ? indicesYahoo : []);
+  const indices = fallbackCorrelationFromTV(assetSymbol, tvSnapshot);
 
   const snapshot = {
     timestamp: new Date().toISOString(),

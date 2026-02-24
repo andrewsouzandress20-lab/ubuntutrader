@@ -175,6 +175,8 @@ export const fetchCorrelationData = async (assetSymbol: string): Promise<Correla
   const quoteMap = new Map<string, any>();
   if (data?.quoteResponse?.result && data.quoteResponse.result.length > 0) {
     data.quoteResponse.result.forEach((q: any) => quoteMap.set(q.symbol, q));
+  } else {
+    console.warn('[fetchCorrelationData] Yahoo não retornou resultados para:', symbols, data);
   }
 
   const results: any[] = [];
@@ -184,9 +186,11 @@ export const fetchCorrelationData = async (assetSymbol: string): Promise<Correla
     let change = quote?.regularMarketChangePercent;
 
     if (price === null || price === undefined || Number.isNaN(price) || change === null || change === undefined || Number.isNaN(change)) {
+      console.warn(`[fetchCorrelationData] Dados ausentes para ${target.symbol} | price:`, price, '| change:', change, '| quote:', quote);
       const fallback = await fetchYahooChartPriceChange(target.symbol);
       if (price === null || price === undefined || Number.isNaN(price)) price = fallback.price;
       if (change === null || change === undefined || Number.isNaN(change)) change = fallback.change;
+      console.warn(`[fetchCorrelationData] Fallback chart para ${target.symbol} | price:`, price, '| change:', change);
     }
 
     results.push({

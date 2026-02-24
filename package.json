@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "preview": "vite preview",
     "start": "node legacy/server.cjs",
     "send-signals-open": "ts-node --project tsconfig.scripts.json send_signals_action.ts open",
     "send-analysis-open": "ts-node --project tsconfig.scripts.json send_signals_action.ts open analysis",
