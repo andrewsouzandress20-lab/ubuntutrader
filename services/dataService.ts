@@ -150,21 +150,18 @@ export const fetchCorrelationData = async (assetSymbol: string): Promise<Correla
       { symbol: 'DX-Y.NYB', name: '4️⃣ DXY (Índice do Dólar)', correlation: 'negative', info: 'Fluxo de capital global\nFiltro secundário (risk-off)' },
       { symbol: '^TNX', name: '5️⃣ Treasury 10Y (US10Y)', correlation: 'negative', info: 'Custo do dinheiro\nPressão direta em ações' },
       { symbol: '^RUT', name: '6️⃣ Russell 2000 (US2000)', correlation: 'positive', info: 'Força da economia doméstica\nConfirmação de breadth' },
+
     ];
   }
-    }
 
-    return results;
-
-
-      change: (change !== null && change !== undefined && !Number.isNaN(change)) ? change : undefined as any,
-      correlation: target.correlation,
-      info: (target as any).info || ''
-    });
+  for (const target of targets) {
+    // ...existing code...
+    change: (change !== null && change !== undefined && !Number.isNaN(change)) ? change : undefined as any,
+    correlation: target.correlation,
+    info: (target as any).info || ''
   }
-
   return results;
-};
+}
 
 export const fetchEconomicEvents = async (): Promise<EconomicEvent[]> => {
   const calendarUrl = BACKEND_URL
