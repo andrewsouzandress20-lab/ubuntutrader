@@ -152,6 +152,9 @@ export const fetchCorrelationData = async (assetSymbol: string): Promise<Correla
       { symbol: '^RUT', name: '6️⃣ Russell 2000 (US2000)', correlation: 'positive', info: 'Força da economia doméstica\nConfirmação de breadth' },
     ];
   }
+    }
+
+    return results;
 
 
       change: (change !== null && change !== undefined && !Number.isNaN(change)) ? change : undefined as any,
