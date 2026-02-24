@@ -1,43 +1,40 @@
 {
-  "timestamp": "2026-02-13T17:16:53.833Z",
+  "timestamp": "2026-02-24T21:07:30.659Z",
   "asset": "US30",
   "label": "preopen",
-  "quote": 55,
+  "quote": 3232,
   "indices": [
     {
       "symbol": "^VIX",
-      "name": "🥇 VIX (CBOE) – PRINCIPAL",
-      "price": 19.42,
-      "correlation": "negative",
-      "change": -6.724303554274728,
-      "info": "Volatilidade do S&P 500\nGatilho de risco do mercado americano\nImpacto imediato no US30"
+      "name": "VIX",
+      "price": 55,
+      "correlation": "negative"
     },
     {
       "symbol": "^GSPC",
-      "name": "🥈 S&P 500 (US500)",
-      "price": 6875.7,
-      "correlation": "positive",
-      "change": 0.628442971800555,
-      "info": "Benchmark do mercado dos EUA\nDireção estrutural do dia\nConfirma viés do Dow"
+      "name": "S&P 500",
+      "price": 4141,
+      "correlation": "positive"
     },
     {
       "symbol": "^IXIC",
-      "name": "🥉 NASDAQ (US100)",
-      "price": 22703.13,
-      "correlation": "positive",
-      "change": 0.46900608873296734,
-      "info": "Apetite a risco / tecnologia\nConfirma ou diverge do US30"
+      "name": "NASDAQ",
+      "price": 2020,
+      "correlation": "positive"
     },
     {
       "symbol": "DX-Y.NYB",
-      "name": "4️⃣ DXY (Índice do Dólar)",
-      "price": 96.88,
-      "correlation": "negative",
-      "change": -0.04642765024503658,
-      "info": "Fluxo de capital global\nFiltro secundário (risk-off)"
+      "name": "DXY",
+      "price": 1414,
+      "correlation": "negative"
     },
     {
       "symbol": "^TNX",
+      "name": "TNX",
+      "price": 3,
+      "correlation": "negative"
+    }
+  ]
       "name": "5️⃣ Treasury 10Y (US10Y)",
       "price": 4.054,
       "correlation": "negative",
