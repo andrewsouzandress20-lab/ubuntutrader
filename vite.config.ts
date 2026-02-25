@@ -7,7 +7,7 @@ export default defineConfig(({ mode }) => {
     return {
       plugins: [react()],
       // Serve from root when usando domínio custom (GitHub Pages + CNAME)
-      base: '/ubuntutrader/',
+      base: '/',
       define: {
         'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
         'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)

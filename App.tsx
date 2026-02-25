@@ -2,14 +2,14 @@ import './tailwind.css';
 import { io } from 'socket.io-client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Candle, Asset, SUPPORTED_ASSETS, Timeframe, TIMEFRAMES, UTC_OFFSETS, CorrelationData, MarketBreadthSummary, BreadthCompanyDetails, VolumePressure, GapData, EconomicEvent, SMCZone, FVGType, ZoneType } from './types.js';
-import { fetchRealData, fetchCorrelationData, fetchMarketBreadth, calculateVolumePressure, detectOpeningGap, fetchEconomicEvents, fetchCurrentPrice } from './services/dataService.js';
-import { fetchLocalJson } from './utils/fetchLocalJson.js';
-import { sendTelegramSignal, sendTelegramAnalysis } from './services/telegramService.js';
-import { detectSMCZones } from './utils/fvgDetector.js';
-import TradingChart from './components/TradingChart.js';
-import MqlCalendarWidget from './components/MqlCalendarWidget.js';
-import MacroHeaderAlert from './components/MacroHeaderAlert.js';
+import { Candle, Asset, SUPPORTED_ASSETS, Timeframe, TIMEFRAMES, UTC_OFFSETS, CorrelationData, MarketBreadthSummary, BreadthCompanyDetails, VolumePressure, GapData, EconomicEvent, SMCZone, FVGType, ZoneType } from './types';
+import { fetchRealData, fetchCorrelationData, fetchMarketBreadth, calculateVolumePressure, detectOpeningGap, fetchEconomicEvents, fetchCurrentPrice } from './services/dataService';
+import { fetchLocalJson } from './utils/fetchLocalJson';
+import { sendTelegramSignal, sendTelegramAnalysis } from './services/telegramService';
+import { detectSMCZones } from './utils/fvgDetector';
+import TradingChart from './components/TradingChart';
+import MqlCalendarWidget from './components/MqlCalendarWidget';
+import MacroHeaderAlert from './components/MacroHeaderAlert';
 
 const App: React.FC = () => {
     // ...contador de usuários online removido...

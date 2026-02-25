@@ -16,6 +16,7 @@ export interface Asset {
   basePrice: number;
   volatility: number;
   decimals: number;
+  symbolYahoo?: string;
 }
 
 export interface CorrelationData {
