@@ -1,4 +1,4 @@
-import { Candle, Asset, Timeframe, TIMEFRAMES } from '../types.js';
+import { Candle, Asset, Timeframe, TIMEFRAMES } from '../types.ts';
 
 export const generateMockCandles = (count: number, asset: Asset, timeframe: Timeframe): Candle[] => {
   const candles: Candle[] = [];

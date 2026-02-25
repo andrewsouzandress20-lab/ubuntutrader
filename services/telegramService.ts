@@ -4,7 +4,7 @@ declare global {
     __UBUNTU_TRADER_SIGNAL_DATA__?: any;
   }
 }
-
+    // Buscar dados dos índices globais
 function getEnvVar(name: string): string | undefined {
   if (typeof process !== 'undefined' && process.env) {
     if (process.env[name]) return process.env[name];
@@ -83,37 +83,21 @@ export const sendTelegramSignal = async (
     return Number.isNaN(num) ? 0 : num;
   };
 
-<<<<<<< HEAD
-*ANALISE A ZONA SMC/FGV PARA UMA ENTRADA MELHOR*
-  // Buscar dados dos índices globais
-  const { fetchCorrelationData } = await import('./dataService');
-  const globalIndices = await fetchCorrelationData(assetSymbol);
-
+// ...existing code...
   // Montar string dos índices globais
-  const indicesMsg = globalIndices.map(idx => {
-    let nome = idx.name;
-    if (nome === 'S&P 500') nome = 'SP500';
-    if (nome === 'NASDAQ') nome = 'NASDAQ';
-    if (nome === 'VIX') nome = 'VIX';
-    if (nome === 'DXY') nome = 'DXY';
-    if (nome === 'NIKKEI 225') nome = '10Y'; // Ajuste se necessário
-    if (nome === 'RUSSELL 2000') nome = 'RUSSELL 2000';
-    return `${nome}: ${idx.price !== 0 ? idx.price : '⚠️ dado ausente'}`;
-  }).join('\n');
+  const indicesMsg = context?.indices
+    ? Object.entries(context.indices).map(([nome, price]) => {
+        if (nome === 'S&P 500') nome = 'SP500';
+        if (nome === 'NASDAQ') nome = 'NASDAQ';
+        if (nome === 'VIX') nome = 'VIX';
+        if (nome === 'DXY') nome = 'DXY';
+        if (nome === 'NIKKEI 225') nome = '10Y';
+        if (nome === 'RUSSELL 2000') nome = 'RUSSELL 2000';
+        return `${nome}: ${price !== 0 ? price : '⚠️ dado ausente'}`;
+      }).join('\n')
+    : '';
 
-  const message = `
-🚨 **SINAL DE ABERTURA - SENTINEL PRO** 🚨
---------------------------------------
-- **ATIVO:** \`${assetSymbol}\`
-- **DIREÇÃO:** ${signal === 'COMPRA' ? '📈' : '📉'} **${signal}**
-- **FORÇA:** **${strength}**
-- **SCORE:** \`${score}\`
---------------------------------------
-🌎 Índices globais:\n${indicesMsg}
---------------------------------------
-*ANALISE A ZONA SMC/FGV PARA UMA ENTRADA MELHOR*
-  `;
-=======
+    // ...existing code...
     const isBuy = signal === 'COMPRA'; // This line determines if the signal is a buy signal
 
   const quote = context?.quote ?? '-';
@@ -257,7 +241,6 @@ export const sendTelegramSignal = async (
       'Para ver os dados detalhadamente!'
     ].join('\n');
   }
->>>>>>> 66ed77ac784d73b870a1a9bdaab2199bd65d79cc
 
   try {
     writeMessageToFile(message);

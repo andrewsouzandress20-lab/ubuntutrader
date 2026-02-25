@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { collectAndSendSignal } from './scheduler.js';
+import { collectAndSendSignal } from './scheduler.ts';
 
 (async () => {
   await collectAndSendSignal('US30');

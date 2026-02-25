@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { sendTelegramSignal } from './services/telegramService.js';
+import { sendTelegramSignal } from './services/telegramService.ts';
 
 (async () => {
   await sendTelegramSignal('US30', 'COMPRA', 'FORTE', 10);

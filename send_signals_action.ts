@@ -1,9 +1,9 @@
 import 'dotenv/config';
 import * as fs from 'fs';
-import { sendTelegramSignal, sendTelegramAnalysis } from './services/telegramService.js';
-import { collectSnapshot } from './scripts/collect_snapshot.js';
-import { fetchCorrelationData, fetchMarketBreadth, fetchRealData, calculateVolumePressure, detectOpeningGap, fetchCurrentPrice, fetchYahooChartPriceChange } from './services/dataService.js';
-import { SUPPORTED_ASSETS } from './types.js';
+import { sendTelegramSignal, sendTelegramAnalysis } from './services/telegramService';
+import { collectSnapshot } from './scripts/collect_snapshot';
+import { fetchCorrelationData, fetchMarketBreadth, fetchRealData, calculateVolumePressure, detectOpeningGap, fetchCurrentPrice, fetchYahooChartPriceChange } from './services/dataService';
+import { SUPPORTED_ASSETS } from './types';
 import { spawnSync } from 'child_process';
 
 
@@ -359,21 +359,13 @@ const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snap
 
   // Sempre usa TradingView (tvIndices) para os valores das mensagens
   const changeOrPrice = (symbol: string) => {
-    // Busca variação percentual (change) no snapshot
-    const idx = snapshot.indices?.find(i => i.symbol === symbol);
-    let priceStr = '-';
-    if (idx && typeof idx.price === 'number') {
-      priceStr = `${fmtPrice(idx.price)} (preço)`;
-    } else {
-      const price = tvPriceForSymbol(symbol, tvIndices);
-      if (price !== undefined && price !== null) priceStr = `${fmtPrice(price)} (preço)`;
+    // Busca preço diretamente de indices_snapshot.json
+    const indicesRaw = JSON.parse(fs.readFileSync('indices_snapshot.json', 'utf-8')).indices;
+    const price = indicesRaw[symbol]?.price;
+    if (price !== undefined && price !== null && !Number.isNaN(price)) {
+      return `${fmtPrice(price)} (preço)`;
     }
-    // Sempre mostra preço, e se não houver change, mostra '⚠️ dado ausente'
-    if (!idx || typeof idx.change !== 'number') {
-      return `${priceStr} ⚠️ dado ausente`;
-    }
-    // Se houver change, mostra ambos
-    return `${priceStr} ${idx.change.toFixed(2).replace('.', ',')}%`;
+    return '⚠️ dado ausente';
   };
 
   const favorability = (symbol: string, prefer: 'pos' | 'neg') => {
@@ -387,29 +379,27 @@ const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snap
   };
 
   // Só exibe índices presentes no snapshot, sem buscar Yahoo ou ativos não relacionados
-  // Corrige para usar os símbolos coletados do TradingView
+  // Mapeamento correto para indices_snapshot.json
   const relevantSymbols = assetSymbol === 'US30'
-    ? ['VIX', 'SP500', 'NASDAQ', 'DXY', 'TNX']
-    : ['VHSI', 'NIKKEI', 'SSE', 'SP500', 'USDJPY', 'DXY'];
+    ? [
+        { symbol: 'VIX', label: '🥇 VIX' },
+        { symbol: 'US500', label: '🇺🇸 S&P 500' },
+        { symbol: 'US100', label: '🇺🇸 NASDAQ' },
+        { symbol: 'DXY', label: '💵 DXY' },
+        { symbol: '^TNX', label: '🇺🇸 10Y' },
+      ]
+    : [
+        { symbol: 'VHSI', label: '🥇 VHSI' },
+        { symbol: 'NIKKEI', label: '🇯🇵 Nikkei 225' },
+        { symbol: 'SSE', label: '🇨🇳 SSE' },
+        { symbol: 'US500', label: '🇺🇸 US500' },
+        { symbol: 'USDJPY', label: '🇺🇸 USD/JPY' },
+        { symbol: 'DXY', label: '💵 DXY' },
+      ];
 
-  // Garante que todos os índices relevantes sejam exibidos, mesmo se ausentes no snapshot
-  const indicators = relevantSymbols.map(symbol => {
-    let label = assetSymbol === 'HK50' ? INDEX_MAP_HK50[symbol] : INDEX_MAP_US30[symbol];
-    if (!label) label = symbol;
-    return {
-      label,
-      symbol,
-      preferCompra: 'pos',
-      caution: false
-    };
-  });
-
-  const indicatorLines = indicators.map(({ label, symbol, preferCompra, caution }) => {
-    const prefer = signal === 'VENDA' ? (preferCompra === 'pos' ? 'neg' : 'pos') : preferCompra;
+  const indicatorLines = relevantSymbols.map(({ label, symbol }) => {
     const value = changeOrPrice(symbol);
-    const fav = favorability(symbol, prefer as 'pos' | 'neg');
-    const prefix = caution && fav.startsWith('❌') ? '⚠️ ' : '';
-    return `${label}: ${value} ${prefix}${fav}`;
+    return `${label}: ${value}`;
   });
 
   const volumeSummary = () => {
@@ -488,9 +478,10 @@ async function sendSignalFromSnapshot(assetSymbol: string, label: string) {
   }
 
   // Monta contexto apenas com dados do indices_snapshot.json
+  const indicesRaw = JSON.parse(fs.readFileSync('indices_snapshot.json', 'utf-8')).indices;
   const indicesCtx: Record<string, number | string> = {};
-  Object.entries(tvIndices).forEach(([key, value]) => {
-    indicesCtx[key] = value;
+  Object.entries(indicesRaw).forEach(([key, value]: [string, any]) => {
+    indicesCtx[key] = value.price;
   });
 
   await sendTelegramSignal(

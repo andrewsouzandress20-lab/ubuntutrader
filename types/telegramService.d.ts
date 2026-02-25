@@ -1,4 +1,4 @@
-declare module './services/telegramService.js' {
+declare module './services/telegramService' {
   export const sendTelegramSignal: (
     assetSymbol: string,
     signal: string,

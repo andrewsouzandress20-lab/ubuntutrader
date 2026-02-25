@@ -1,6 +1,6 @@
 import 'dotenv/config';
-import { SUPPORTED_ASSETS, CorrelationData } from '../types.js';
-import { fetchCurrentPrice, fetchCorrelationData, fetchMarketBreadth, fetchRealData, calculateVolumePressure, detectOpeningGap } from '../services/dataService.js';
+import { SUPPORTED_ASSETS, CorrelationData } from '../types.ts';
+import { fetchCurrentPrice, fetchCorrelationData, fetchMarketBreadth, fetchRealData, calculateVolumePressure, detectOpeningGap } from '../services/dataService';
 import * as fs from 'fs';
 
 const loadTradingViewSnapshot = (): Record<string, number> => {
