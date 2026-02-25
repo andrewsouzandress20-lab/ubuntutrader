@@ -24,11 +24,7 @@
       "name": "DXY",
       "price": 131310.0
     },
-    {
-      "symbol": "^TNX",
-      "name": "10Y",
-      "price": 113.0
-    }
+    
   ],
   "breadth": {
     "summary": {
