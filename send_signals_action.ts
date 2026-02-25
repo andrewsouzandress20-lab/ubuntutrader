@@ -390,8 +390,7 @@ const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snap
         { symbol: 'US500', label: '🇺🇸 S&P 500' },
         { symbol: 'US100', label: '🇺🇸 NASDAQ' },
         { symbol: 'DXY', label: '💵 DXY' },
-        { symbol: '^TNX', label: '🇺🇸 10Y' },
-        { symbol: 'RUSSELL2000', label: '🇺🇸 Russell 2000' }
+        { symbol: '^TNX', label: '🇺🇸 10Y' }
       ]
     : [
         { symbol: 'VHSI', label: '🥇 VHSI' },
@@ -567,11 +566,7 @@ const inferAssetsByTime = (): string[] => {
 (async () => {
   const label = process.argv[2] || 'open';
   const mode = process.argv[3] || (label === 'preopen' ? 'analysis' : 'signal');
-  const targets = (process.env.TARGET_ASSETS || '')
-    .split(',')
-    .map(t => t.trim().toUpperCase())
-    .filter(Boolean);
-  const assets = targets.length ? targets : inferAssetsByTime();
+  const assets = ['US30'];
 
   for (const asset of assets) {
     if (mode === 'analysis') {
