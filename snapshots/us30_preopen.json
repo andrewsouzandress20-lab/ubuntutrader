@@ -5,24 +5,39 @@
   "quote": 3232,
   "indices": [
     {
-      "symbol": "^TNX",
-      "name": "TNX",
-      "price": 3,
-      "correlation": "negative"
+      "symbol": "US30",
+      "name": "US30",
+      "price": 161613.0
     },
     {
-      "symbol": "DX-Y.NYB",
+      "symbol": "US500",
+      "name": "S&P 500",
+      "price": 1818308.0
+    },
+    {
+      "symbol": "US100",
+      "name": "NASDAQ",
+      "price": 121280.0
+    },
+    {
+      "symbol": "VIX",
+      "name": "VIX",
+      "price": 1115.0
+    },
+    {
+      "symbol": "DXY",
       "name": "DXY",
-      "price": 1414,
-      "correlation": "negative"
+      "price": 131310.0
     },
     {
-      "symbol": "^RUT",
-      "name": "6️⃣ Russell 2000 (US2000)",
-      "price": 2661.225,
-      "change": 1.7353956487998066,
-      "correlation": "positive",
-      "info": "Força da economia doméstica\nConfirmação de breadth"
+      "symbol": "^TNX",
+      "name": "10Y",
+      "price": 113.0
+    },
+    {
+      "symbol": "RUSSELL2000",
+      "name": "Russell 2000",
+      "price": null
     }
   ],
   "breadth": {
