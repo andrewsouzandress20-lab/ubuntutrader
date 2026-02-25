@@ -438,7 +438,19 @@ const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snap
     '',
     '📊 Resumo:',
     `- ${volumeSummary()}`,
-    `- ⚠️ ${volIndexSymbol === '^VIX' ? 'VIX' : 'VHSI'}: ${fmtPct(getChange(snapshot, volIndexSymbol))}`,
+    (() => {
+      const change = getChange(snapshot, volIndexSymbol);
+      if (change !== null && !Number.isNaN(change)) {
+        return `- ⚠️ ${volIndexSymbol === '^VIX' ? 'VIX' : 'VHSI'}: ${fmtPct(change)}`;
+      }
+      // Busca preço do índice
+      const indicesRaw = JSON.parse(fs.readFileSync('indices_snapshot.json', 'utf-8')).indices;
+      const price = indicesRaw[volIndexSymbol.replace('^', '')]?.price;
+      if (price !== undefined && price !== null && !Number.isNaN(price)) {
+        return `- ⚠️ ${volIndexSymbol === '^VIX' ? 'VIX' : 'VHSI'}: ${fmtPrice(price)} (preço)`;
+      }
+      return `- ⚠️ ${volIndexSymbol === '^VIX' ? 'VIX' : 'VHSI'}: dado ausente`;
+    })(),
     `- ${breadthSummary()}`,
     `- 🕳️ ${gapSummary()}`,
     '',
