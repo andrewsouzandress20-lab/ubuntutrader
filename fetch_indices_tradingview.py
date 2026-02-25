@@ -118,7 +118,7 @@ def main():
                 price_num = float(str(price).replace(',', ''))
             except Exception:
                 price_num = price
-            snapshot['indices'][name] = price_num
+            snapshot['indices'][name] = {"price": price_num}
         else:
             print(f'[LOG] Não foi possível coletar preço real para {name} no TradingView. Não será salvo.')
 
