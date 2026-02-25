@@ -399,8 +399,24 @@ const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snap
       ];
 
   const indicatorLines = relevantSymbols.map(({ label, symbol }) => {
-    const value = changeOrPrice(symbol);
-    return `${label}: ${value}`;
+    // Busca variação percentual (change) do snapshot
+    const change = getChange(snapshot, symbol);
+    let valueStr;
+    if (change !== null && !Number.isNaN(change)) {
+      // Determina favorabilidade
+      const favor = (signal === 'COMPRA') ? (change > 0) : (change < 0);
+      const check = favor ? '✅' : '❌';
+      const word = favor ? 'favorável' : 'desfavorável';
+      valueStr = `${fmtPct(change)} ${check} (${word} para ${signal})`;
+    } else {
+      // Se não houver change, exibe preço
+      const indicesRaw = JSON.parse(fs.readFileSync('indices_snapshot.json', 'utf-8')).indices;
+      const price = indicesRaw[symbol]?.price;
+      valueStr = price !== undefined && price !== null && !Number.isNaN(price)
+        ? `${fmtPrice(price)} (preço)`
+        : '⚠️ dado ausente';
+    }
+    return `${label}: ${valueStr}`;
   });
 
   const volumeSummary = () => {
