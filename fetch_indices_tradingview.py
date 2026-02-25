@@ -119,7 +119,7 @@ def main():
     for name, url in INDICES.items():
         print(f'Coletando {name}...')
         price = None
-        # Busca preço apenas no TradingView, sem fallback
+        # Aplica lógica especial para HK50 e US30
         if name == 'VHSI':
             price = fetch_vhsi_from_hsi_official()
         else:
@@ -136,6 +136,12 @@ def main():
             except Exception:
                 print(f'[LOG] Valor não numérico para {name}: {price} (ignorado)')
                 price_num = None
+        # Aplica logs detalhados para US30
+        if name == 'US30':
+            if price_num is not None:
+                print(f'[LOG] US30 coletado: {price_num}')
+            else:
+                print(f'[LOG] US30 ausente ou inválido: {price}')
         if price_num is not None:
             snapshot['indices'][name] = {"price": price_num}
         else:
