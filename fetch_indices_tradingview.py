@@ -124,12 +124,19 @@ def main():
             price = fetch_vhsi_from_hsi_official()
         else:
             price = fetch_index_price(url)
+        # Validação: só salva se for número válido e maior que zero
+        price_num = None
         if price is not None:
-            # Sempre grava como número
             try:
                 price_num = float(str(price).replace(',', ''))
+                # Ignora valores zero, negativos ou strings não numéricas
+                if price_num <= 0 or not isinstance(price_num, float) or str(price).strip() == '' or str(price).isalpha():
+                    print(f'[LOG] Valor inválido para {name}: {price} (ignorado)')
+                    price_num = None
             except Exception:
-                price_num = price
+                print(f'[LOG] Valor não numérico para {name}: {price} (ignorado)')
+                price_num = None
+        if price_num is not None:
             snapshot['indices'][name] = {"price": price_num}
         else:
             print(f'[LOG] Não foi possível coletar preço real para {name} no TradingView. Não será salvo.')
