@@ -186,9 +186,7 @@ const buildTvCorrelation = (assetSymbol: string, tv: Record<string, number>) => 
     { symbol: '^VIX', price: get('VIX') },
     { symbol: '^GSPC', price: get('SP500') },
     { symbol: '^IXIC', price: get('NASDAQ') },
-    { symbol: 'DX-Y.NYB', price: get('DXY') },
-    { symbol: '^TNX', price: get('TNX') },
-    { symbol: '^RUT', price: get('RUT') }
+    { symbol: 'DX-Y.NYB', price: get('DXY') }
   ].filter(e => e.price !== undefined);
 };
 
@@ -303,7 +301,7 @@ const computeScore = (assetSymbol: string, snapshot: Snapshot): { total: number;
   const dec = snapshot.breadth?.summary?.declining ?? 0;
   const breadthScore = adv === dec ? 0 : adv > dec ? 3 : -3;
 
-  const indicesListUS = ['^GSPC', '^IXIC', '^RUT'];
+  const indicesListUS = ['^GSPC', '^IXIC'];
   const indicesListHK = ['^N225', '000001.SS', '^GSPC'];
   const chosenList = assetSymbol === 'HK50' ? indicesListHK : indicesListUS;
   let posIdx = 0;
