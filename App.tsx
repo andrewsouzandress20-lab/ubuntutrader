@@ -17,7 +17,7 @@ const App: React.FC = () => {
   const clientSignalsEnabled = (() => {
     // Permite habilitar manualmente o envio de mensagens pelo cliente; desligado por padrão.
     // Precisa definir VITE_ENABLE_CLIENT_SIGNALS=true.
-    if (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_ENABLE_CLIENT_SIGNALS === 'true') return true;
+    if (typeof process !== 'undefined' && process.env?.VITE_ENABLE_CLIENT_SIGNALS === 'true') return true;
     if (typeof process !== 'undefined' && (process as any).env?.VITE_ENABLE_CLIENT_SIGNALS === 'true') return true;
     return false;
   })();

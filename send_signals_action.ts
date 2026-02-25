@@ -117,8 +117,12 @@ const INDEX_MAP_US30: Record<string, string> = {
   '^GSPC': 'SP500',
   '^IXIC': 'NASDAQ',
   'DX-Y.NYB': 'DXY',
-  '^TNX': 'TNX',
-  '^RUT': 'RUT'
+  'US30': 'US30',
+  'US500': 'S&P 500',
+  'US100': 'NASDAQ',
+  'DXY': 'DXY',
+  '10Y': '10Y',
+  'RUSSELL2000': 'Russell 2000'
 };
 
 const INDEX_MAP_HK50: Record<string, string> = {
@@ -387,7 +391,7 @@ const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snap
         { symbol: 'US100', label: '🇺🇸 NASDAQ' },
         { symbol: 'DXY', label: '💵 DXY' },
         { symbol: '^TNX', label: '🇺🇸 10Y' },
-        { symbol: 'RUT', label: '🇺🇸 Russell 2000' }
+        { symbol: 'RUSSELL2000', label: '🇺🇸 Russell 2000' }
       ]
     : [
         { symbol: 'VHSI', label: '🥇 VHSI' },

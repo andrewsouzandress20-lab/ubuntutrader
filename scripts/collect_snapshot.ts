@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { SUPPORTED_ASSETS, CorrelationData } from '../types.ts';
+import { SUPPORTED_ASSETS, CorrelationData } from '../types';
 import { fetchCurrentPrice, fetchCorrelationData, fetchMarketBreadth, fetchRealData, calculateVolumePressure, detectOpeningGap } from '../services/dataService';
 import * as fs from 'fs';
 

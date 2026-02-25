@@ -1,5 +1,5 @@
 import cron from 'node-cron';
-import { sendTelegramSignal } from '../services/telegramService.ts';
+import { sendTelegramSignal } from '../services/telegramService';
 
 const API_KEY = '94200850ee23473c98c21d8ab76db933';
 const NYSE_SYMBOL = 'NYSE';

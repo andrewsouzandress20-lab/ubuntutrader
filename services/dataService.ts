@@ -8,7 +8,7 @@ const BACKEND_URL = (() => {
   }
   try {
     // @ts-ignore – Vite env at build time
-    if (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_BACKEND_URL) return (import.meta as any).env.VITE_BACKEND_URL;
+    if (typeof process !== 'undefined' && process.env?.VITE_BACKEND_URL) return process.env.VITE_BACKEND_URL;
   } catch (_) {
     // ignore when not running in Vite/browser
   }
