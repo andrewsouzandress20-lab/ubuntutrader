@@ -429,7 +429,13 @@ const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snap
   const lines = [
     `${headerLine}`,
     '',
-    `${headerAsset}: Sinal de ${signal === 'NEUTRO' ? '⚖️ NEUTRO' : signal === 'COMPRA' ? '🔺 COMPRA' : '🔻 VENDA'} ${strength}`,
+    (() => {
+      let favor;
+      if (signal === 'COMPRA') favor = 'favorável à compra';
+      else if (signal === 'VENDA') favor = 'desfavorável à compra';
+      else favor = 'neutro';
+      return `${headerAsset}: Sinal de ${signal === 'NEUTRO' ? '⚖️ NEUTRO' : signal === 'COMPRA' ? '🔺 COMPRA' : '🔻 VENDA'} ${strength} (${favor})`;
+    })(),
     `Score institucional: ${total > 0 ? '+' : ''}${total}`,
     `Cotação: ${fmtPrice(snapshot.quote ?? null)}`,
     '',
