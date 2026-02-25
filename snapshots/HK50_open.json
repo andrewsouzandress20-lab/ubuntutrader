@@ -1,0 +1,22 @@
+{
+  "quote": "17000",
+  "indices": {
+    "VHSI": 18.5,
+    "CNH": 7.2,
+    "NIKKEI": 33000,
+    "SSE": 3200,
+    "US500": 5000,
+    "USDJPY": 150,
+    "DXY": 104.5
+  },
+  "volume": "8000",
+  "volumeBuy": "5000",
+  "volumeSell": "3000",
+  "breadth": {
+    "summary": {
+      "advancing": 15,
+      "declining": 5
+    }
+  },
+  "gap": 50
+}

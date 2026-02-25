@@ -1,0 +1,211 @@
+{
+  "timestamp": "2026-02-24T21:07:30.659Z",
+  "asset": "US30",
+  "label": "open",
+  "quote": 3232,
+  "indices": [
+    {
+      "symbol": "^VIX",
+      "name": "VIX",
+      "price": 55,
+      "correlation": "negative"
+    },
+    {
+      "symbol": "^GSPC",
+      "name": "S&P 500",
+      "price": 4141,
+      "correlation": "positive"
+    },
+    {
+      "symbol": "^IXIC",
+      "name": "NASDAQ",
+      "price": 2020,
+      "correlation": "positive"
+    },
+    {
+      "symbol": "DX-Y.NYB",
+      "name": "DXY",
+      "price": 1414,
+      "correlation": "negative"
+    },
+    {
+      "symbol": "^TNX",
+      "name": "TNX",
+      "price": 3,
+      "correlation": "negative"
+    }
+  ],
+  "breadth": {
+    "summary": {
+      "advancing": 17,
+      "declining": 13,
+      "total": 30
+    },
+    "details": [
+      {
+        "symbol": "AMZN",
+        "change": 3.6838180462341517,
+        "status": "BUY"
+      },
+      {
+        "symbol": "PG",
+        "change": 3.6164211845816245,
+        "status": "BUY"
+      },
+      {
+        "symbol": "AAPL",
+        "change": 3.1302107018341636,
+        "status": "BUY"
+      },
+      {
+        "symbol": "CVX",
+        "change": 2.6613126557740117,
+        "status": "BUY"
+      },
+      {
+        "symbol": "AMGN",
+        "change": 2.5471394900364235,
+        "status": "BUY"
+      },
+      {
+        "symbol": "TRV",
+        "change": 2.071984760886271,
+        "status": "BUY"
+      },
+      {
+        "symbol": "VZ",
+        "change": 1.9108931126098554,
+        "status": "BUY"
+      },
+      {
+        "symbol": "MCD",
+        "change": 1.706245039985341,
+        "status": "BUY"
+      },
+      {
+        "symbol": "CSCO",
+        "change": 1.6785946649316934,
+        "status": "BUY"
+      },
+      {
+        "symbol": "KO",
+        "change": 1.4580191050779243,
+        "status": "BUY"
+      },
+      {
+        "symbol": "JNJ",
+        "change": 1.2164550199317714,
+        "status": "BUY"
+      },
+      {
+        "symbol": "CRM",
+        "change": 0.6348689565359031,
+        "status": "BUY"
+      },
+      {
+        "symbol": "DIS",
+        "change": 0.6022382397572128,
+        "status": "BUY"
+      },
+      {
+        "symbol": "CAT",
+        "change": 0.49165751346827646,
+        "status": "BUY"
+      },
+      {
+        "symbol": "HON",
+        "change": 0.3956315681022081,
+        "status": "BUY"
+      },
+      {
+        "symbol": "HD",
+        "change": 0.3759398496240595,
+        "status": "BUY"
+      },
+      {
+        "symbol": "WBA",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "INTC",
+        "change": -0.12992637505414092,
+        "status": "SELL"
+      },
+      {
+        "symbol": "MMM",
+        "change": -0.6920415224913474,
+        "status": "SELL"
+      },
+      {
+        "symbol": "SHW",
+        "change": -0.7658857422405783,
+        "status": "SELL"
+      },
+      {
+        "symbol": "NKE",
+        "change": -1.1184819500154188,
+        "status": "SELL"
+      },
+      {
+        "symbol": "GS",
+        "change": -1.5184926422426934,
+        "status": "SELL"
+      },
+      {
+        "symbol": "WMT",
+        "change": -1.6298020954598327,
+        "status": "SELL"
+      },
+      {
+        "symbol": "MSFT",
+        "change": -1.980547296275768,
+        "status": "SELL"
+      },
+      {
+        "symbol": "JPM",
+        "change": -3.158271741607785,
+        "status": "SELL"
+      },
+      {
+        "symbol": "V",
+        "change": -3.8591549295774596,
+        "status": "SELL"
+      },
+      {
+        "symbol": "BA",
+        "change": -4.347647926569409,
+        "status": "SELL"
+      },
+      {
+        "symbol": "UNH",
+        "change": -5.1956138226849715,
+        "status": "SELL"
+      },
+      {
+        "symbol": "AXP",
+        "change": -7.0008417264098775,
+        "status": "SELL"
+      },
+      {
+        "symbol": "IBM",
+        "change": -11.184235995509278,
+        "status": "SELL"
+      }
+    ]
+  },
+  "volume": {
+    "buyPercent": 53.500069179063395,
+    "sellPercent": 46.499930820936605,
+    "total": 951129388.0585938
+  },
+  "gap": {
+    "value": 8.94140625,
+    "percent": 0.01831547554463935,
+    "type": "up",
+    "startIndex": 1560,
+    "prevClose": 48818.859375,
+    "openPrice": 48827.80078125,
+    "isFilled": true
+  }
+}

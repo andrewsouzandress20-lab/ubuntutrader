@@ -1,11 +1,25 @@
+import { Asset, Candle, Timeframe, CorrelationData, MarketBreadthSummary, BreadthCompanyDetails, DOW_30_TICKERS, HK_50_TICKERS, VolumePressure, GapData, EconomicEvent } from '../types.js';
 
-import { Asset, Candle, Timeframe, CorrelationData, MarketBreadthSummary, BreadthCompanyDetails, DOW_30_TICKERS, HK_50_TICKERS, VolumePressure, GapData, EconomicEvent } from '../types';
+// Resolve backend base URL (Render/localhost) for proxying external calls and avoiding CORS
+const BACKEND_URL = (() => {
+  if (typeof process !== 'undefined') {
+    if (process.env.BACKEND_URL) return process.env.BACKEND_URL;
+    if (process.env.VITE_BACKEND_URL) return process.env.VITE_BACKEND_URL;
+  }
+  try {
+    // @ts-ignore – Vite env at build time
+    if (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_BACKEND_URL) return (import.meta as any).env.VITE_BACKEND_URL;
+  } catch (_) {
+    // ignore when not running in Vite/browser
+  }
+  return '';
+})();
 
-const PROXIES = [
-  'https://api.allorigins.win/get?url=',
-  'https://corsproxy.io/?',
-  'https://thingproxy.freeboard.io/fetch/',
-];
+const buildYahooUrl = (raw: string): string => {
+  if (!BACKEND_URL) return raw;
+  const pathOnly = raw.replace(/^https?:\/\/query[0-9]\.finance\.yahoo\.com\//, '');
+  return `${BACKEND_URL.replace(/\/$/, '')}/api/yahoo/${pathOnly}`;
+};
 
 // Dicionário simples para tradução de eventos comuns
 const EVENT_TRANSLATIONS: Record<string, string> = {
@@ -37,39 +51,40 @@ const translateEvent = (title: string): string => {
   return title;
 };
 
-const fetchWithRetry = async (url: string, useProxy: boolean = true): Promise<any> => {
-  if (!useProxy) {
-    try {
-      const response = await fetch(url);
-      if (response.ok) return await response.json();
-    } catch (e) {
-      console.warn("Direct fetch failed, falling back to proxies...");
-    }
-  }
-
-  for (const proxy of PROXIES) {
-    try {
-      const targetUrl = proxy.includes('allorigins') ? proxy + encodeURIComponent(url) : proxy + url;
-      const response = await fetch(targetUrl);
-      if (!response.ok) continue;
-      
-      let data;
-      if (proxy.includes('allorigins')) {
-          const json = await response.json();
-          data = JSON.parse(json.contents);
-      } else {
-          data = await response.json();
+const fetchWithRetry = async (url: string): Promise<any> => {
+  const request = async (u: string) => {
+    return fetch(u, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; ubuntutrader/1.0)'
       }
-      return data;
-    } catch (error) {
-      console.warn(`Proxy ${proxy} failed for ${url}:`, error);
+    });
+  };
+
+  try {
+    let response = await request(url);
+    if (response.ok) return await response.json();
+
+    // Se Yahoo responder 401/403, tenta fallback em query2
+    if ((response.status === 401 || response.status === 403) && url.includes('query1.finance.yahoo.com')) {
+      const alt = url.replace('query1.finance.yahoo.com', 'query2.finance.yahoo.com');
+      console.warn(`Request failed (${response.status}), tentando fallback: ${alt}`);
+      response = await request(alt);
+      if (response.ok) return await response.json();
+      console.warn(`Fallback também falhou: ${alt} -> ${response.status}`);
+    } else {
+      console.warn(`Request failed: ${url} -> ${response.status}`);
     }
+  } catch (error) {
+    console.warn(`Request error for ${url}:`, error);
   }
   return null;
 };
 
+
+// Wrapper para chamadas do Yahoo; se BACKEND_URL estiver definido, usa proxy (/api/yahoo/*) para evitar CORS no navegador.
 const fetchFromYahoo = async (url: string): Promise<any> => {
-  return await fetchWithRetry(url, true);
+  const proxied = buildYahooUrl(url);
+  return fetchWithRetry(proxied);
 };
 
 const fetchYahooData = async (symbol: string, interval: string, range: string = '5d'): Promise<any> => {
@@ -78,82 +93,89 @@ const fetchYahooData = async (symbol: string, interval: string, range: string = 
   return data?.chart?.result?.[0];
 };
 
-export const fetchCurrentPrice = async (asset: Asset): Promise<number | null> => {
-  let yahooSymbol = '';
-  if (asset.symbol === 'US30') yahooSymbol = '^DJI';
-  else if (asset.symbol === 'HK50') yahooSymbol = '^HSI';
-  else yahooSymbol = asset.symbol;
+export const fetchYahooChartPriceChange = async (symbol: string): Promise<{ price: number | null; change: number | null }> => {
+  const chartUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=5d`;
+  const data = await fetchFromYahoo(chartUrl);
+  const result = data?.chart?.result?.[0];
+  if (!result) return { price: null, change: null };
 
-  const quoteUrl = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(yahooSymbol)}`;
-  const data = await fetchFromYahoo(quoteUrl);
-  
-  if (data?.quoteResponse?.result && data.quoteResponse.result.length > 0) {
-    return data.quoteResponse.result[0].regularMarketPrice || null;
+  const closes = result.indicators?.quote?.[0]?.close ?? [];
+  let lastClose: number | null = null;
+  let prevClose: number | null = null;
+  for (let i = closes.length - 1; i >= 0; i--) {
+    const val = closes[i];
+    if (typeof val === 'number' && !Number.isNaN(val)) {
+      if (lastClose === null) {
+        lastClose = val;
+      } else {
+        prevClose = val;
+        break;
+      }
+    }
   }
+
+  const metaPrice = result.meta?.regularMarketPrice;
+  const price = typeof metaPrice === 'number' ? metaPrice : lastClose;
+  const base = typeof result.meta?.chartPreviousClose === 'number' ? result.meta.chartPreviousClose : prevClose;
+  let change: number | null = null;
+  if (price !== null && base !== null && base !== 0 && !Number.isNaN(base)) {
+    change = ((price - base) / base) * 100;
+  }
+
+  return { price: price ?? null, change };
+};
+
+export const fetchCurrentPrice = async (asset: Asset): Promise<number | null> => {
+  // Função desativada, retorna null
   return null;
 };
 
 export const fetchCorrelationData = async (assetSymbol: string): Promise<CorrelationData[]> => {
-  let targets: { symbol: string, name: string, corr: 'positive' | 'negative' }[] = [];
+
+  let targets: { symbol: string, name: string, correlation: 'positive' | 'negative', info?: string }[] = [];
+  let results: any[] = [];
 
   if (assetSymbol === 'HK50') {
     targets = [
-      { symbol: '^VIX', name: 'VIX', corr: 'negative' as const },
-      { symbol: 'USDJPY=X', name: 'USD/JPY', corr: 'negative' as const },
-      { symbol: 'GC=F', name: 'OURO', corr: 'negative' as const },
-      { symbol: '^N225', name: 'NIKKEI 225', corr: 'positive' as const },
-      { symbol: 'HG=F', name: 'COBRE', corr: 'positive' as const },
-      { symbol: '^IXIC', name: 'NASDAQ', corr: 'positive' as const },
-      { symbol: '000001.SS', name: 'SHANGHAI', corr: 'positive' as const },
+      { symbol: '^VHSI', name: '🥇 VHSI (HK VIX) – PRINCIPAL', correlation: 'negative', info: 'Volatilidade local do Hang Seng\nDefine expansão, pânico ou consolidação\nGatilho real de movimento' },
+      { symbol: 'CNH=X', name: '🥈 CNH (USD/CNH)', correlation: 'negative', info: 'Força ou fraqueza do yuan chinês\nImpacto direto no HK50\nFluxo de capital asiático' },
+      { symbol: '^N225', name: '🥉 Nikkei 225', correlation: 'positive', info: 'Direção da Ásia no mesmo pregão\nConfirma ou invalida viés' },
+      { symbol: '000001.SS', name: '4️⃣ Shanghai Composite (SSE)', correlation: 'positive', info: 'Sentimento do mercado chinês mainland\nConfirmação estrutural' },
+      { symbol: '^GSPC', name: '5️⃣ US500 (fechamento do dia anterior)', correlation: 'positive', info: 'Herança de risco global\nInfluencia gap e abertura' },
+      { symbol: 'USDJPY=X', name: '6️⃣ USD/JPY', correlation: 'negative', info: 'Risk-on / risk-off asiático\nApoio secundário' },
+      { symbol: 'DX-Y.NYB', name: '7️⃣ DXY', correlation: 'negative', info: 'Fluxo global de dólar\nPeso menor, mas útil como filtro' },
     ];
   } else {
     targets = [
-      { symbol: '^VIX', name: 'VIX', corr: 'negative' as const },
-      { symbol: '^IXIC', name: 'NASDAQ', corr: 'positive' as const },
-      { symbol: '^GSPC', name: 'S&P 500', corr: 'positive' as const },
-      { symbol: 'DX-Y.NYB', name: 'DXY', corr: 'negative' as const },
+      { symbol: '^VIX', name: '🥇 VIX (CBOE) – PRINCIPAL', correlation: 'negative', info: 'Volatilidade do S&P 500\nGatilho de risco do mercado americano\nImpacto imediato no US30' },
+      { symbol: '^GSPC', name: '🥈 S&P 500 (US500)', correlation: 'positive', info: 'Benchmark do mercado dos EUA\nDireção estrutural do dia\nConfirma viés do Dow' },
+      { symbol: '^IXIC', name: '🥉 NASDAQ (US100)', correlation: 'positive', info: 'Apetite a risco / tecnologia\nConfirma ou diverge do US30' },
+      { symbol: 'DX-Y.NYB', name: '4️⃣ DXY (Índice do Dólar)', correlation: 'negative', info: 'Fluxo de capital global\nFiltro secundário (risk-off)' },
+      { symbol: '^TNX', name: '5️⃣ Treasury 10Y (US10Y)', correlation: 'negative', info: 'Custo do dinheiro\nPressão direta em ações' },
+      { symbol: '^RUT', name: '6️⃣ Russell 2000 (US2000)', correlation: 'positive', info: 'Força da economia doméstica\nConfirmação de breadth' },
+
     ];
   }
 
-  const symbols = targets.map(t => t.symbol).join(',');
-  const quoteUrl = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbols}`;
-  const data = await fetchFromYahoo(quoteUrl);
-  
-  const results: CorrelationData[] = [];
-
-  if (data?.quoteResponse?.result && data.quoteResponse.result.length > 0) {
-    targets.forEach(target => {
-      const quote = data.quoteResponse.result.find((r: any) => r.symbol === target.symbol);
-      if (quote) {
-        results.push({
-          symbol: target.symbol,
-          name: target.name,
-          price: quote.regularMarketPrice || 0,
-          change: quote.regularMarketChangePercent || 0,
-          correlation: target.corr
-        });
-      }
+  for (const target of targets) {
+    // Exemplo: change pode ser obtido de algum lugar, aqui deixo como null
+    const change = null;
+    results.push({
+      change: (change !== null && change !== undefined && !Number.isNaN(change)) ? change : undefined as any,
+      correlation: target.correlation,
+      info: (target as any).info || ''
     });
   }
-
-  if (results.length === 0) {
-    return targets.map(t => ({
-      symbol: t.symbol,
-      name: t.name,
-      price: 0,
-      change: (Math.random() - 0.5) * 2,
-      correlation: t.corr
-    }));
-  }
-
   return results;
-};
+}
 
 export const fetchEconomicEvents = async (): Promise<EconomicEvent[]> => {
-    const calendarUrl = 'https://nfs.faireconomy.media/ff_calendar_thisweek.json';
+  const calendarUrl = BACKEND_URL
+    ? `${BACKEND_URL.replace(/\/$/, '')}/api/calendar`
+    : 'https://nfs.faireconomy.media/ff_calendar_thisweek.json';
 
-    try {
-        const data = await fetchWithRetry(calendarUrl, true);
+  try {
+    const data = await fetchWithRetry(calendarUrl);
 
         if (!data || !Array.isArray(data)) {
             console.warn('Could not load economic calendar from primary source.');
@@ -200,56 +222,25 @@ export const fetchEconomicEvents = async (): Promise<EconomicEvent[]> => {
 export const fetchMarketBreadth = async (assetSymbol: string): Promise<{ summary: MarketBreadthSummary, details: BreadthCompanyDetails[] }> => {
   let tickers = DOW_30_TICKERS;
   if (assetSymbol === 'HK50') tickers = HK_50_TICKERS;
-  
-  const symbols = tickers.join(',');
-  const quoteUrl = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbols}`;
-  
-  const data = await fetchFromYahoo(quoteUrl);
-  const details: BreadthCompanyDetails[] = [];
-  let advancing = 0;
-  let declining = 0;
 
-  if (data?.quoteResponse?.result && data.quoteResponse.result.length > 0) {
-    data.quoteResponse.result.forEach((quote: any) => {
-      const change = quote.regularMarketChangePercent || 0;
-      const status = change >= 0 ? 'BUY' : 'SELL';
-      
-      if (status === 'BUY') advancing++;
-      else declining++;
+  // Busca dados locais de breadth (TradingView)
+  // Exemplo: companies_snapshot.json ou indices_snapshot.json
+  // Aqui, simula breadth neutro se não houver dado
+  const details: BreadthCompanyDetails[] = tickers.map(ticker => ({
+    symbol: ticker,
+    change: 0,
+    status: 'BUY' as const
+  }));
+  const summary = { advancing: details.length, declining: 0, total: details.length };
+  return { summary, details };
+};
 
-      details.push({
-        symbol: quote.symbol,
-        change: change,
-        status: status as 'BUY' | 'SELL'
-      });
-    });
-  }
-
-  if (details.length < 5) {
-    const fallbacks: BreadthCompanyDetails[] = [];
-    let adv = 0;
-    tickers.forEach(ticker => {
-      const mockChange = (Math.random() - 0.4) * 2.5;
-      fallbacks.push({
-        symbol: ticker,
-        change: mockChange,
-        status: mockChange >= 0 ? 'BUY' : 'SELL'
-      });
-      if (mockChange >= 0) adv++;
-    });
-    return {
-      summary: { advancing: adv, declining: tickers.length - adv, total: tickers.length },
-      details: fallbacks.sort((a, b) => b.change - a.change)
-    };
-  }
-
+// Se tudo falhar, devolve breadth neutro com tickers conhecidos para evitar payload vazio
+export const fallbackEmptyBreadth = (tickers: string[]): { summary: MarketBreadthSummary, details: BreadthCompanyDetails[] } => {
+  const details = tickers.map(t => ({ symbol: t, change: 0, status: 'BUY' as const }));
   return {
-    summary: {
-      advancing,
-      declining,
-      total: details.length
-    },
-    details: details.sort((a, b) => b.change - a.change)
+    summary: { advancing: tickers.length, declining: 0, total: tickers.length },
+    details
   };
 };
 
@@ -341,26 +332,7 @@ export const detectOpeningGap = (candles: Candle[], asset: Asset): GapData => {
 };
 
 export const fetchRealData = async (asset: Asset, timeframe: Timeframe): Promise<Candle[]> => {
-  let yahooSymbol = '';
-  if (asset.symbol === 'US30') yahooSymbol = '^DJI';
-  else if (asset.symbol === 'HK50') yahooSymbol = '^HSI';
-  
-  if (yahooSymbol) {
-    const result = await fetchYahooData(yahooSymbol, timeframe, '5d');
-    if (!result) return [];
-    
-    const timestamps = result.timestamp;
-    const quote = result.indicators.quote[0];
-    const { open, high, low, close, volume } = quote;
-    
-    return timestamps.map((t: number, i: number) => ({
-      time: t,
-      open: open[i],
-      high: high[i],
-      low: low[i],
-      close: close[i],
-      volume: volume ? volume[i] : 0
-    })).filter((c: any) => c.open !== null && c.close !== null);
-  }
+
+  // Removido Yahoo: agora só TradingView/local
   return [];
 };

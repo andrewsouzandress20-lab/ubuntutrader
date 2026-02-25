@@ -1,6 +1,6 @@
 
 import { GoogleGenAI } from "@google/genai";
-import { Candle, Asset, CorrelationData, EconomicEvent } from "../types";
+import { Candle, Asset, CorrelationData, EconomicEvent } from "../types.js";
 
 export const analyzeMarket = async (
   candles: Candle[], 
@@ -10,8 +10,17 @@ export const analyzeMarket = async (
   context: string = "Standard",
   extraData: { score: number, bullFVG: number, bearFVG: number }
 ): Promise<{ text: string, sources?: any[] }> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  
+  if (typeof window !== 'undefined') {
+    return { text: "analyzeMarket deve ser executado no servidor (backend)." };
+  }
+
+  const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
+  if (!apiKey) {
+    return { text: "GEMINI_API_KEY não configurada no ambiente do servidor." };
+  }
+
+  const ai = new GoogleGenAI({ apiKey });
+
   if (candles.length === 0) return { text: "Nenhum dado disponível para análise." };
   
   const currentPrice = candles[candles.length - 1].close;
@@ -34,11 +43,10 @@ export const analyzeMarket = async (
     
     INSTRUÇÃO OBRIGATÓRIA DE IDIOMA:
     - TODA a sua resposta deve ser em PORTUGUÊS-BR.
-    - Se encontrar notícias em Inglês via Google Search, traduza e resuma para o Português.
     
     TAREFA:
-    1. Pesquise notícias de ÚLTIMA HORA (últimas 24h) sobre ${asset.symbol} e o mercado macro.
-    2. Combine a técnica (SMC) com o sentimento das notícias.
+    1. Considere notícias macro das últimas 24h sobre ${asset.symbol} e o mercado.
+    2. Combine a técnica (SMC) com o sentimento macro.
     
     FORMATO EXIGIDO (EM PORTUGUÊS):
     ---
@@ -61,14 +69,11 @@ export const analyzeMarket = async (
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
-      contents: prompt,
-      config: {
-        tools: [{ googleSearch: {} }]
-      }
+      contents: [{ role: 'user', parts: [{ text: prompt }] }]
     });
 
-    const text = response.text || "Análise indisponível no momento.";
-    const sources = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
+    const text = (response as any).text || "Análise indisponível no momento.";
+    const sources = (response as any).candidates?.[0]?.groundingMetadata?.groundingChunks || [];
 
     return { text, sources };
   } catch (error) {

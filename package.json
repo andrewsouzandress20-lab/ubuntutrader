@@ -1,26 +1,57 @@
 {
   "name": "sentinel-pro-v3.8",
+  "type": "module",
   "private": true,
   "version": "0.0.0",
-  "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "start": "node legacy/server.cjs",
+    "send-signals-open": "ts-node --project tsconfig.scripts.json send_signals_action.ts open",
+    "send-analysis-open": "ts-node --project tsconfig.scripts.json send_signals_action.ts open analysis",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d dist"
   },
   "dependencies": {
     "@google/genai": "^1.38.0",
+    "body-parser": "^2.2.2",
+    "dotenv": "^17.2.3",
+    "esbuild-register": "^3.6.0",
+    "express": "^5.2.1",
     "lightweight-charts": "4.2.1",
+    "node-cron": "^4.2.1",
+    "node-fetch": "^3.3.2",
     "react": "^19.2.3",
-    "react-dom": "^19.2.3"
+    "react-dom": "^19.2.3",
+    "socket.io": "^4.8.3",
+    "socket.io-client": "^4.8.3",
+    "ts-node": "^10.9.2"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.2.1",
     "@types/node": "^22.14.0",
+    "@vitejs/plugin-react": "^5.1.3",
+    "autoprefixer": "^10.4.24",
+    "gh-pages": "^6.3.0",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.18",
+    "typescript": "~5.8.2",
+    "vite": "^6.2.0",
+    "vitest": "^4.0.18"
     "@vitejs/plugin-react": "^5.0.0",
     "autoprefixer": "^10.4.23",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.18",
+=======
+    "@vitejs/plugin-react": "^5.1.3",
+    "autoprefixer": "^10.4.24",
+    "gh-pages": "^6.3.0",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.3",
+>>>>>>> 66ed77ac784d73b870a1a9bdaab2199bd65d79cc
     "typescript": "~5.8.2",
-    "vite": "^6.2.0"
+    "vite": "^6.2.0",
+    "vitest": "^4.0.18"
   }
 }

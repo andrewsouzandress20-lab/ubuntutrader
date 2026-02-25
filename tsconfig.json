@@ -3,7 +3,7 @@
     "target": "ES2022",
     "experimentalDecorators": true,
     "useDefineForClassFields": false,
-    "module": "ESNext",
+    "module": "Node16",
     "lib": [
       "ES2022",
       "DOM",
@@ -13,17 +13,27 @@
     "types": [
       "node"
     ],
-    "moduleResolution": "bundler",
+    "moduleResolution": "node16",
     "isolatedModules": true,
     "moduleDetection": "force",
-    "allowJs": true,
+    
+    "outDir": "dist",
     "jsx": "react-jsx",
     "paths": {
       "@/*": [
         "./*"
       ]
     },
-    "allowImportingTsExtensions": true,
-    "noEmit": true
-  }
+    "typeRoots": [
+      "./types",
+      "./node_modules/@types"
+    ]
+  },
+  "exclude": [
+    "dist",
+    "dist/scripts",
+    "dist/scripts-esm",
+    "node_modules",
+    "legacy"
+  ]
 }

@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "outDir": "dist",
+    "noEmit": false,
+  },
+  "include": [
+    "scripts/collect_snapshot.ts",
+    "services/**/*.ts",
+    "types.ts",
+    "send_signals_action.ts"
+  ]
+}

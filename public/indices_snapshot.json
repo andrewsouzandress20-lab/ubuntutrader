@@ -1,0 +1,69 @@
+{
+  "timestamp": "2026-02-20T15:05:15.342827Z",
+  "indices": {
+    "US30": {
+      "price": "3232",
+      "url": "https://www.tradingview.com/symbols/DJI/"
+    },
+    "US500": {
+      "price": "4141",
+      "url": "https://www.tradingview.com/symbols/SPX/"
+    },
+    "US100": {
+      "price": "2020",
+      "url": "https://www.tradingview.com/symbols/NDX/"
+    },
+    "VIX": {
+      "price": "55",
+      "url": "https://www.tradingview.com/symbols/CBOE-VIX/"
+    },
+    "DXY": {
+      "price": "1414",
+      "url": "https://www.tradingview.com/symbols/TVC-DXY/"
+    },
+    "HK50": {
+      "price": 26413.35,
+      "url": "https://www.tradingview.com/symbols/HKEX-HSI/"
+    },
+    "JP225": {
+      "price": 56825.7,
+      "url": "https://www.tradingview.com/symbols/TVC-NIKKEI225/"
+    },
+    "CN50": {
+      "price": null,
+      "url": "https://www.tradingview.com/symbols/SGX-CN50/"
+    },
+    "GOLD": {
+      "price": "134134",
+      "url": "https://www.tradingview.com/symbols/TVC-GOLD/"
+    },
+    "WTI": {
+      "price": "66",
+      "url": "https://www.tradingview.com/symbols/TVC-USOIL/"
+    },
+    "VHSI": {
+      "price": 24.36,
+      "url": "https://www.tradingview.com/symbols/HKEX-VHSI/"
+    },
+    "CNH=X": {
+      "price": "0",
+      "url": "https://www.tradingview.com/symbols/FX_IDC-CNHUSD/"
+    },
+    "000001.SS": {
+      "price": "000001",
+      "url": "https://www.tradingview.com/symbols/SSE-000001/"
+    },
+    "USDJPY=X": {
+      "price": "1212",
+      "url": "https://www.tradingview.com/symbols/FX_IDC-USDJPY/"
+    },
+    "^TNX": {
+      "price": "3",
+      "url": "https://www.tradingview.com/symbols/TVC-US10Y/"
+    },
+    "^RUT": {
+      "price": null,
+      "url": "https://www.tradingview.com/symbols/AMEX-RUT/"
+    }
+  }
+}
