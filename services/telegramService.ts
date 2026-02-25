@@ -20,6 +20,23 @@ export const sendTelegramSignal = async (
     return;
   }
 
+*ANALISE A ZONA SMC/FGV PARA UMA ENTRADA MELHOR*
+  // Buscar dados dos índices globais
+  const { fetchCorrelationData } = await import('./dataService');
+  const globalIndices = await fetchCorrelationData(assetSymbol);
+
+  // Montar string dos índices globais
+  const indicesMsg = globalIndices.map(idx => {
+    let nome = idx.name;
+    if (nome === 'S&P 500') nome = 'SP500';
+    if (nome === 'NASDAQ') nome = 'NASDAQ';
+    if (nome === 'VIX') nome = 'VIX';
+    if (nome === 'DXY') nome = 'DXY';
+    if (nome === 'NIKKEI 225') nome = '10Y'; // Ajuste se necessário
+    if (nome === 'RUSSELL 2000') nome = 'RUSSELL 2000';
+    return `${nome}: ${idx.price !== 0 ? idx.price : '⚠️ dado ausente'}`;
+  }).join('\n');
+
   const message = `
 🚨 **SINAL DE ABERTURA - SENTINEL PRO** 🚨
 --------------------------------------
@@ -27,6 +44,8 @@ export const sendTelegramSignal = async (
 - **DIREÇÃO:** ${signal === 'COMPRA' ? '📈' : '📉'} **${signal}**
 - **FORÇA:** **${strength}**
 - **SCORE:** \`${score}\`
+--------------------------------------
+🌎 Índices globais:\n${indicesMsg}
 --------------------------------------
 *ANALISE A ZONA SMC/FGV PARA UMA ENTRADA MELHOR*
   `;
