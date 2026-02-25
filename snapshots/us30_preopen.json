@@ -5,41 +5,16 @@
   "quote": 3232,
   "indices": [
     {
-      "symbol": "^VIX",
-      "name": "VIX",
-      "price": 55,
+      "symbol": "^TNX",
+      "name": "TNX",
+      "price": 3,
       "correlation": "negative"
-    },
-    {
-      "symbol": "^GSPC",
-      "name": "S&P 500",
-      "price": 4141,
-      "correlation": "positive"
-    },
-    {
-      "symbol": "^IXIC",
-      "name": "NASDAQ",
-      "price": 2020,
-      "correlation": "positive"
     },
     {
       "symbol": "DX-Y.NYB",
       "name": "DXY",
       "price": 1414,
       "correlation": "negative"
-    },
-    {
-      "symbol": "^TNX",
-      "name": "TNX",
-      "price": 3,
-      "correlation": "negative"
-    }
-  ]
-      "name": "5️⃣ Treasury 10Y (US10Y)",
-      "price": 4.054,
-      "correlation": "negative",
-      "change": -1.218323586744635,
-      "info": "Custo do dinheiro\nPressão direta em ações"
     },
     {
       "symbol": "^RUT",
