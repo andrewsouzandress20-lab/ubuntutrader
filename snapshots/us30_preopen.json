@@ -5,9 +5,9 @@
   "quote": 3232,
   "indices": [
     {
-      "symbol": "US30",
-      "name": "US30",
-      "price": 161613.0
+      "symbol": "VIX",
+      "name": "VIX",
+      "price": 1115.0
     },
     {
       "symbol": "US500",
@@ -20,11 +20,6 @@
       "price": 121280.0
     },
     {
-      "symbol": "VIX",
-      "name": "VIX",
-      "price": 1115.0
-    },
-    {
       "symbol": "DXY",
       "name": "DXY",
       "price": 131310.0
@@ -33,11 +28,6 @@
       "symbol": "^TNX",
       "name": "10Y",
       "price": 113.0
-    },
-    {
-      "symbol": "RUSSELL2000",
-      "name": "Russell 2000",
-      "price": null
     }
   ],
   "breadth": {
