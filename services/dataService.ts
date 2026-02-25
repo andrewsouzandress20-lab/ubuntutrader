@@ -332,7 +332,23 @@ export const detectOpeningGap = (candles: Candle[], asset: Asset): GapData => {
 };
 
 export const fetchRealData = async (asset: Asset, timeframe: Timeframe): Promise<Candle[]> => {
-
-  // Removido Yahoo: agora só TradingView/local
-  return [];
+  // Busca dados reais do Yahoo Finance para exibir candles no dashboard
+  const symbol = asset.symbolYahoo || asset.symbol;
+  let interval = '5m';
+  let range = '5d';
+  if (timeframe === '1m') interval = '1m';
+  if (timeframe === '15m') interval = '15m';
+  if (timeframe === '1h') { interval = '60m'; range = '1mo'; }
+  if (timeframe === '1d') { interval = '1d'; range = '6mo'; }
+  const data = await fetchYahooData(symbol, interval, range);
+  if (!data || !data.timestamp || !data.indicators?.quote?.[0]) return [];
+  const quote = data.indicators.quote[0];
+  return data.timestamp.map((t: number, i: number) => ({
+    time: t * 1000,
+    open: quote.open[i],
+    high: quote.high[i],
+    low: quote.low[i],
+    close: quote.close[i],
+    volume: quote.volume[i],
+  })).filter((c: any) => c.open && c.close);
 };
