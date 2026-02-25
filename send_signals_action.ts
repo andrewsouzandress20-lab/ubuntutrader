@@ -515,20 +515,23 @@ async function sendAnalysisFromSnapshot(assetSymbol: string, label: string) {
     console.error(`[SNAPSHOT] Ainda não foi possível criar o snapshot: ${file}`);
     return;
   }
+  // Atualiza snapshot com dados atuais do TradingView
+  const indicesRaw = JSON.parse(fs.readFileSync('indices_snapshot.json', 'utf-8')).indices;
   let snapshot: Snapshot = JSON.parse(fs.readFileSync(file, 'utf-8'));
-  // Não busca Yahoo, usa apenas TradingView do snapshot
-  // Converte array de índices para Record<string, number>
+  snapshot.indices = [
+    { symbol: 'VIX', price: indicesRaw['VIX']?.price },
+    { symbol: 'US500', price: indicesRaw['US500']?.price },
+    { symbol: 'US100', price: indicesRaw['US100']?.price },
+    { symbol: 'DXY', price: indicesRaw['DXY']?.price }
+  ].filter(e => e.price !== undefined);
+  snapshot.quote = indicesRaw['US30']?.price ?? snapshot.quote;
+  fs.writeFileSync(file, JSON.stringify(snapshot, null, 2));
   const tvIndices: Record<string, number> = {};
-  if (Array.isArray(snapshot.indices)) {
-    snapshot.indices.forEach((idx: any) => {
-      if (idx.symbol && typeof idx.price === 'number') {
-        tvIndices[idx.symbol] = idx.price;
-      }
-    });
-  }
-  if (!snapshot.quote) {
-    snapshot.quote = snapshot.quote;
-  }
+  snapshot.indices.forEach((idx: any) => {
+    if (idx.symbol && typeof idx.price === 'number') {
+      tvIndices[idx.symbol] = idx.price;
+    }
+  });
   const { message, score, signal, strength } = buildAnalysisMessage(assetSymbol, label, snapshot, tvIndices);
   await sendTelegramAnalysis(message);
   console.log(`[ANALISE] (${assetSymbol}) ${label} | sinal ${signal} ${strength} (score ${score}) enviado.`);
