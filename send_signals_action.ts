@@ -387,6 +387,7 @@ const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snap
         { symbol: 'US100', label: '🇺🇸 NASDAQ' },
         { symbol: 'DXY', label: '💵 DXY' },
         { symbol: '^TNX', label: '🇺🇸 10Y' },
+        { symbol: 'RUT', label: '🇺🇸 Russell 2000' }
       ]
     : [
         { symbol: 'VHSI', label: '🥇 VHSI' },
