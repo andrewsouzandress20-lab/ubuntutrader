@@ -1,69 +1,41 @@
 {
-  "timestamp": "2026-02-20T15:05:15.342827Z",
+  "timestamp": "2026-02-25T01:35:19.713888+00:00",
   "indices": {
     "US30": {
-      "price": "3232",
-      "url": "https://www.tradingview.com/symbols/DJI/"
+      "price": 161613.0
     },
     "US500": {
-      "price": "4141",
-      "url": "https://www.tradingview.com/symbols/SPX/"
+      "price": 1818308.0
     },
     "US100": {
-      "price": "2020",
-      "url": "https://www.tradingview.com/symbols/NDX/"
+      "price": 121280.0
     },
     "VIX": {
-      "price": "55",
-      "url": "https://www.tradingview.com/symbols/CBOE-VIX/"
+      "price": 1115.0
     },
     "DXY": {
-      "price": "1414",
-      "url": "https://www.tradingview.com/symbols/TVC-DXY/"
-    },
-    "HK50": {
-      "price": 26413.35,
-      "url": "https://www.tradingview.com/symbols/HKEX-HSI/"
-    },
-    "JP225": {
-      "price": 56825.7,
-      "url": "https://www.tradingview.com/symbols/TVC-NIKKEI225/"
-    },
-    "CN50": {
-      "price": null,
-      "url": "https://www.tradingview.com/symbols/SGX-CN50/"
+      "price": 131310.0
     },
     "GOLD": {
-      "price": "134134",
-      "url": "https://www.tradingview.com/symbols/TVC-GOLD/"
+      "price": 7171543.0
     },
     "WTI": {
-      "price": "66",
-      "url": "https://www.tradingview.com/symbols/TVC-USOIL/"
+      "price": 2222110.0
     },
     "VHSI": {
-      "price": 24.36,
-      "url": "https://www.tradingview.com/symbols/HKEX-VHSI/"
+      "price": 24.47
     },
     "CNH=X": {
-      "price": "0",
-      "url": "https://www.tradingview.com/symbols/FX_IDC-CNHUSD/"
+      "price": 0.0
     },
     "000001.SS": {
-      "price": "000001",
-      "url": "https://www.tradingview.com/symbols/SSE-000001/"
+      "price": 1.0
     },
     "USDJPY=X": {
-      "price": "1212",
-      "url": "https://www.tradingview.com/symbols/FX_IDC-USDJPY/"
+      "price": 111122.0
     },
     "^TNX": {
-      "price": "3",
-      "url": "https://www.tradingview.com/symbols/TVC-US10Y/"
-    },
-    "^RUT": {
-      "price": null,
-      "url": "https://www.tradingview.com/symbols/AMEX-RUT/"
+      "price": 113.0
     }
   }
 }
