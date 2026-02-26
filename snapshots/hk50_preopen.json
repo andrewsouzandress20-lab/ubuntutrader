@@ -1,0 +1,357 @@
+{
+  "timestamp": "2026-02-25T03:06:56.994Z",
+  "asset": "HK50",
+  "label": "preopen",
+  "quote": null,
+  "indices": [
+    {
+      "symbol": "^VHSI",
+      "name": "VHSI",
+      "price": 24.47,
+      "correlation": "negative"
+    },
+    {
+      "symbol": "000001.SS",
+      "name": "SSE",
+      "price": 1,
+      "correlation": "positive"
+    },
+    {
+      "symbol": "^GSPC",
+      "name": "US500",
+      "price": 1818308,
+      "correlation": "positive"
+    },
+    {
+      "symbol": "USDJPY=X",
+      "name": "USDJPY",
+      "price": 111122,
+      "correlation": "negative"
+    },
+    {
+      "symbol": "DX-Y.NYB",
+      "name": "DXY",
+      "price": 131310,
+      "correlation": "negative"
+    }
+  ],
+  "breadth": {
+    "summary": {
+      "advancing": 60,
+      "declining": 0,
+      "total": 60
+    },
+    "details": [
+      {
+        "symbol": "0001.HK",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "0002.HK",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "0003.HK",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "0005.HK",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "0006.HK",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "0011.HK",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "0012.HK",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "0016.HK",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "0017.HK",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "0027.HK",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "0066.HK",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "0101.HK",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "0175.HK",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "0241.HK",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "0267.HK",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "0288.HK",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "0386.HK",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "0388.HK",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "0669.HK",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "0688.HK",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "0700.HK",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "0762.HK",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "0823.HK",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "0857.HK",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "0883.HK",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "0939.HK",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "0941.HK",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "0960.HK",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "0968.HK",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "0981.HK",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "0992.HK",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "1038.HK",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "1044.HK",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "1088.HK",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "1093.HK",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "1109.HK",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "1113.HK",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "1177.HK",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "1211.HK",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "1299.HK",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "1398.HK",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "1810.HK",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "1928.HK",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "2020.HK",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "2313.HK",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "2318.HK",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "2319.HK",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "2331.HK",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "2382.HK",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "2388.HK",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "2628.HK",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "2688.HK",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "3690.HK",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "3968.HK",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "3988.HK",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "9618.HK",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "9633.HK",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "9888.HK",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "9988.HK",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "9999.HK",
+        "change": 0,
+        "status": "BUY"
+      }
+    ]
+  },
+  "volume": {
+    "buyPercent": 50,
+    "sellPercent": 50,
+    "total": 0
+  },
+  "gap": {
+    "value": 0,
+    "percent": 0,
+    "type": "none"
+  }
+}
