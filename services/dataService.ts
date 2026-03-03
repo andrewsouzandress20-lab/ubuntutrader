@@ -332,23 +332,18 @@ export const detectOpeningGap = (candles: Candle[], asset: Asset): GapData => {
 };
 
 export const fetchRealData = async (asset: Asset, timeframe: Timeframe): Promise<Candle[]> => {
-  // Busca dados reais do Yahoo Finance para exibir candles no dashboard
-  const symbol = asset.symbolYahoo || asset.symbol;
-  let interval = '5m';
-  let range = '5d';
-  if (timeframe === '1m') interval = '1m';
-  if (timeframe === '15m') interval = '15m';
-  if (timeframe === '1h') { interval = '60m'; range = '1mo'; }
-  if (timeframe === '1d') { interval = '1d'; range = '6mo'; }
-  const data = await fetchYahooData(symbol, interval, range);
-  if (!data || !data.timestamp || !data.indicators?.quote?.[0]) return [];
-  const quote = data.indicators.quote[0];
-  return data.timestamp.map((t: number, i: number) => ({
-    time: t * 1000,
-    open: quote.open[i],
-    high: quote.high[i],
-    low: quote.low[i],
-    close: quote.close[i],
-    volume: quote.volume[i],
-  })).filter((c: any) => c.open && c.close);
+  // Busca candles reais do arquivo local data/{symbol}_candles.json
+  const fs = require('fs');
+  const path = `data/${asset.symbol.toLowerCase()}_candles.json`;
+  if (!fs.existsSync(path)) return [];
+  try {
+    const candles = JSON.parse(fs.readFileSync(path, 'utf-8'));
+    if (Array.isArray(candles)) {
+      return candles;
+    }
+    return [];
+  } catch (err) {
+    console.warn('[fetchRealData] Falha ao ler candles reais:', err);
+    return [];
+  }
 };
