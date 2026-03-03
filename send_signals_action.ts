@@ -601,7 +601,13 @@ const inferAssetsByTime = (): string[] => {
 (async () => {
   const label = process.argv[2] || 'open';
   const mode = process.argv[3] || (label === 'preopen' ? 'analysis' : 'signal');
-  const assets = ['US30'];
+  // Permite selecionar ativos via env ou por inferência
+  let assets: string[] = [];
+  if (process.env.TARGET_ASSETS) {
+    assets = process.env.TARGET_ASSETS.split(',').map(a => a.trim().toUpperCase());
+  } else {
+    assets = inferAssetsByTime();
+  }
 
   for (const asset of assets) {
     if (mode === 'analysis') {
