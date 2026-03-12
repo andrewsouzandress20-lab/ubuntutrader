@@ -2,6 +2,7 @@ import 'dotenv/config';
 import * as fs from 'fs';
 import { sendTelegramSignal, sendTelegramAnalysis } from './services/telegramService.js';
 import { collectSnapshot } from './scripts/collect_snapshot.js';
+import { execSync } from 'child_process';
 import { fetchCorrelationData, fetchMarketBreadth, fetchRealData, calculateVolumePressure, detectOpeningGap, fetchCurrentPrice, fetchYahooChartPriceChange } from './services/dataService.js';
 import { SUPPORTED_ASSETS } from './types.js';
 import { spawnSync } from 'child_process';
@@ -384,6 +385,16 @@ const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snap
     return value.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 2 });
   };
 
+  // Atualiza os candles do US30 antes de tudo
+  try {
+    // Substitua pelo comando real de coleta dos candles do US30
+    // Exemplo: python fetch_indices_tradingview.py us30
+    execSync('python fetch_indices_tradingview.py us30', { stdio: 'inherit' });
+    console.log('[ACTION] Candles do US30 atualizados com sucesso.');
+  } catch (err) {
+    console.warn('[ACTION] Falha ao atualizar candles do US30:', err);
+  }
+
   // Leitura das empresas do US30 (companies_snapshot.json)
   let us30Companies: { ticker: string; name: string; change?: number }[] = [];
   let us30Resumo = '';
@@ -404,12 +415,6 @@ const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snap
             volume: c.volume
           }));
           console.log(`[DEBUG] us30Companies carregadas: ${us30Companies.length}`);
-          // Resumo empresas em alta x baixa (compra x venda) para US30
-          if (us30Companies.length > 0) {
-            const emAlta = us30Companies.filter(c => typeof c.change === 'number' && c.change > 0).length;
-            const emBaixa = us30Companies.filter(c => typeof c.change === 'number' && c.change < 0).length;
-            us30Resumo = `Resumo US30: ${emAlta} em alta (compra) / ${emBaixa} em baixa (venda)`;
-          }
         } else {
           console.warn('[DEBUG] Campo indices.US30 não encontrado em companies_snapshot.json');
         }
