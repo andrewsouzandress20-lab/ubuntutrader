@@ -31,7 +31,13 @@ const ensureSnapshotData = async (assetSymbol: string, snapshot: Snapshot, snaps
 
   // Corrige: se indices for objeto, converte para array de objetos com campo symbol
   if (snapshot.indices && !Array.isArray(snapshot.indices)) {
-    snapshot.indices = Object.entries(snapshot.indices).map(([symbol, data]) => ({ symbol, ...data }));
+    snapshot.indices = Object.entries(snapshot.indices).map(([symbol, data]) => {
+      if (data && typeof data === 'object' && !Array.isArray(data)) {
+        return { symbol, ...data };
+      } else {
+        return { symbol, value: data };
+      }
+    });
     changed = true;
   }
   if (!snapshot.indices || snapshot.indices.length === 0) {
