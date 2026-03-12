@@ -434,12 +434,27 @@ const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snap
         { symbol: 'DXY', label: '💵 DXY' },
       ];
 
+  // Correlação dos índices para US30
+  const correlationMap: Record<string, 'positive' | 'negative'> = {
+    'VIX': 'negative',
+    'DXY': 'negative',
+    'US500': 'positive',
+    'S&P 500': 'positive',
+    'US100': 'positive',
+    'NASDAQ': 'positive'
+  };
   const indicatorLines = relevantSymbols.map(({ label, symbol }) => {
     // Busca variação percentual (change) do snapshot
     const change = getChange(snapshot, symbol);
     if (change !== null && !Number.isNaN(change)) {
-      // Determina favorabilidade
-      const favor = (signal === 'COMPRA') ? (change > 0) : (change < 0);
+      // Determina favorabilidade pela correlação
+      const corr = correlationMap[symbol] || 'positive';
+      let favor: boolean;
+      if (corr === 'positive') {
+        favor = (signal === 'COMPRA') ? (change > 0) : (change < 0);
+      } else {
+        favor = (signal === 'COMPRA') ? (change < 0) : (change > 0);
+      }
       const check = favor ? '✅' : '❌';
       const word = favor ? 'favorável' : 'desfavorável';
       return `${label}: ${fmtPct(change)} ${check} (${word} para ${signal})`;
