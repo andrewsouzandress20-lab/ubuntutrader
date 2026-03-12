@@ -248,7 +248,20 @@ const mapIndices = (snapshot: Snapshot, map: Record<string, string>): Record<str
 };
 
 const getChange = (snapshot: Snapshot, symbols: string | string[]): number | null => {
-  const list = Array.isArray(symbols) ? symbols : [symbols];
+  // Adiciona aliases para garantir que encontra o símbolo correto
+  const aliasMap: Record<string, string[]> = {
+    'VIX': ['VIX', '^VIX'],
+    '^VIX': ['VIX', '^VIX'],
+    'US500': ['US500', '^GSPC', 'S&P 500'],
+    '^GSPC': ['US500', '^GSPC', 'S&P 500'],
+    'US100': ['US100', '^IXIC', 'NASDAQ'],
+    '^IXIC': ['US100', '^IXIC', 'NASDAQ'],
+    'DXY': ['DXY', 'DX-Y.NYB'],
+    'DX-Y.NYB': ['DXY', 'DX-Y.NYB'],
+  };
+  let list = Array.isArray(symbols) ? symbols : [symbols];
+  // Expande aliases
+  list = list.flatMap(sym => aliasMap[sym] || [sym]);
   const found = snapshot.indices?.find(i => list.includes(i.symbol));
   return typeof found?.change === 'number' ? found.change : null;
 };
@@ -469,13 +482,7 @@ const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snap
       if (change !== null && !Number.isNaN(change)) {
         return `- ⚠️ ${volIndexSymbol === '^VIX' ? 'VIX' : 'VHSI'}: ${fmtPct(change)}`;
       }
-      // Busca preço do índice
-      const indicesRaw = JSON.parse(fs.readFileSync('indices_snapshot.json', 'utf-8')).indices;
-      const price = indicesRaw[volIndexSymbol.replace('^', '')]?.price;
-      if (price !== undefined && price !== null && !Number.isNaN(price)) {
-        return `- ⚠️ ${volIndexSymbol === '^VIX' ? 'VIX' : 'VHSI'}: ${fmtPrice(price)} (preço)`;
-      }
-      return `- ⚠️ ${volIndexSymbol === '^VIX' ? 'VIX' : 'VHSI'}: dado ausente`;
+      return `- ⚠️ ${volIndexSymbol === '^VIX' ? 'VIX' : 'VHSI'}: -`;
     })(),
     `- ${breadthSummary()}`,
     `- 🕳️ ${gapSummary()}`,
