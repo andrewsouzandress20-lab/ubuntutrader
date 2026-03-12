@@ -525,7 +525,6 @@ const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snap
       return `- ⚠️ ${volIndexSymbol === '^VIX' ? 'VIX' : 'VHSI'}: -`;
     })(),
     `- ${breadthSummary()}`,
-    `- 🕳️ ${gapSummary()}`,
     '',
     '⚡️ Siga as zonas SMC/FVG para melhor entrada.',
     '',
