@@ -118,13 +118,13 @@ export const sendTelegramSignal = async (
   const dxy = indices.DXY ?? '-';
 
   // HK set
-  const vhsi = indices.VHSI ?? '-';
-  const cnh = indices.CNH ?? indices['USD/CNH'] ?? '-';
-  const nikkei = indices.NIKKEI ?? '-';
-  const sse = indices.SSE ?? '-';
-  const us500 = indices.US500 ?? indices['US500'] ?? '-';
-  const usdjpy = indices.USDJPY ?? indices['USD/JPY'] ?? '-';
-  const dxyHK = indices.DXY ?? '-';
+  const vhsi = typeof indices.VHSI === 'object' ? indices.VHSI : {};
+  const cnh = typeof indices.CNH === 'object' ? indices.CNH : (typeof indices['USD/CNH'] === 'object' ? indices['USD/CNH'] : {});
+  const nikkei = typeof indices.NIKKEI225 === 'object' ? indices.NIKKEI225 : {};
+  const sse = typeof indices.SSE === 'object' ? indices.SSE : {};
+  const us500 = typeof indices.US500 === 'object' ? indices.US500 : {};
+  const usdjpy = typeof indices.USDJPY === 'object' ? indices.USDJPY : {};
+  const dxyHK = typeof indices.DXY === 'object' ? indices.DXY : {};
 
   const vixMood = toNum(vix) < 0 ? '😌' : '⚠️';
   const vhsiMood = toNum(vhsi) < 0 ? '😱' : '⚠️';
@@ -188,13 +188,13 @@ export const sendTelegramSignal = async (
       quoteLine,
       '',
       '🌎 Índices globais:',
-      `🥇 VHSI: ${vhsi?.changePctStr ?? '-'} ${vhsiMood} ${impact(vhsi, !isBuy)} ${impactText(vhsi, !isBuy, isBuy)}`,
-      `🇨🇳 CNH (USD/CNH): ${cnh?.changePctStr ?? '-'} ${impact(cnh, !isBuy)} ${impactText(cnh, !isBuy, isBuy)}`,
-      `🇯🇵 Nikkei 225: ${nikkei?.changePctStr ?? '-'} ${impact(nikkei, isBuy)} ${impactText(nikkei, isBuy, isBuy)}`,
-      `🇨🇳 SSE: ${sse?.changePctStr ?? '-'} ${impact(sse, isBuy)} ${impactText(sse, isBuy, isBuy)}`,
-      `🇺🇸 US500: ${us500?.changePctStr ?? '-'} ${impact(us500, isBuy)} ${impactText(us500, isBuy, isBuy)}`,
-      `🇺🇸 USD/JPY: ${usdjpy?.changePctStr ?? '-'} ${impact(usdjpy, !isBuy)} ${impactText(usdjpy, !isBuy, isBuy)}`,
-      `💵 DXY: ${dxyHK?.changePctStr ?? '-'} ${impact(dxyHK, !isBuy)} ${impactText(dxyHK, !isBuy, isBuy)}`,
+      `🥇 VHSI: ${vhsi.changePctStr ?? (vhsi.change !== undefined ? `${vhsi.change >= 0 ? '+' : ''}${vhsi.change?.toFixed(2)}%` : '-')} ${vhsiMood} ${impact(vhsi.change, !isBuy)} ${impactText(vhsi.change, !isBuy, isBuy)}`,
+      `🇨🇳 CNH (USD/CNH): ${cnh.changePctStr ?? (cnh.change !== undefined ? `${cnh.change >= 0 ? '+' : ''}${cnh.change?.toFixed(2)}%` : '-')} ${impact(cnh.change, !isBuy)} ${impactText(cnh.change, !isBuy, isBuy)}`,
+      `🇯🇵 Nikkei 225: ${nikkei.changePctStr ?? (nikkei.change !== undefined ? `${nikkei.change >= 0 ? '+' : ''}${nikkei.change?.toFixed(2)}%` : '-')} ${impact(nikkei.change, isBuy)} ${impactText(nikkei.change, isBuy, isBuy)}`,
+      `🇨🇳 SSE: ${sse.changePctStr ?? (sse.change !== undefined ? `${sse.change >= 0 ? '+' : ''}${sse.change?.toFixed(2)}%` : '-')} ${impact(sse.change, isBuy)} ${impactText(sse.change, isBuy, isBuy)}`,
+      `🇺🇸 US500: ${us500.changePctStr ?? (us500.change !== undefined ? `${us500.change >= 0 ? '+' : ''}${us500.change?.toFixed(2)}%` : '-')} ${impact(us500.change, isBuy)} ${impactText(us500.change, isBuy, isBuy)}`,
+      `🇺🇸 USD/JPY: ${usdjpy.changePctStr ?? (usdjpy.change !== undefined ? `${usdjpy.change >= 0 ? '+' : ''}${usdjpy.change?.toFixed(2)}%` : '-')} ${impact(usdjpy.change, !isBuy)} ${impactText(usdjpy.change, !isBuy, isBuy)}`,
+      `💵 DXY: ${dxyHK.changePctStr ?? (dxyHK.change !== undefined ? `${dxyHK.change >= 0 ? '+' : ''}${dxyHK.change?.toFixed(2)}%` : '-')} ${impact(dxyHK.change, !isBuy)} ${impactText(dxyHK.change, !isBuy, isBuy)}`,
       '',
       '📊 Resumo:',
       hkVolumeLine,
@@ -221,12 +221,12 @@ export const sendTelegramSignal = async (
       quoteLine,
       '',
       '🌎 Índices globais:',
-      `🥇 VIX: ${vix?.changePctStr ?? '-'} ${vixMood} ${impact(vix, !isBuy)} ${impactText(vix, !isBuy, isBuy)}`,
-      `🇺🇸 S&P 500: ${sp500?.changePctStr ?? '-'} ${impact(sp500, isBuy)} ${impactText(sp500, isBuy, isBuy)}`,
-      `🇺🇸 NASDAQ: ${nasdaq?.changePctStr ?? '-'} ${impact(nasdaq, isBuy)} ${impactText(nasdaq, isBuy, isBuy)}`,
-      `💵 DXY: ${dxy?.changePctStr ?? '-'} ${impact(dxy, !isBuy)} ${impactText(dxy, !isBuy, isBuy)}`,
-      `🇺🇸 10Y: ${tnx?.changePctStr ?? '-'} ${impact(tnx, !isBuy)} ${impactText(tnx, !isBuy, isBuy)}`,
-      `🇺🇸 Russell 2000: ${russell?.changePctStr ?? '-'} ${impact(russell, isBuy)} ${impactText(russell, isBuy, isBuy)}`,
+      `🥇 VIX: ${vix.changePctStr ?? (vix.change !== undefined ? `${vix.change >= 0 ? '+' : ''}${vix.change?.toFixed(2)}%` : '-')} ${vixMood} ${impact(vix.change, !isBuy)} ${impactText(vix.change, !isBuy, isBuy)}`,
+      `🇺🇸 S&P 500: ${sp500.changePctStr ?? (sp500.change !== undefined ? `${sp500.change >= 0 ? '+' : ''}${sp500.change?.toFixed(2)}%` : '-')} ${impact(sp500.change, isBuy)} ${impactText(sp500.change, isBuy, isBuy)}`,
+      `🇺🇸 NASDAQ: ${nasdaq.changePctStr ?? (nasdaq.change !== undefined ? `${nasdaq.change >= 0 ? '+' : ''}${nasdaq.change?.toFixed(2)}%` : '-')} ${impact(nasdaq.change, isBuy)} ${impactText(nasdaq.change, isBuy, isBuy)}`,
+      `💵 DXY: ${dxy.changePctStr ?? (dxy.change !== undefined ? `${dxy.change >= 0 ? '+' : ''}${dxy.change?.toFixed(2)}%` : '-')} ${impact(dxy.change, !isBuy)} ${impactText(dxy.change, !isBuy, isBuy)}`,
+      `🇺🇸 10Y: ${tnx.changePctStr ?? (tnx.change !== undefined ? `${tnx.change >= 0 ? '+' : ''}${tnx.change?.toFixed(2)}%` : '-')} ${impact(tnx.change, !isBuy)} ${impactText(tnx.change, !isBuy, isBuy)}`,
+      `🇺🇸 Russell 2000: ${russell.changePctStr ?? (russell.change !== undefined ? `${russell.change >= 0 ? '+' : ''}${russell.change?.toFixed(2)}%` : '-')} ${impact(russell.change, isBuy)} ${impactText(russell.change, isBuy, isBuy)}`,
       '',
       '📊 Resumo:',
       volumeLine,
