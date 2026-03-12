@@ -157,11 +157,54 @@ export const fetchCorrelationData = async (assetSymbol: string): Promise<Correla
     ];
   }
 
+  // Lê o snapshot local dos índices
+  let indicesSnapshot: any = null;
+  try {
+    const resp = await fetch('/indices_snapshot.json?t=' + Date.now());
+    if (resp.ok) indicesSnapshot = await resp.json();
+  } catch (e) {
+    console.error('Erro ao ler indices_snapshot.json', e);
+  }
+
   for (const target of targets) {
-    // Exemplo: change pode ser obtido de algum lugar, aqui deixo como null
-    const change = null;
+    let change = null;
+    let changeAbs = null;
+    if (indicesSnapshot && indicesSnapshot.indices) {
+      // Mapeamento dos símbolos do frontend para as chaves do snapshot
+      const symbolMap: Record<string, string> = {
+        '^VHSI': 'VHSI',
+        'CNH=X': 'CNH',
+        '^N225': 'NIKKEI225',
+        '000001.SS': 'SSE',
+        '^GSPC': 'US500',
+        '^IXIC': 'US100',
+        'USDJPY=X': 'USDJPY',
+        'DX-Y.NYB': 'DXY',
+        '^VIX': 'VIX',
+        '^TNX': 'TNX',
+        '^RUT': 'RUT'
+      };
+      const key = symbolMap[target.symbol] || target.symbol;
+      const idx = indicesSnapshot.indices[key];
+      if (idx) {
+        change = idx.change;
+        changeAbs = idx.changeAbs;
+      }
+    }
+    // Calcula a variação formatada
+    let changePctStr = undefined;
+    let changeAbsStr = undefined;
+    if (change !== null && change !== undefined && !Number.isNaN(change)) {
+      changePctStr = `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`;
+    }
+    if (changeAbs !== null && changeAbs !== undefined && !Number.isNaN(changeAbs)) {
+      changeAbsStr = `${changeAbs >= 0 ? '+' : ''}${changeAbs.toFixed(2)}`;
+    }
     results.push({
-      change: (change !== null && change !== undefined && !Number.isNaN(change)) ? change : undefined as any,
+      change: change,
+      changeAbs: changeAbs,
+      changePctStr,
+      changeAbsStr,
       correlation: target.correlation,
       info: (target as any).info || ''
     });
@@ -250,6 +293,12 @@ export const fetchMarketBreadth = async (assetSymbol: string): Promise<{ summary
   if (!details || details.length === 0) {
     details = tickers.map(ticker => ({ symbol: ticker, change: 0, status: 'BUY' as const }));
     console.warn(`[fetchMarketBreadth] Usando breadth neutro para ${assetSymbol}`);
+  } else {
+    // Ajusta status dinamicamente conforme o campo change
+    details = details.map(d => ({
+      ...d,
+      status: d.status || (typeof d.change === 'number' ? (d.change >= 0 ? 'BUY' : 'SELL') : 'BUY')
+    }));
   }
   const summary = { advancing: details.filter(d => d.status === 'BUY').length, declining: details.filter(d => d.status === 'SELL').length, total: details.length };
   return { summary, details };
