@@ -29,6 +29,11 @@ const ensureSnapshotData = async (assetSymbol: string, snapshot: Snapshot, snaps
   let changed = false;
 
 
+  // Corrige: se indices for objeto, converte para array de objetos com campo symbol
+  if (snapshot.indices && !Array.isArray(snapshot.indices)) {
+    snapshot.indices = Object.entries(snapshot.indices).map(([symbol, data]) => ({ symbol, ...data }));
+    changed = true;
+  }
   if (!snapshot.indices || snapshot.indices.length === 0) {
     // Prioridade: TradingView
     const tvFallback = buildTvCorrelation(assetSymbol, tvIndices);
