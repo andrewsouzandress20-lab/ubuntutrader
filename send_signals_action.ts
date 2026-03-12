@@ -491,6 +491,7 @@ const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snap
     '',
     'Para ver os dados detalhadamente!'
   ];
+}
 
 async function sendSignalFromSnapshot(assetSymbol: string, label: string) {
   const file = `snapshots/${assetSymbol.toLowerCase()}_${label}.json`;
