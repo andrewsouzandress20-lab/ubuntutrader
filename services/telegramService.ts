@@ -204,7 +204,7 @@ export const sendTelegramSignal = async (
       hkVolumeLine,
       `- ${vixResumo}`,
       `- ${breadthResumo}`,
-      `- ${gapResumo}`,
+      // linha do gap removida
       '',
       '⚡️ Siga as zonas SMC/FVG para melhor entrada.',
       '',
