@@ -500,15 +500,8 @@ const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snap
     `${headerLine}`,
     '',
     us30Resumo,
-    (() => {
-      let favor;
-      if (signal === 'COMPRA') favor = 'favorável à compra';
-      else if (signal === 'VENDA') favor = 'desfavorável à compra';
-      else favor = 'neutro';
-      return `${headerAsset}: Sinal de ${signal === 'NEUTRO' ? '⚖️ NEUTRO' : signal === 'COMPRA' ? '🔺 COMPRA' : '🔻 VENDA'} ${strength} (${favor})`;
-    })(),
+    `${headerAsset}: Sinal de ${signal === 'NEUTRO' ? '⚖️ NEUTRO' : signal === 'COMPRA' ? '🔺 COMPRA' : '🔻 VENDA'} ${strength}`,
     `Score institucional: ${total > 0 ? '+' : ''}${total}`,
-    `Cotação: ${fmtPrice(snapshot.quote ?? null)}`,
     '',
     '🌎 Índices globais:',
     ...indicatorLines,
