@@ -313,37 +313,31 @@ export const fallbackEmptyBreadth = (tickers: string[]): { summary: MarketBreadt
   };
 };
 
-export const calculateVolumePressure = (candles: Candle[]): VolumePressure => {
-  if (candles.length === 0) {
-    console.warn('[calculateVolumePressure] Nenhum candle recebido');
-    return { buyPercent: 50, sellPercent: 50, total: 0 };
-  }
-  
+// Novo cálculo: volume comprador/vendedor a partir do companies_snapshot.json
+import * as fs from 'fs';
+export const calculateVolumePressure = (_candles: Candle[]): VolumePressure => {
   let buyVol = 0;
   let sellVol = 0;
-  
-  const recent = candles.slice(-20);
-  recent.forEach(c => {
-    const body = Math.abs(c.close - c.open);
-    const wickTop = c.high - Math.max(c.open, c.close);
-    const wickBottom = Math.min(c.open, c.close) - c.low;
-    const vol = (c.volume || 1);
-    
-    if (c.close > c.open) {
-      buyVol += vol * (body + wickBottom);
-      sellVol += vol * wickTop;
-    } else {
-      sellVol += vol * (body + wickTop);
-      buyVol += vol * wickBottom;
+  let total = 0;
+  try {
+    const companiesRaw = JSON.parse(fs.readFileSync('companies_snapshot.json', 'utf-8'));
+    if (companiesRaw?.indices?.US30) {
+      for (const c of companiesRaw.indices.US30) {
+        const vol = typeof c.volume === 'number' ? c.volume : parseFloat(c.volume);
+        if (typeof vol === 'number' && !isNaN(vol)) {
+          if (c.change > 0) buyVol += vol;
+          else if (c.change < 0) sellVol += vol;
+        }
+      }
+      total = buyVol + sellVol;
     }
-  });
-
-  const total = buyVol + sellVol || 1;
-  const result = {
-    buyPercent: Math.max(10, Math.min(90, (buyVol / total) * 100)),
-    sellPercent: Math.max(10, Math.min(90, (sellVol / total) * 100)),
-    total: total
-  };
+  } catch (e) {
+    console.warn('[calculateVolumePressure] Falha ao ler companies_snapshot.json:', e);
+  }
+  if (total === 0) return { buyPercent: 50, sellPercent: 50, total: 0 };
+  const buyPercent = (buyVol / total) * 100;
+  const sellPercent = (sellVol / total) * 100;
+  const result = { buyPercent, sellPercent, total };
   console.log('[calculateVolumePressure] Resultado:', result);
   return result;
 };
