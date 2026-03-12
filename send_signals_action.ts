@@ -413,22 +413,10 @@ const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snap
   const indicatorLines = relevantSymbols.map(({ label, symbol }) => {
     // Busca variação percentual (change) do snapshot
     const change = getChange(snapshot, symbol);
-    let favorText = '';
     if (change !== null && !Number.isNaN(change)) {
-      // Determina favorabilidade
-      const favor = (signal === 'COMPRA') ? (change > 0) : (change < 0);
-      const check = favor ? '✅' : '❌';
-      const word = favor ? 'favorável' : 'desfavorável';
-      favorText = `${check} (${word} para ${signal})`;
-      return `${label}: ${fmtPct(change)} ${favorText}`;
+      return `${label}: ${fmtPct(change)}`;
     } else {
-      // Se não houver change, exibe preço e favorabilidade baseada no sinal
-      const indicesRaw = JSON.parse(fs.readFileSync('indices_snapshot.json', 'utf-8')).indices;
-      const price = indicesRaw[symbol]?.price;
-      favorText = signal === 'COMPRA' ? '✅ (favorável para COMPRA)' : signal === 'VENDA' ? '✅ (favorável para VENDA)' : '⚖️ (neutro)';
-      return price !== undefined && price !== null && !Number.isNaN(price)
-        ? `${label}: ${fmtPrice(price)} ${favorText}`
-        : `${label}: ⚠️ dado ausente`;
+      return `${label}: -`;
     }
   });
 
