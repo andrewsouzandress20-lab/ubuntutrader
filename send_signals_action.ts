@@ -336,6 +336,13 @@ const computeScore = (assetSymbol: string, snapshot: Snapshot): { total: number;
 };
 
 const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snapshot, tvIndices: Record<string, number>) => {
+    // Resumo empresas em alta x baixa (compra x venda) para US30
+    let us30Resumo = '';
+    if (assetSymbol === 'US30' && us30Companies.length > 0) {
+      const emAlta = us30Companies.filter(c => typeof c.change === 'number' && c.change > 0).length;
+      const emBaixa = us30Companies.filter(c => typeof c.change === 'number' && c.change < 0).length;
+      us30Resumo = `Resumo US30: ${emAlta} em alta (compra) / ${emBaixa} em baixa (venda)`;
+    }
   const { total } = computeScore(assetSymbol, snapshot);
   const signal = resolveSignal(total);
   const strength = resolveStrength(total);
@@ -450,6 +457,7 @@ const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snap
   const lines = [
     `${headerLine}`,
     '',
+    us30Resumo,
     (() => {
       let favor;
       if (signal === 'COMPRA') favor = 'favorável à compra';
