@@ -438,7 +438,11 @@ const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snap
     // Busca variação percentual (change) do snapshot
     const change = getChange(snapshot, symbol);
     if (change !== null && !Number.isNaN(change)) {
-      return `${label}: ${fmtPct(change)}`;
+      // Determina favorabilidade
+      const favor = (signal === 'COMPRA') ? (change > 0) : (change < 0);
+      const check = favor ? '✅' : '❌';
+      const word = favor ? 'favorável' : 'desfavorável';
+      return `${label}: ${fmtPct(change)} ${check} (${word} para ${signal})`;
     } else {
       return `${label}: -`;
     }
