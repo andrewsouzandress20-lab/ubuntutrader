@@ -70,14 +70,24 @@ def fetch_companies(url, fallback_tickers):
     except Exception as e:
         print(f'Erro ao buscar empresas em {url}: {e}')
 
-    # Não usa fallback: salva apenas empresas realmente coletadas do TradingView
+    if not companies and fallback_tickers:
+        print(f'[LOG] Nenhuma empresa coletada em {url}, usando fallback de tickers conhecidos.')
+        companies = [{
+            'ticker': t,
+            'name': t,
+            'price': None,
+            'change': None,
+            'changePercent': None
+        } for t in fallback_tickers]
+
     return companies
 
 def main():
     snapshot = {'timestamp': datetime.now(timezone.utc).isoformat(), 'indices': {}}
     for index, url in INDEX_COMPONENTS.items():
         print(f'Coletando empresas do {index}...')
-        companies = fetch_companies(url, [])
+        fallback = DOW_30_TICKERS if index == 'US30' else HK_50_TICKERS if index == 'HK50' else []
+        companies = fetch_companies(url, fallback)
         snapshot['indices'][index] = companies
     with open('companies_snapshot.json', 'w') as f:
         json.dump(snapshot, f, indent=2)

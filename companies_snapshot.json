@@ -1,7 +1,499 @@
 {
-  "timestamp": "placeholder",
+  "timestamp": "2026-03-12T13:41:43.012787+00:00",
   "indices": {
-    "US30": [],
-    "HK50": []
+    "US30": [
+      {
+        "ticker": "NVDANVIDIA Corporation",
+        "name": "4.52\u202fT USD",
+        "price": null,
+        "change": 0.68,
+        "changePercent": null
+      },
+      {
+        "ticker": "AAPLApple Inc.",
+        "name": "3.83\u202fT USD",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "MSFTMicrosoft Corporation",
+        "name": "3.01\u202fT USD",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "AMZNAmazon.com, Inc.",
+        "name": "2.28\u202fT USD",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "WMTWalmart Inc.",
+        "name": "984.24\u202fB USD",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "JPMJP Morgan Chase & Co.",
+        "name": "775.45\u202fB USD",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "VVisa Inc.",
+        "name": "588.88\u202fB USD",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "JNJJohnson & Johnson",
+        "name": "585.58\u202fB USD",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "CVXChevron Corporation",
+        "name": "382.69\u202fB USD",
+        "price": null,
+        "change": 2.95,
+        "changePercent": null
+      },
+      {
+        "ticker": "PGProcter & Gamble Company (The)",
+        "name": "356.32\u202fB USD",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      }
+    ],
+    "HK50": [
+      {
+        "ticker": "0001.HK",
+        "name": "0001.HK",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "0002.HK",
+        "name": "0002.HK",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "0003.HK",
+        "name": "0003.HK",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "0005.HK",
+        "name": "0005.HK",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "0006.HK",
+        "name": "0006.HK",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "0011.HK",
+        "name": "0011.HK",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "0012.HK",
+        "name": "0012.HK",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "0016.HK",
+        "name": "0016.HK",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "0017.HK",
+        "name": "0017.HK",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "0027.HK",
+        "name": "0027.HK",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "0066.HK",
+        "name": "0066.HK",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "0101.HK",
+        "name": "0101.HK",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "0175.HK",
+        "name": "0175.HK",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "0241.HK",
+        "name": "0241.HK",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "0267.HK",
+        "name": "0267.HK",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "0288.HK",
+        "name": "0288.HK",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "0386.HK",
+        "name": "0386.HK",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "0388.HK",
+        "name": "0388.HK",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "0669.HK",
+        "name": "0669.HK",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "0688.HK",
+        "name": "0688.HK",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "0700.HK",
+        "name": "0700.HK",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "0762.HK",
+        "name": "0762.HK",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "0823.HK",
+        "name": "0823.HK",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "0857.HK",
+        "name": "0857.HK",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "0883.HK",
+        "name": "0883.HK",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "0939.HK",
+        "name": "0939.HK",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "0941.HK",
+        "name": "0941.HK",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "0960.HK",
+        "name": "0960.HK",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "0968.HK",
+        "name": "0968.HK",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "0981.HK",
+        "name": "0981.HK",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "0992.HK",
+        "name": "0992.HK",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "1038.HK",
+        "name": "1038.HK",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "1044.HK",
+        "name": "1044.HK",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "1088.HK",
+        "name": "1088.HK",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "1093.HK",
+        "name": "1093.HK",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "1109.HK",
+        "name": "1109.HK",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "1113.HK",
+        "name": "1113.HK",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "1177.HK",
+        "name": "1177.HK",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "1211.HK",
+        "name": "1211.HK",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "1299.HK",
+        "name": "1299.HK",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "1398.HK",
+        "name": "1398.HK",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "1810.HK",
+        "name": "1810.HK",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "1928.HK",
+        "name": "1928.HK",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "2020.HK",
+        "name": "2020.HK",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "2313.HK",
+        "name": "2313.HK",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "2318.HK",
+        "name": "2318.HK",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "2319.HK",
+        "name": "2319.HK",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "2331.HK",
+        "name": "2331.HK",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "2382.HK",
+        "name": "2382.HK",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "2388.HK",
+        "name": "2388.HK",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "2628.HK",
+        "name": "2628.HK",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "2688.HK",
+        "name": "2688.HK",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "3690.HK",
+        "name": "3690.HK",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "3968.HK",
+        "name": "3968.HK",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "3988.HK",
+        "name": "3988.HK",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "9618.HK",
+        "name": "9618.HK",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "9633.HK",
+        "name": "9633.HK",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "9888.HK",
+        "name": "9888.HK",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "9988.HK",
+        "name": "9988.HK",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      },
+      {
+        "ticker": "9999.HK",
+        "name": "9999.HK",
+        "price": null,
+        "change": null,
+        "changePercent": null
+      }
+    ]
   }
 }

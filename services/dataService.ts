@@ -225,13 +225,29 @@ export const fetchMarketBreadth = async (assetSymbol: string): Promise<{ summary
 
   // Busca dados locais de breadth (TradingView)
   // Exemplo: companies_snapshot.json ou indices_snapshot.json
-  // Aqui, simula breadth neutro se não houver dado
-  const details: BreadthCompanyDetails[] = tickers.map(ticker => ({
-    symbol: ticker,
-    change: 0,
-    status: 'BUY' as const
-  }));
-  const summary = { advancing: details.length, declining: 0, total: details.length };
+  let details: BreadthCompanyDetails[] = [];
+  try {
+    const file = 'companies_snapshot.json';
+    const fs = require('fs');
+    if (fs.existsSync(file)) {
+      const raw = JSON.parse(fs.readFileSync(file, 'utf-8'));
+      if (raw?.indices?.[assetSymbol]) {
+        details = raw.indices[assetSymbol];
+        console.log(`[fetchMarketBreadth] Empresas carregadas para ${assetSymbol}:`, details.length);
+      } else {
+        console.warn(`[fetchMarketBreadth] Nenhum dado de empresas para ${assetSymbol} em companies_snapshot.json`);
+      }
+    } else {
+      console.warn(`[fetchMarketBreadth] Arquivo não encontrado: companies_snapshot.json`);
+    }
+  } catch (err) {
+    console.warn('[fetchMarketBreadth] Falha ao ler empresas:', err);
+  }
+  if (!details || details.length === 0) {
+    details = tickers.map(ticker => ({ symbol: ticker, change: 0, status: 'BUY' as const }));
+    console.warn(`[fetchMarketBreadth] Usando breadth neutro para ${assetSymbol}`);
+  }
+  const summary = { advancing: details.filter(d => d.status === 'BUY').length, declining: details.filter(d => d.status === 'SELL').length, total: details.length };
   return { summary, details };
 };
 
@@ -245,7 +261,10 @@ export const fallbackEmptyBreadth = (tickers: string[]): { summary: MarketBreadt
 };
 
 export const calculateVolumePressure = (candles: Candle[]): VolumePressure => {
-  if (candles.length === 0) return { buyPercent: 50, sellPercent: 50, total: 0 };
+  if (candles.length === 0) {
+    console.warn('[calculateVolumePressure] Nenhum candle recebido');
+    return { buyPercent: 50, sellPercent: 50, total: 0 };
+  }
   
   let buyVol = 0;
   let sellVol = 0;
@@ -267,15 +286,20 @@ export const calculateVolumePressure = (candles: Candle[]): VolumePressure => {
   });
 
   const total = buyVol + sellVol || 1;
-  return {
+  const result = {
     buyPercent: Math.max(10, Math.min(90, (buyVol / total) * 100)),
     sellPercent: Math.max(10, Math.min(90, (sellVol / total) * 100)),
     total: total
   };
+  console.log('[calculateVolumePressure] Resultado:', result);
+  return result;
 };
 
 export const detectOpeningGap = (candles: Candle[], asset: Asset): GapData => {
-  if (candles.length < 2) return { value: 0, percent: 0, type: 'none' };
+  if (candles.length < 2) {
+    console.warn('[detectOpeningGap] Menos de 2 candles recebidos');
+    return { value: 0, percent: 0, type: 'none' };
+  }
   
   let prevDayClose = 0;
   let todayOpen = 0;
@@ -320,7 +344,7 @@ export const detectOpeningGap = (candles: Candle[], asset: Asset): GapData => {
     }
   }
 
-  return {
+  const gapData = {
     value: diff,
     percent: pct,
     type: gapType,
@@ -329,18 +353,25 @@ export const detectOpeningGap = (candles: Candle[], asset: Asset): GapData => {
     openPrice: todayOpen,
     isFilled: isFilled
   };
+  console.log('[detectOpeningGap] Resultado:', gapData);
+  return gapData;
 };
 
 export const fetchRealData = async (asset: Asset, timeframe: Timeframe): Promise<Candle[]> => {
   // Busca candles reais do arquivo local data/{symbol}_candles.json
   const fs = require('fs');
   const path = `data/${asset.symbol.toLowerCase()}_candles.json`;
-  if (!fs.existsSync(path)) return [];
+  if (!fs.existsSync(path)) {
+    console.warn(`[fetchRealData] Arquivo não encontrado: ${path}`);
+    return [];
+  }
   try {
     const candles = JSON.parse(fs.readFileSync(path, 'utf-8'));
     if (Array.isArray(candles)) {
+      console.log(`[fetchRealData] Candles carregados para ${asset.symbol}:`, candles.length);
       return candles;
     }
+    console.warn(`[fetchRealData] Dados de candles não são array para ${asset.symbol}`);
     return [];
   } catch (err) {
     console.warn('[fetchRealData] Falha ao ler candles reais:', err);

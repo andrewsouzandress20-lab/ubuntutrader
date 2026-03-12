@@ -1,0 +1,207 @@
+{
+  "timestamp": "2026-03-12T13:27:51.651Z",
+  "asset": "US30",
+  "label": "US30",
+  "quote": 228,
+  "indices": [
+    {
+      "symbol": "^VIX",
+      "name": "VIX",
+      "price": 115,
+      "correlation": "negative"
+    },
+    {
+      "symbol": "^GSPC",
+      "name": "S&P 500",
+      "price": 7726,
+      "correlation": "positive"
+    },
+    {
+      "symbol": "^IXIC",
+      "name": "NASDAQ",
+      "price": 9974,
+      "correlation": "positive"
+    },
+    {
+      "symbol": "DX-Y.NYB",
+      "name": "DXY",
+      "price": 8834,
+      "correlation": "negative"
+    },
+    {
+      "symbol": "^TNX",
+      "name": "TNX",
+      "price": 3,
+      "correlation": "negative"
+    }
+  ],
+  "breadth": {
+    "summary": {
+      "advancing": 30,
+      "declining": 0,
+      "total": 30
+    },
+    "details": [
+      {
+        "symbol": "AAPL",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "AMGN",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "AMZN",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "AXP",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "BA",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "CAT",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "CRM",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "CSCO",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "CVX",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "DIS",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "GS",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "HD",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "HON",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "IBM",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "INTC",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "JNJ",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "JPM",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "KO",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "MCD",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "MMM",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "MSFT",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "NKE",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "PG",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "SHW",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "TRV",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "UNH",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "V",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "VZ",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "WBA",
+        "change": 0,
+        "status": "BUY"
+      },
+      {
+        "symbol": "WMT",
+        "change": 0,
+        "status": "BUY"
+      }
+    ]
+  },
+  "volume": {
+    "buyPercent": 71.64170082091086,
+    "sellPercent": 28.35829917908914,
+    "total": 248139
+  },
+  "gap": {
+    "value": 0,
+    "percent": 0,
+    "type": "none"
+  }
+}
