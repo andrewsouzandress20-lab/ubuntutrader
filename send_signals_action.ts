@@ -385,14 +385,13 @@ const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snap
     return value.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 2 });
   };
 
-  // Atualiza os candles do US30 antes de tudo
+
+  // Atualiza os candles do US500 como fallback para volume institucional
   try {
-    // Substitua pelo comando real de coleta dos candles do US30
-    // Exemplo: python fetch_indices_tradingview.py us30
-    execSync('python fetch_indices_tradingview.py us30', { stdio: 'inherit' });
-    console.log('[ACTION] Candles do US30 atualizados com sucesso.');
+    execSync('python fetch_indices_tradingview.py us500', { stdio: 'inherit' });
+    console.log('[ACTION] Candles do US500 atualizados com sucesso (usado como proxy para volume do US30).');
   } catch (err) {
-    console.warn('[ACTION] Falha ao atualizar candles do US30:', err);
+    console.warn('[ACTION] Falha ao atualizar candles do US500:', err);
   }
 
   // Leitura das empresas do US30 (companies_snapshot.json)

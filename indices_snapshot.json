@@ -1,36 +1,36 @@
 {
-  "timestamp": "2026-03-12T19:06:05.039455+00:00",
+  "timestamp": "2026-03-12T21:48:53.935606+00:00",
   "indices": {
     "VIX": {
-      "price": 26.35,
-      "change": 8.749484110606689,
-      "changeAbs": 2.120000000000001,
-      "changeFromOpen": 3.4144427001569895,
-      "changeFromOpenAbs": 0.870000000000001,
+      "price": 27.29,
+      "change": 12.628972348328512,
+      "changeAbs": 3.0599999999999987,
+      "changeFromOpen": 7.103610675039242,
+      "changeFromOpenAbs": 1.8099999999999987,
       "volume": null
     },
     "US500": {
-      "price": 6688.66,
-      "change": -1.2859017177332843,
-      "changeAbs": -87.13000000000011,
-      "changeFromOpen": -0.774676303390659,
-      "changeFromOpenAbs": -52.220000000000255,
-      "volume": 2191000000
+      "price": 6672.61,
+      "change": -1.522774466150815,
+      "changeAbs": -103.18000000000029,
+      "changeFromOpen": -1.0127757800168589,
+      "changeFromOpenAbs": -68.27000000000044,
+      "volume": 3471000000
     },
     "US100": {
-      "price": 24605.766,
-      "change": -1.4389750081456025,
-      "changeAbs": -359.2402000000002,
-      "changeFromOpen": -0.6683112973955743,
-      "changeFromOpenAbs": -165.549500000001,
-      "volume": 709557299
+      "price": 24533.583,
+      "change": -1.728111727847282,
+      "changeAbs": -431.4232000000011,
+      "changeFromOpen": -0.9597088212775858,
+      "changeFromOpenAbs": -237.7325000000019,
+      "volume": 1151789470
     },
     "DXY": {
-      "price": 99.724,
-      "change": 0.4755571676137594,
-      "changeAbs": 0.4720000000000084,
-      "changeFromOpen": 0.27249052316169525,
-      "changeFromOpenAbs": 0.2710000000000008,
+      "price": 99.743,
+      "change": 0.4947003586829481,
+      "changeAbs": 0.49099999999999966,
+      "changeFromOpen": 0.2915950247855691,
+      "changeFromOpenAbs": 0.28999999999999204,
       "volume": null
     },
     "VHSI": {
