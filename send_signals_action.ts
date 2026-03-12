@@ -491,6 +491,14 @@ const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snap
     '',
     'Para ver os dados detalhadamente!'
   ];
+
+  // Always return the expected object
+  return {
+    message: lines.join('\n'),
+    score: total,
+    signal,
+    strength
+  };
 }
 
 async function sendSignalFromSnapshot(assetSymbol: string, label: string) {
