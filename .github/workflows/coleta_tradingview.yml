@@ -20,8 +20,8 @@ jobs:
           pip install requests beautifulsoup4
       - name: Coletar índices TradingView
         run: python3 fetch_indices_tradingview.py
-      - name: Coletar empresas TradingView
-        run: python3 fetch_companies_tradingview.py
+      - name: Gerar companies_snapshot.json a partir do CSV
+        run: python3 csv_to_companies_snapshot.py
       - name: Upload arquivos de snapshot
         uses: actions/upload-artifact@v4
         with:

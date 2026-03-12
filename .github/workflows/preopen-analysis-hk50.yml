@@ -21,8 +21,8 @@ jobs:
       - name: Coletar indices TradingView (prioridade)
         run: python3 fetch_indices_tradingview.py
 
-      - name: Coletar empresas TradingView (breadth)
-        run: python3 fetch_companies_tradingview.py
+      - name: Gerar companies_snapshot.json a partir do CSV
+        run: python3 csv_to_companies_snapshot.py
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
