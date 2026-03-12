@@ -359,27 +359,31 @@ const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snap
     return value.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 2 });
   };
 
-  // Sempre usa TradingView (tvIndices) para os valores das mensagens
-  const changeOrPrice = (symbol: string) => {
-    // Busca preço diretamente de indices_snapshot.json
-    const indicesRaw = JSON.parse(fs.readFileSync('indices_snapshot.json', 'utf-8')).indices;
-    const price = indicesRaw[symbol]?.price;
-    if (price !== undefined && price !== null && !Number.isNaN(price)) {
-      return `${fmtPrice(price)} (preço)`;
+  // Leitura das empresas do US30 (companies_snapshot.json)
+  let us30Companies: { ticker: string; name: string }[] = [];
+  if (assetSymbol === 'US30') {
+    try {
+      const path = './companies_snapshot.json';
+      const exists = fs.existsSync(path);
+      console.log(`[DEBUG] companies_snapshot.json exists: ${exists}`);
+      if (exists) {
+        const companiesRaw = JSON.parse(fs.readFileSync(path, 'utf-8'));
+        console.log('[DEBUG] companies_snapshot.json conteúdo:', JSON.stringify(companiesRaw, null, 2));
+        if (companiesRaw?.indices?.US30) {
+          us30Companies = companiesRaw.indices.US30.map((c: any) => ({ ticker: c.ticker, name: c.name }));
+          console.log(`[DEBUG] us30Companies carregadas: ${us30Companies.length}`);
+        } else {
+          console.warn('[DEBUG] Campo indices.US30 não encontrado em companies_snapshot.json');
+        }
+      } else {
+        console.warn('[DEBUG] Arquivo companies_snapshot.json não encontrado no diretório atual');
+      }
+    } catch (err) {
+      console.warn('[ANALYSIS] Falha ao ler companies_snapshot.json:', err);
     }
-    return '⚠️ dado ausente';
-  };
+  }
 
-  const favorability = (symbol: string, prefer: 'pos' | 'neg') => {
-    const change = getChange(snapshot, symbol);
-    if (change === null || Number.isNaN(change)) return '⚠️ dado ausente';
-    const desiredPos = prefer === 'pos';
-    const ok = desiredPos ? change > 0 : change < 0;
-    const check = ok ? '✅' : '❌';
-    const word = ok ? 'favorável' : 'desfavorável';
-    return `${check} (${word} para ${signal === 'NEUTRO' ? 'NEUTRO' : signal})`;
-  };
-
+  // ...existing code...
   // Só exibe índices presentes no snapshot, sem buscar Yahoo ou ativos não relacionados
   // Mapeamento correto para indices_snapshot.json
   const relevantSymbols = assetSymbol === 'US30'
@@ -446,46 +450,50 @@ const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snap
   const lines = [
     `${headerLine}`,
     '',
-    (() => {
-      let favor;
-      if (signal === 'COMPRA') favor = 'favorável à compra';
-      else if (signal === 'VENDA') favor = 'desfavorável à compra';
-      else favor = 'neutro';
-      return `${headerAsset}: Sinal de ${signal === 'NEUTRO' ? '⚖️ NEUTRO' : signal === 'COMPRA' ? '🔺 COMPRA' : '🔻 VENDA'} ${strength} (${favor})`;
-    })(),
-    `Score institucional: ${total > 0 ? '+' : ''}${total}`,
-    `Cotação: ${fmtPrice(snapshot.quote ?? null)}`,
-    '',
-    '🌎 Índices globais:',
-    ...indicatorLines,
-    '',
-    '📊 Resumo:',
-    `- ${volumeSummary()}`,
-    (() => {
-      const change = getChange(snapshot, volIndexSymbol);
-      if (change !== null && !Number.isNaN(change)) {
-        return `- ⚠️ ${volIndexSymbol === '^VIX' ? 'VIX' : 'VHSI'}: ${fmtPct(change)}`;
-      }
-      // Busca preço do índice
-      const indicesRaw = JSON.parse(fs.readFileSync('indices_snapshot.json', 'utf-8')).indices;
-      const price = indicesRaw[volIndexSymbol.replace('^', '')]?.price;
-      if (price !== undefined && price !== null && !Number.isNaN(price)) {
-        return `- ⚠️ ${volIndexSymbol === '^VIX' ? 'VIX' : 'VHSI'}: ${fmtPrice(price)} (preço)`;
-      }
-      return `- ⚠️ ${volIndexSymbol === '^VIX' ? 'VIX' : 'VHSI'}: dado ausente`;
-    })(),
-    `- ${breadthSummary()}`,
-    `- 🕳️ ${gapSummary()}`,
-    '',
-    '⚡️ Siga as zonas SMC/FVG para melhor entrada.',
-    '',
-    `Acesse: ${siteUrl}`,
-    '',
-    'Para ver os dados detalhadamente!'
-  ];
-
-  return { message: lines.join('\n'), signal, strength, score: total };
-};
+    const lines = [
+      `${headerLine}`,
+      '',
+      (() => {
+        let favor;
+        if (signal === 'COMPRA') favor = 'favorável à compra';
+        else if (signal === 'VENDA') favor = 'desfavorável à compra';
+        else favor = 'neutro';
+        return `${headerAsset}: Sinal de ${signal === 'NEUTRO' ? '⚖️ NEUTRO' : signal === 'COMPRA' ? '🔺 COMPRA' : '🔻 VENDA'} ${strength} (${favor})`;
+      })(),
+      `Score institucional: ${total > 0 ? '+' : ''}${total}`,
+      `Cotação: ${fmtPrice(snapshot.quote ?? null)}`,
+      '',
+      '🌎 Índices globais:',
+      ...indicatorLines,
+      '',
+      (assetSymbol === 'US30' && us30Companies.length > 0)
+        ? '🏢 Empresas do US30:\n' + us30Companies.map(c => `- ${c.ticker}: ${c.name}`).join('\n')
+        : '',
+      '',
+      '📊 Resumo:',
+      `- ${volumeSummary()}`,
+      (() => {
+        const change = getChange(snapshot, volIndexSymbol);
+        if (change !== null && !Number.isNaN(change)) {
+          return `- ⚠️ ${volIndexSymbol === '^VIX' ? 'VIX' : 'VHSI'}: ${fmtPct(change)}`;
+        }
+        // Busca preço do índice
+        const indicesRaw = JSON.parse(fs.readFileSync('indices_snapshot.json', 'utf-8')).indices;
+        const price = indicesRaw[volIndexSymbol.replace('^', '')]?.price;
+        if (price !== undefined && price !== null && !Number.isNaN(price)) {
+          return `- ⚠️ ${volIndexSymbol === '^VIX' ? 'VIX' : 'VHSI'}: ${fmtPrice(price)} (preço)`;
+        }
+        return `- ⚠️ ${volIndexSymbol === '^VIX' ? 'VIX' : 'VHSI'}: dado ausente`;
+      })(),
+      `- ${breadthSummary()}`,
+      `- 🕳️ ${gapSummary()}`,
+      '',
+      '⚡️ Siga as zonas SMC/FVG para melhor entrada.',
+      '',
+      `Acesse: ${siteUrl}`,
+      '',
+      'Para ver os dados detalhadamente!'
+    ];
 
 async function sendSignalFromSnapshot(assetSymbol: string, label: string) {
   const file = `snapshots/${assetSymbol.toLowerCase()}_${label}.json`;
@@ -574,6 +582,7 @@ async function sendAnalysisFromSnapshot(assetSymbol: string, label: string) {
     }
   });
   const { message, score, signal, strength } = buildAnalysisMessage(assetSymbol, label, snapshot, tvIndices);
+  console.log('[OG TELEGRAM MESSAGE]\n' + message + '\n[END OG TELEGRAM MESSAGE]');
   await sendTelegramAnalysis(message);
   console.log(`[ANALISE] (${assetSymbol}) ${label} | sinal ${signal} ${strength} (score ${score}) enviado.`);
 }

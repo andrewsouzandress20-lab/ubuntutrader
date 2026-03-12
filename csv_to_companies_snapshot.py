@@ -18,6 +18,13 @@ def csv_to_companies_snapshot(csv_path, json_path):
                 'change': None,
                 'changePercent': None
             })
+    print(f'[DEBUG] Empresas lidas do CSV: {len(companies)}')
+    if companies:
+        print('[DEBUG] Primeiras empresas:')
+        for c in companies[:5]:
+            print(f"  - {c['ticker']}: {c['name']}")
+    else:
+        print('[DEBUG] Nenhuma empresa lida do CSV!')
     snapshot = {
         'timestamp': datetime.now(timezone.utc).isoformat(),
         'indices': {

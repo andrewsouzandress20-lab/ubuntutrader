@@ -22,8 +22,19 @@ jobs:
       - name: Coletar indices TradingView (prioridade)
         run: python3 fetch_indices_tradingview.py
 
+      - name: Exibir script csv_to_companies_snapshot.py (debug)
+        run: cat csv_to_companies_snapshot.py
+
       - name: Gerar companies_snapshot.json a partir do CSV
         run: python3 csv_to_companies_snapshot.py
+
+      - name: Listar arquivos do diretório (debug)
+        run: ls -lh .
+
+      - name: Garantir companies_snapshot.json no dist/
+        run: |
+          cp companies_snapshot.json dist/ || true
+          cp companies_snapshot.json public/ || true
 
       - name: Setup Node.js
         uses: actions/setup-node@v4

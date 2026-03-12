@@ -1,6 +1,36 @@
 {
   "timestamp": "2026-03-12T15:27:51.890580+00:00",
   "indices": {
-    "US30": []
+    "US30": [
+      {"ticker": "AAPL", "name": "Apple Stock Chart — NASDAQ:AAPL Stock Price — TradingView", "market": "NASDAQ", "url": "https://www.tradingview.com/symbols/NASDAQ-AAPL/", "price": null, "change": null, "changePercent": null},
+      {"ticker": "AMGN", "name": "AMGN Stock Price and Chart — NASDAQ:AMGN — TradingView", "market": "NASDAQ", "url": "https://www.tradingview.com/symbols/NASDAQ-AMGN/", "price": null, "change": null, "changePercent": null},
+      {"ticker": "AXP", "name": "AXP Stock Price and Chart — NYSE:AXP — TradingView", "market": "NYSE", "url": "https://www.tradingview.com/symbols/NYSE-AXP/", "price": null, "change": null, "changePercent": null},
+      {"ticker": "BA", "name": "Boeing Stock Price and Chart — NYSE:BA — TradingView", "market": "NYSE", "url": "https://www.tradingview.com/symbols/NYSE-BA/", "price": null, "change": null, "changePercent": null},
+      {"ticker": "CAT", "name": "CAT Stock Price and Chart — NYSE:CAT — TradingView", "market": "NYSE", "url": "https://www.tradingview.com/symbols/NYSE-CAT/", "price": null, "change": null, "changePercent": null},
+      {"ticker": "CSCO", "name": "CSCO Stock Price and Chart — NASDAQ:CSCO — TradingView", "market": "NASDAQ", "url": "https://www.tradingview.com/symbols/NASDAQ-CSCO/", "price": null, "change": null, "changePercent": null},
+      {"ticker": "CVX", "name": "CVX Stock Price and Chart — NYSE:CVX — TradingView", "market": "NYSE", "url": "https://www.tradingview.com/symbols/NYSE-CVX/", "price": null, "change": null, "changePercent": null},
+      {"ticker": "DIS", "name": "Disney Stock Price and Chart — NYSE:DIS — TradingView", "market": "NYSE", "url": "https://www.tradingview.com/symbols/NYSE-DIS/", "price": null, "change": null, "changePercent": null},
+      {"ticker": "DOW", "name": "DOW Stock Price and Chart — NYSE:DOW — TradingView", "market": "NYSE", "url": "https://www.tradingview.com/symbols/NYSE-DOW/", "price": null, "change": null, "changePercent": null},
+      {"ticker": "GS", "name": "GS Stock Price and Chart — NYSE:GS — TradingView", "market": "NYSE", "url": "https://www.tradingview.com/symbols/NYSE-GS/", "price": null, "change": null, "changePercent": null},
+      {"ticker": "HD", "name": "HD Stock Price and Chart — NYSE:HD — TradingView", "market": "NYSE", "url": "https://www.tradingview.com/symbols/NYSE-HD/", "price": null, "change": null, "changePercent": null},
+      {"ticker": "HON", "name": "HON Stock Price and Chart — NASDAQ:HON — TradingView", "market": "NASDAQ", "url": "https://www.tradingview.com/symbols/NASDAQ-HON/", "price": null, "change": null, "changePercent": null},
+      {"ticker": "IBM", "name": "IBM Stock Price and Chart — NYSE:IBM — TradingView", "market": "NYSE", "url": "https://www.tradingview.com/symbols/NYSE-IBM/", "price": null, "change": null, "changePercent": null},
+      {"ticker": "INTC", "name": "Intel (INTC) Stock Price, Chart, and Market Cap — TradingView", "market": "NASDAQ", "url": "https://www.tradingview.com/symbols/NASDAQ-INTC/", "price": null, "change": null, "changePercent": null},
+      {"ticker": "JNJ", "name": "JNJ Stock Price and Chart — NYSE:JNJ — TradingView", "market": "NYSE", "url": "https://www.tradingview.com/symbols/NYSE-JNJ/", "price": null, "change": null, "changePercent": null},
+      {"ticker": "JPM", "name": "JPM Stock Price and Chart — NYSE:JPM — TradingView", "market": "NYSE", "url": "https://www.tradingview.com/symbols/NYSE-JPM/", "price": null, "change": null, "changePercent": null},
+      {"ticker": "KO", "name": "Coca-Cola Stock Price — KO Chart — TradingView", "market": "NYSE", "url": "https://www.tradingview.com/symbols/NYSE-KO/", "price": null, "change": null, "changePercent": null},
+      {"ticker": "MCD", "name": "McDonald's Stock Price and Chart — TradingView", "market": "NYSE", "url": "https://www.tradingview.com/symbols/NYSE-MCD/", "price": null, "change": null, "changePercent": null},
+      {"ticker": "MMM", "name": "MMM Stock Price and Chart — NYSE:MMM — TradingView", "market": "NYSE", "url": "https://www.tradingview.com/symbols/NYSE-MMM/", "price": null, "change": null, "changePercent": null},
+      {"ticker": "MRK", "name": "MRK Stock Price and Chart — NYSE:MRK — TradingView", "market": "NYSE", "url": "https://www.tradingview.com/symbols/NYSE-MRK/", "price": null, "change": null, "changePercent": null},
+      {"ticker": "MSFT", "name": "MSFT Stock Chart and Price — Microsoft (NASDAQ) — TradingView", "market": "NASDAQ", "url": "https://www.tradingview.com/symbols/NASDAQ-MSFT/", "price": null, "change": null, "changePercent": null},
+      {"ticker": "NKE", "name": "Nike Stock Price and Chart — TradingView", "market": "NYSE", "url": "https://www.tradingview.com/symbols/NYSE-NKE/", "price": null, "change": null, "changePercent": null},
+      {"ticker": "PG", "name": "PG Stock Price and Chart — NYSE:PG — TradingView", "market": "NYSE", "url": "https://www.tradingview.com/symbols/NYSE-PG/", "price": null, "change": null, "changePercent": null},
+      {"ticker": "TRV", "name": "TRV Stock Price and Chart — NYSE:TRV — TradingView", "market": "NYSE", "url": "https://www.tradingview.com/symbols/NYSE-TRV/", "price": null, "change": null, "changePercent": null},
+      {"ticker": "UNH", "name": "UNH Stock Price Today — NYSE:UNH Chart — TradingView", "market": "NYSE", "url": "https://www.tradingview.com/symbols/NYSE-UNH/", "price": null, "change": null, "changePercent": null},
+      {"ticker": "V", "name": "Visa Stock Price and Chart — NYSE:V — TradingView", "market": "NYSE", "url": "https://www.tradingview.com/symbols/NYSE-V/", "price": null, "change": null, "changePercent": null},
+      {"ticker": "VZ", "name": "VZ Stock Price and Chart — NYSE:VZ — TradingView", "market": "NYSE", "url": "https://www.tradingview.com/symbols/NYSE-VZ/", "price": null, "change": null, "changePercent": null},
+      {"ticker": "WMT", "name": "WMT Stock Price and Chart — NASDAQ:WMT — TradingView", "market": "NASDAQ", "url": "https://www.tradingview.com/symbols/NASDAQ-WMT/", "price": null, "change": null, "changePercent": null},
+      {"ticker": "CRM", "name": "Salesforce Stock Price, Chart, and Market Cap — NYSE:CRM — TradingView", "market": "NYSE", "url": "https://www.tradingview.com/symbols/NYSE-CRM/", "price": null, "change": null, "changePercent": null}
+    ]
   }
 }
