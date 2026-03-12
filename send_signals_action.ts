@@ -1,9 +1,9 @@
 import 'dotenv/config';
 import * as fs from 'fs';
-import { sendTelegramSignal, sendTelegramAnalysis } from './services/telegramService';
-import { collectSnapshot } from './scripts/collect_snapshot';
-import { fetchCorrelationData, fetchMarketBreadth, fetchRealData, calculateVolumePressure, detectOpeningGap, fetchCurrentPrice, fetchYahooChartPriceChange } from './services/dataService';
-import { SUPPORTED_ASSETS } from './types';
+import { sendTelegramSignal, sendTelegramAnalysis } from './services/telegramService.js';
+import { collectSnapshot } from './scripts/collect_snapshot.js';
+import { fetchCorrelationData, fetchMarketBreadth, fetchRealData, calculateVolumePressure, detectOpeningGap, fetchCurrentPrice, fetchYahooChartPriceChange } from './services/dataService.js';
+import { SUPPORTED_ASSETS } from './types.js';
 import { spawnSync } from 'child_process';
 
 
@@ -504,6 +504,9 @@ async function sendSignalFromSnapshot(assetSymbol: string, label: string) {
   const tvIndices = loadTradingViewIndices();
   const tvQuote = loadTradingViewQuote(assetSymbol);
 
+  // LOG: Mostrar snapshot bruto
+  console.log(`[DEBUG] Snapshot lido (${assetSymbol}, ${label}):`, JSON.stringify(snapshot, null, 2));
+
   const { total: score } = computeScore(assetSymbol, snapshot);
   const signal = resolveSignal(score);
   const strength = resolveStrength(score);
@@ -520,20 +523,23 @@ async function sendSignalFromSnapshot(assetSymbol: string, label: string) {
     indicesCtx[key] = value.price;
   });
 
+  const context = {
+    quote: tvQuote ?? snapshot.quote ?? undefined,
+    indices: indicesCtx,
+    volumeBuy: snapshot.volume?.buyPercent,
+    volumeSell: snapshot.volume?.sellPercent,
+    breadthAdv: snapshot.breadth?.summary?.advancing,
+    breadthDec: snapshot.breadth?.summary?.declining,
+    gap: snapshot.gap?.percent
+  };
+  // LOG: Mostrar contexto enviado para o Telegram
+  console.log(`[DEBUG] Contexto enviado para sendTelegramSignal (${assetSymbol}, ${label}):`, JSON.stringify(context, null, 2));
   await sendTelegramSignal(
     assetSymbol,
     signal,
     strength,
     score,
-    {
-      quote: tvQuote ?? snapshot.quote ?? undefined,
-      indices: indicesCtx,
-      volumeBuy: snapshot.volume?.buyPercent,
-      volumeSell: snapshot.volume?.sellPercent,
-      breadthAdv: snapshot.breadth?.summary?.advancing,
-      breadthDec: snapshot.breadth?.summary?.declining,
-      gap: snapshot.gap?.percent
-    }
+    context
   );
   console.log(`[SINAL] Sinal enviado para ${assetSymbol} usando snapshot ${label}`);
 

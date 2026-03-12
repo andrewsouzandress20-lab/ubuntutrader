@@ -1,17 +1,41 @@
 {
-  "timestamp": "2026-02-25T08:45:00+00:00",
+  "timestamp": "2026-03-12T13:09:41.824156+00:00",
   "indices": {
-    "US30": { "price": 39000.5 },
-    "US500": { "price": 5100.2 },
-    "US100": { "price": 18000.7 },
-    "VIX": { "price": 14.2 },
-    "DXY": { "price": 104.5 },
-    "GOLD": { "price": 2025.3 },
-    "WTI": { "price": 78.6 },
-    "VHSI": { "price": 18.7 },
-    "CNH=X": { "price": 7.2 },
-    "000001.SS": { "price": 3200.1 },
-    "USDJPY=X": { "price": 150.3 },
-    "^TNX": { "price": 4.3 }
+    "US30": {
+      "price": 228.0
+    },
+    "US500": {
+      "price": 7726.0
+    },
+    "US100": {
+      "price": 9974.0
+    },
+    "VIX": {
+      "price": 115.0
+    },
+    "DXY": {
+      "price": 8834.0
+    },
+    "GOLD": {
+      "price": 8585195.0
+    },
+    "WTI": {
+      "price": 2020177.0
+    },
+    "VHSI": {
+      "price": 25.56
+    },
+    "CNH=X": {
+      "price": 2.0
+    },
+    "000001.SS": {
+      "price": 1.0
+    },
+    "USDJPY=X": {
+      "price": 262647.0
+    },
+    "^TNX": {
+      "price": 3.0
+    }
   }
 }
