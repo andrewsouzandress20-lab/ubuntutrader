@@ -396,7 +396,13 @@ const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snap
         const companiesRaw = JSON.parse(fs.readFileSync(path, 'utf-8'));
         console.log('[DEBUG] companies_snapshot.json conteúdo:', JSON.stringify(companiesRaw, null, 2));
         if (companiesRaw?.indices?.US30) {
-          us30Companies = companiesRaw.indices.US30.map((c: any) => ({ ticker: c.ticker, name: c.name, change: c.change }));
+          // Agora inclui o campo volume, se existir
+          us30Companies = companiesRaw.indices.US30.map((c: any) => ({
+            ticker: c.ticker ?? c.symbol,
+            name: c.name,
+            change: c.change,
+            volume: c.volume
+          }));
           console.log(`[DEBUG] us30Companies carregadas: ${us30Companies.length}`);
           // Resumo empresas em alta x baixa (compra x venda) para US30
           if (us30Companies.length > 0) {
