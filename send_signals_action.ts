@@ -482,9 +482,9 @@ const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snap
   };
 
   const breadthSummary = () => {
-    if (!adv && !dec) return 'Breadth indisponível';
+    if (!adv && !dec) return 'DOW30 indisponível';
     const pos = adv > dec;
-    return `${pos ? '🟢 Breadth positivo' : adv === dec ? '⚖️ Breadth neutro' : '🔴 Breadth negativo'} (${adv} alta, ${dec} baixa)`;
+    return `${pos ? '🟢 DOW30 positivo' : adv === dec ? '⚖️ DOW30 neutro' : '🔴 DOW30 negativo'} (${adv} alta, ${dec} baixa)`;
   };
 
   const gapSummary = () => {
