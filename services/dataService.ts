@@ -236,7 +236,7 @@ export const fetchMarketBreadth = async (assetSymbol: string): Promise<{ summary
         console.log(`[fetchMarketBreadth] Empresas carregadas para ${assetSymbol}:`, details.length);
         // Log OG das empresas coletadas
         if (assetSymbol === 'US30') {
-          console.log('[OG EMPRESAS US30]\n' + details.map(e => `- ${e.ticker || e.symbol}: ${e.name || ''}`).join('\n') + '\n[END OG EMPRESAS US30]');
+          console.log('[OG EMPRESAS US30]\n' + details.map(e => `- ${e.symbol}: ${e.name || ''}`).join('\n') + '\n[END OG EMPRESAS US30]');
         }
       } else {
         console.warn(`[fetchMarketBreadth] Nenhum dado de empresas para ${assetSymbol} em companies_snapshot.json`);
