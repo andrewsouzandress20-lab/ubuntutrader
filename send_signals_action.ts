@@ -450,50 +450,47 @@ const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snap
   const lines = [
     `${headerLine}`,
     '',
-    const lines = [
-      `${headerLine}`,
-      '',
-      (() => {
-        let favor;
-        if (signal === 'COMPRA') favor = 'favorável à compra';
-        else if (signal === 'VENDA') favor = 'desfavorável à compra';
-        else favor = 'neutro';
-        return `${headerAsset}: Sinal de ${signal === 'NEUTRO' ? '⚖️ NEUTRO' : signal === 'COMPRA' ? '🔺 COMPRA' : '🔻 VENDA'} ${strength} (${favor})`;
-      })(),
-      `Score institucional: ${total > 0 ? '+' : ''}${total}`,
-      `Cotação: ${fmtPrice(snapshot.quote ?? null)}`,
-      '',
-      '🌎 Índices globais:',
-      ...indicatorLines,
-      '',
-      (assetSymbol === 'US30' && us30Companies.length > 0)
-        ? '🏢 Empresas do US30:\n' + us30Companies.map(c => `- ${c.ticker}: ${c.name}`).join('\n')
-        : '',
-      '',
-      '📊 Resumo:',
-      `- ${volumeSummary()}`,
-      (() => {
-        const change = getChange(snapshot, volIndexSymbol);
-        if (change !== null && !Number.isNaN(change)) {
-          return `- ⚠️ ${volIndexSymbol === '^VIX' ? 'VIX' : 'VHSI'}: ${fmtPct(change)}`;
-        }
-        // Busca preço do índice
-        const indicesRaw = JSON.parse(fs.readFileSync('indices_snapshot.json', 'utf-8')).indices;
-        const price = indicesRaw[volIndexSymbol.replace('^', '')]?.price;
-        if (price !== undefined && price !== null && !Number.isNaN(price)) {
-          return `- ⚠️ ${volIndexSymbol === '^VIX' ? 'VIX' : 'VHSI'}: ${fmtPrice(price)} (preço)`;
-        }
-        return `- ⚠️ ${volIndexSymbol === '^VIX' ? 'VIX' : 'VHSI'}: dado ausente`;
-      })(),
-      `- ${breadthSummary()}`,
-      `- 🕳️ ${gapSummary()}`,
-      '',
-      '⚡️ Siga as zonas SMC/FVG para melhor entrada.',
-      '',
-      `Acesse: ${siteUrl}`,
-      '',
-      'Para ver os dados detalhadamente!'
-    ];
+    (() => {
+      let favor;
+      if (signal === 'COMPRA') favor = 'favorável à compra';
+      else if (signal === 'VENDA') favor = 'desfavorável à compra';
+      else favor = 'neutro';
+      return `${headerAsset}: Sinal de ${signal === 'NEUTRO' ? '⚖️ NEUTRO' : signal === 'COMPRA' ? '🔺 COMPRA' : '🔻 VENDA'} ${strength} (${favor})`;
+    })(),
+    `Score institucional: ${total > 0 ? '+' : ''}${total}`,
+    `Cotação: ${fmtPrice(snapshot.quote ?? null)}`,
+    '',
+    '🌎 Índices globais:',
+    ...indicatorLines,
+    '',
+    (assetSymbol === 'US30' && us30Companies.length > 0)
+      ? '🏢 Empresas do US30:\n' + us30Companies.map(c => `- ${c.ticker}: ${c.name}`).join('\n')
+      : '',
+    '',
+    '📊 Resumo:',
+    `- ${volumeSummary()}`,
+    (() => {
+      const change = getChange(snapshot, volIndexSymbol);
+      if (change !== null && !Number.isNaN(change)) {
+        return `- ⚠️ ${volIndexSymbol === '^VIX' ? 'VIX' : 'VHSI'}: ${fmtPct(change)}`;
+      }
+      // Busca preço do índice
+      const indicesRaw = JSON.parse(fs.readFileSync('indices_snapshot.json', 'utf-8')).indices;
+      const price = indicesRaw[volIndexSymbol.replace('^', '')]?.price;
+      if (price !== undefined && price !== null && !Number.isNaN(price)) {
+        return `- ⚠️ ${volIndexSymbol === '^VIX' ? 'VIX' : 'VHSI'}: ${fmtPrice(price)} (preço)`;
+      }
+      return `- ⚠️ ${volIndexSymbol === '^VIX' ? 'VIX' : 'VHSI'}: dado ausente`;
+    })(),
+    `- ${breadthSummary()}`,
+    `- 🕳️ ${gapSummary()}`,
+    '',
+    '⚡️ Siga as zonas SMC/FVG para melhor entrada.',
+    '',
+    `Acesse: ${siteUrl}`,
+    '',
+    'Para ver os dados detalhadamente!'
+  ];
 
 async function sendSignalFromSnapshot(assetSymbol: string, label: string) {
   const file = `snapshots/${assetSymbol.toLowerCase()}_${label}.json`;
