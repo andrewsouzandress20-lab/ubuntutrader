@@ -118,13 +118,23 @@ export const sendTelegramSignal = async (
   const dxy = indices.DXY ?? '-';
 
   // HK set
-  const vhsi = typeof indices.VHSI === 'object' ? indices.VHSI : {};
-  const cnh = typeof indices.CNH === 'object' ? indices.CNH : (typeof indices['USD/CNH'] === 'object' ? indices['USD/CNH'] : {});
-  const nikkei = typeof indices.NIKKEI225 === 'object' ? indices.NIKKEI225 : {};
-  const sse = typeof indices.SSE === 'object' ? indices.SSE : {};
-  const us500 = typeof indices.US500 === 'object' ? indices.US500 : {};
-  const usdjpy = typeof indices.USDJPY === 'object' ? indices.USDJPY : {};
-  const dxyHK = typeof indices.DXY === 'object' ? indices.DXY : {};
+  function safeIndex(idx: any): { change?: number, changePctStr?: string } {
+    if (idx && typeof idx === 'object' && ('change' in idx || 'changePctStr' in idx)) return idx;
+    return { change: undefined, changePctStr: undefined };
+  }
+  const vhsi = safeIndex(indices.VHSI);
+  const cnh = safeIndex(indices.CNH) || safeIndex(indices['USD/CNH']);
+  const nikkei = safeIndex(indices.NIKKEI225);
+  const sse = safeIndex(indices.SSE);
+  const us500 = safeIndex(indices.US500);
+  const usdjpy = safeIndex(indices.USDJPY);
+  const dxyHK = safeIndex(indices.DXY);
+  const vix = safeIndex(indices.VIX);
+  const sp500 = safeIndex(indices.US500);
+  const nasdaq = safeIndex(indices.US100);
+  const dxy = safeIndex(indices.DXY);
+  const tnx = safeIndex(indices.TNX);
+  const russell = safeIndex(indices.RUT);
 
   const vixMood = toNum(vix) < 0 ? '😌' : '⚠️';
   const vhsiMood = toNum(vhsi) < 0 ? '😱' : '⚠️';
