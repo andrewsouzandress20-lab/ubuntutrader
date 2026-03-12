@@ -66,7 +66,7 @@ export const sendTelegramSignal = async (
   context?: {
     quote?: number | string | null;
     quoteChange?: number | string | null;
-    indices?: Record<string, number | string>;
+    indices?: Record<string, any>;
     volumeBuy?: number | string;
     volumeSell?: number | string;
     breadthAdv?: number | string;
@@ -109,19 +109,19 @@ export const sendTelegramSignal = async (
   const breadthDec = context?.breadthDec ?? '-';
   const gap = context?.gap ?? '-';
 
-  // US set
-  const vix = indices.VIX ?? '-';
-  const sp500 = indices.SP500 ?? indices['S&P 500'] ?? '-';
-  const nasdaq = indices.NASDAQ ?? indices['NASDAQ'] ?? '-';
-  const russell = indices.RUT ?? indices['RUSSELL'] ?? '-';
-  const tnx = indices.TNX ?? indices['10Y'] ?? '-';
-  const dxy = indices.DXY ?? '-';
-
   // HK set
   function safeIndex(idx: any): { change?: number, changePctStr?: string } {
     if (idx && typeof idx === 'object' && ('change' in idx || 'changePctStr' in idx)) return idx;
     return { change: undefined, changePctStr: undefined };
   }
+  // US set
+  const vix = safeIndex(indices.VIX);
+  const sp500 = safeIndex(indices.SP500 ?? indices['S&P 500']);
+  const nasdaq = safeIndex(indices.NASDAQ ?? indices['NASDAQ']);
+  const russell = safeIndex(indices.RUT ?? indices['RUSSELL']);
+  const tnx = safeIndex(indices.TNX ?? indices['10Y']);
+  const dxy = safeIndex(indices.DXY);
+  // Outros índices
   const vhsi = safeIndex(indices.VHSI);
   const cnh = safeIndex(indices.CNH) || safeIndex(indices['USD/CNH']);
   const nikkei = safeIndex(indices.NIKKEI225);
@@ -129,12 +129,6 @@ export const sendTelegramSignal = async (
   const us500 = safeIndex(indices.US500);
   const usdjpy = safeIndex(indices.USDJPY);
   const dxyHK = safeIndex(indices.DXY);
-  const vix = safeIndex(indices.VIX);
-  const sp500 = safeIndex(indices.US500);
-  const nasdaq = safeIndex(indices.US100);
-  const dxy = safeIndex(indices.DXY);
-  const tnx = safeIndex(indices.TNX);
-  const russell = safeIndex(indices.RUT);
 
   const vixMood = toNum(vix) < 0 ? '😌' : '⚠️';
   const vhsiMood = toNum(vhsi) < 0 ? '😱' : '⚠️';
