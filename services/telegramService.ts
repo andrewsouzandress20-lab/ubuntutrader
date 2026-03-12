@@ -236,7 +236,6 @@ export const sendTelegramSignal = async (
       volumeLine,
       `- ${vixResumo}`,
       `- ${breadthResumo}`,
-      `- ${gapResumo}`,
       '',
       '⚡️ Siga as zonas SMC/FVG para melhor entrada.',
       '',
