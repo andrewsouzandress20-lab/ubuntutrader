@@ -128,6 +128,7 @@ def main():
             "changeFromOpenAbs": d["d"][5],
             "volume": d["d"][6]
         }
+        print(f'[LOG] {name}: price={d["d"][1]}, change={d["d"][2]}, volume={d["d"][6]}')
     with open('indices_snapshot.json', 'w') as f:
         json.dump(snapshot, f, indent=2)
     with open('public/indices_snapshot.json', 'w') as f:
