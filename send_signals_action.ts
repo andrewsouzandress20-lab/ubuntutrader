@@ -463,9 +463,7 @@ const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snap
     '🌎 Índices globais:',
     ...indicatorLines,
     '',
-    (assetSymbol === 'US30' && us30Companies.length > 0)
-      ? '🏢 Empresas do US30:\n' + us30Companies.map(c => `- ${c.ticker}: ${c.name}`).join('\n')
-      : '',
+    // Removido: lista de empresas do US30
     '',
     '📊 Resumo:',
     `- ${volumeSummary()}`,
