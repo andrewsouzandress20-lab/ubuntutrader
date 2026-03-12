@@ -263,19 +263,17 @@ const App: React.FC = () => {
     fetchLocalJson<any>('/companies_snapshot.json').then(setCompaniesSnapshot);
 
 
-    // Durante a janela especial, prioriza snapshot TradingView
+    // Durante a janela especial, apenas sobrescreve o preço do último candle pelo snapshot TradingView
     if (isSpecialWindow && indicesSnapshot && indicesSnapshot.indices && indicesSnapshot.indices[selectedAsset.symbol]) {
-      // Usa o snapshot TradingView para preço
-      const price = parseFloat(indicesSnapshot.indices[selectedAsset.symbol].price);
-      if (!isNaN(price)) {
-        // Cria candle fake só para gap/score
-        const candle = { time: Date.now() / 1000, open: price, high: price, low: price, close: price, volume: 0 };
-        setCandles([candle]);
-        setVolumePressure({ buyPercent: 50, sellPercent: 50, total: 0 });
-        setGap({ value: 0, percent: 0, type: 'none' });
-      }
+      fetchYahooOnly().then(() => {
+        const price = parseFloat(indicesSnapshot.indices[selectedAsset.symbol].price);
+        if (!isNaN(price) && candles.length > 0) {
+          const newCandles = [...candles];
+          newCandles[newCandles.length - 1].close = price;
+          setCandles(newCandles);
+        }
+      });
     } else {
-      // Fora da janela especial, só Yahoo
       fetchYahooOnly();
     }
 

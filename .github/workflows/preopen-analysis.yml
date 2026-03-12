@@ -17,16 +17,10 @@ jobs:
       - name: Instalar dependencias Python (TradingView)
         run: |
           python3 -m pip install --upgrade pip
-          pip install requests beautifulsoup4
 
       - name: Coletar indices TradingView (prioridade)
         run: python3 fetch_indices_tradingview.py
 
-      - name: Exibir script csv_to_companies_snapshot.py (debug)
-        run: cat csv_to_companies_snapshot.py
-
-      - name: Gerar companies_snapshot.json a partir do CSV
-        run: python3 csv_to_companies_snapshot.py
 
       - name: Listar arquivos do diretório (debug)
         run: ls -lh .

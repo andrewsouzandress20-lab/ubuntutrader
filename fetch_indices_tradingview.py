@@ -9,9 +9,14 @@ from datetime import datetime, timezone
 # Lista de índices e seus tickers para a API do TradingView
 INDICES_TV = {
     'VIX': 'CBOE:VIX',
-    'US500': 'SP:SPX',      # Alternativa para S&P 500
-    'US100': 'NASDAQ:NDX',  # Alternativa para NASDAQ 100
-    'DXY': 'TVC:DXY'
+    'US500': 'SP:SPX',      # S&P 500
+    'US100': 'NASDAQ:NDX',  # NASDAQ 100
+    'DXY': 'TVC:DXY',
+    'VHSI': 'HSI:VHSI',      # Hong Kong Volatility Index
+    'CNH': 'FX_IDC:USDCNH', # USD/CNH
+    'NIKKEI225': 'TVC:NI225', # Nikkei 225
+    'SSE': 'SSE:000001',    # SSE Composite Index
+    'USDJPY': 'FX_IDC:USDJPY' # USD/JPY
 }
 
 HEADERS = {
@@ -110,25 +115,29 @@ def main():
     r = requests.post(url, json=payload)
     data = r.json()["data"]
     # Mapear resultado para cada índice
-    for idx, d in enumerate(data):
-        tv_ticker = d["s"]
-        # Descobre o nome do índice pelo ticker
-        name = None
-        for k, v in INDICES_TV.items():
-            if v == tv_ticker:
-                name = k
-                break
-        if not name:
-            continue
-        snapshot['indices'][name] = {
-            "price": d["d"][1],
-            "change": d["d"][2],
-            "changeAbs": d["d"][3],
-            "changeFromOpen": d["d"][4],
-            "changeFromOpenAbs": d["d"][5],
-            "volume": d["d"][6]
-        }
-        print(f'[LOG] {name}: price={d["d"][1]}, change={d["d"][2]}, volume={d["d"][6]}')
+    ticker_to_data = {d["s"]: d for d in data}
+    for name, tv_ticker in INDICES_TV.items():
+        d = ticker_to_data.get(tv_ticker)
+        if d:
+            snapshot['indices'][name] = {
+                "price": d["d"][1],
+                "change": d["d"][2],
+                "changeAbs": d["d"][3],
+                "changeFromOpen": d["d"][4],
+                "changeFromOpenAbs": d["d"][5],
+                "volume": d["d"][6]
+            }
+            print(f'[LOG] {name}: price={d["d"][1]}, change={d["d"][2]}, volume={d["d"][6]}')
+        else:
+            snapshot['indices'][name] = {
+                "price": None,
+                "change": None,
+                "changeAbs": None,
+                "changeFromOpen": None,
+                "changeFromOpenAbs": None,
+                "volume": None
+            }
+            print(f'[LOG] {name}: NÃO ENCONTRADO na resposta da TradingView!')
     with open('indices_snapshot.json', 'w') as f:
         json.dump(snapshot, f, indent=2)
     with open('public/indices_snapshot.json', 'w') as f:
