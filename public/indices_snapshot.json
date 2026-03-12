@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-03-12T21:48:53.935606+00:00",
+  "timestamp": "2026-03-12T22:03:06.063662+00:00",
   "indices": {
     "VIX": {
       "price": 27.29,
@@ -23,14 +23,14 @@
       "changeAbs": -431.4232000000011,
       "changeFromOpen": -0.9597088212775858,
       "changeFromOpenAbs": -237.7325000000019,
-      "volume": 1151789470
+      "volume": 1152138354
     },
     "DXY": {
-      "price": 99.743,
-      "change": 0.4947003586829481,
-      "changeAbs": 0.49099999999999966,
-      "changeFromOpen": 0.2915950247855691,
-      "changeFromOpenAbs": 0.28999999999999204,
+      "price": 99.748,
+      "change": 0.499738040543273,
+      "changeAbs": 0.4960000000000093,
+      "changeFromOpen": 0.2966225252129163,
+      "changeFromOpenAbs": 0.2950000000000017,
       "volume": null
     },
     "VHSI": {

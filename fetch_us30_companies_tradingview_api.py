@@ -39,26 +39,35 @@ def get_tradingview_snapshot_from_csv(csv_path, json_path):
     r = requests.post(url, json=payload)
     data = r.json()["data"]
     companies = []
+    volume_total = 0
     for d in data:
         t = d["s"]
         info = companies_info.get(t, {})
+        price = d["d"][1]
+        change = d["d"][2]
+        volume = d["d"][6]
+        # Define status
+        status = "BUY" if change > 0 else ("SELL" if change < 0 else "NEUTRAL")
+        # O volume será a variação absoluta
+        volume_var = abs(change)
+        volume_total += volume_var
         companies.append({
             "ticker": info.get('ticker', t.split(':')[-1]),
             "name": info.get('name', ''),
             "market": info.get('market', ''),
             "url": info.get('url', ''),
-            "price": d["d"][1],
-            "change": d["d"][2],
-            "changeAbs": d["d"][3],
-            "changeFromOpen": d["d"][4],
-            "changeFromOpenAbs": d["d"][5],
-            "volume": d["d"][6]
+            "price": price,
+            "change": change,
+            "status": status,
+            "volume": volume,
+            "volume_var": volume_var
         })
     snapshot = {
         'timestamp': datetime.now(timezone.utc).isoformat(),
         'indices': {
             'US30': companies
-        }
+        },
+        'volume_total': volume_total
     }
     with open(json_path, 'w', encoding='utf-8') as f:
         json.dump(snapshot, f, indent=2, ensure_ascii=False)

@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-03-12T20:30:07.878409+00:00",
+  "timestamp": "2026-03-12T22:35:38.675041+00:00",
   "indices": {
     "US30": [
       {
@@ -12,7 +12,7 @@
         "changeAbs": -5.050000000000011,
         "changeFromOpen": -1.1211629165700276,
         "changeFromOpenAbs": -2.900000000000034,
-        "volume": 40204381
+        "volume": 40724804
       },
       {
         "ticker": "AMGN",
@@ -24,7 +24,7 @@
         "changeAbs": -9.849999999999966,
         "changeFromOpen": -1.5314181681882602,
         "changeFromOpenAbs": -5.71999999999997,
-        "volume": 1956029
+        "volume": 1990554
       },
       {
         "ticker": "AXP",
@@ -36,7 +36,7 @@
         "changeAbs": -4.100000000000023,
         "changeFromOpen": 0.44919145538030403,
         "changeFromOpenAbs": 1.349999999999966,
-        "volume": 3595168
+        "volume": 3601473
       },
       {
         "ticker": "BA",
@@ -48,7 +48,7 @@
         "changeAbs": -9.340000000000003,
         "changeFromOpen": -3.5106733895669464,
         "changeFromOpenAbs": -7.450000000000017,
-        "volume": 10650068
+        "volume": 10737734
       },
       {
         "ticker": "CAT",
@@ -60,7 +60,7 @@
         "changeAbs": -6.899999999999977,
         "changeFromOpen": 1.1096681096681176,
         "changeFromOpenAbs": 7.690000000000055,
-        "volume": 3179406
+        "volume": 3231019
       },
       {
         "ticker": "CSCO",
@@ -72,7 +72,7 @@
         "changeAbs": -0.35999999999999943,
         "changeFromOpen": 1.0266406757634725,
         "changeFromOpenAbs": 0.789999999999992,
-        "volume": 19948657
+        "volume": 19968055
       },
       {
         "ticker": "CVX",
@@ -84,7 +84,7 @@
         "changeAbs": 5.180000000000007,
         "changeFromOpen": 2.279572125869761,
         "changeFromOpenAbs": 4.389999999999986,
-        "volume": 26964149
+        "volume": 27128167
       },
       {
         "ticker": "DIS",
@@ -96,7 +96,7 @@
         "changeAbs": -1.4599999999999937,
         "changeFromOpen": -0.6693306693306569,
         "changeFromOpenAbs": -0.6699999999999875,
-        "volume": 10155603
+        "volume": 10304491
       },
       {
         "ticker": "DOW",
@@ -108,7 +108,7 @@
         "changeAbs": 3.210000000000001,
         "changeFromOpen": 5.118881118881114,
         "changeFromOpenAbs": 1.8299999999999983,
-        "volume": 25089258
+        "volume": 25124343
       },
       {
         "ticker": "GS",
@@ -120,7 +120,7 @@
         "changeAbs": -36.24000000000001,
         "changeFromOpen": -2.2103014950578737,
         "changeFromOpenAbs": -17.800000000000068,
-        "volume": 3460837
+        "volume": 3530128
       },
       {
         "ticker": "HD",
@@ -132,7 +132,7 @@
         "changeAbs": -11.909999999999968,
         "changeFromOpen": -2.054675760027746,
         "changeFromOpenAbs": -7.110000000000014,
-        "volume": 3874242
+        "volume": 3891864
       },
       {
         "ticker": "HON",
@@ -144,7 +144,7 @@
         "changeAbs": -6.039999999999992,
         "changeFromOpen": -1.8379105858602869,
         "changeFromOpenAbs": -4.3700000000000045,
-        "volume": 4580158
+        "volume": 4592100
       },
       {
         "ticker": "IBM",
@@ -156,7 +156,7 @@
         "changeAbs": -1.1899999999999977,
         "changeFromOpen": 0.23472278429786017,
         "changeFromOpenAbs": 0.5800000000000125,
-        "volume": 5538368
+        "volume": 5546475
       },
       {
         "ticker": "INTC",
@@ -168,7 +168,7 @@
         "changeAbs": -2.729999999999997,
         "changeFromOpen": -4.535864978902951,
         "changeFromOpenAbs": -2.1499999999999986,
-        "volume": 82792658
+        "volume": 84924425
       },
       {
         "ticker": "JNJ",
@@ -180,7 +180,7 @@
         "changeAbs": -0.950000000000017,
         "changeFromOpen": 0.24020541704629508,
         "changeFromOpenAbs": 0.5799999999999841,
-        "volume": 7652098
+        "volume": 7708336
       },
       {
         "ticker": "JPM",
@@ -192,7 +192,7 @@
         "changeAbs": -4.6299999999999955,
         "changeFromOpen": 0.021214156914048113,
         "changeFromOpenAbs": 0.060000000000002274,
-        "volume": 13694244
+        "volume": 13754484
       },
       {
         "ticker": "KO",
@@ -204,7 +204,7 @@
         "changeAbs": -0.01999999999999602,
         "changeFromOpen": 0.24541462154481752,
         "changeFromOpenAbs": 0.18999999999999773,
-        "volume": 16330182
+        "volume": 16839844
       },
       {
         "ticker": "MCD",
@@ -216,7 +216,7 @@
         "changeAbs": -1.2999999999999545,
         "changeFromOpen": 0.20417633410673625,
         "changeFromOpenAbs": 0.660000000000025,
-        "volume": 2634380
+        "volume": 2639623
       },
       {
         "ticker": "MMM",
@@ -228,7 +228,7 @@
         "changeAbs": -6.069999999999993,
         "changeFromOpen": -2.395915161036919,
         "changeFromOpenAbs": -3.6599999999999966,
-        "volume": 5639058
+        "volume": 5682957
       },
       {
         "ticker": "MRK",
@@ -240,7 +240,7 @@
         "changeAbs": -0.29999999999999716,
         "changeFromOpen": 0.3853981726064116,
         "changeFromOpenAbs": 0.4449999999999932,
-        "volume": 8323030
+        "volume": 8348725
       },
       {
         "ticker": "MSFT",
@@ -252,7 +252,7 @@
         "changeAbs": -3.019999999999982,
         "changeFromOpen": -0.6845760324246798,
         "changeFromOpenAbs": -2.769999999999982,
-        "volume": 26767419
+        "volume": 27219118
       },
       {
         "ticker": "NKE",
@@ -264,7 +264,7 @@
         "changeAbs": -1.5700000000000003,
         "changeFromOpen": -2.080318379160634,
         "changeFromOpenAbs": -1.1499999999999986,
-        "volume": 18481799
+        "volume": 18579545
       },
       {
         "ticker": "PG",
@@ -276,7 +276,7 @@
         "changeAbs": -2.819999999999993,
         "changeFromOpen": -1.123447868077004,
         "changeFromOpenAbs": -1.710000000000008,
-        "volume": 8471688
+        "volume": 8486395
       },
       {
         "ticker": "TRV",
@@ -288,7 +288,7 @@
         "changeAbs": 2.6100000000000136,
         "changeFromOpen": 2.258414031285981,
         "changeFromOpenAbs": 6.670000000000016,
-        "volume": 1421892
+        "volume": 1432282
       },
       {
         "ticker": "UNH",
@@ -300,7 +300,7 @@
         "changeAbs": -8.095000000000027,
         "changeFromOpen": -2.6757966815907315,
         "changeFromOpenAbs": -7.6200000000000045,
-        "volume": 10345478
+        "volume": 10501045
       },
       {
         "ticker": "V",
@@ -312,7 +312,7 @@
         "changeAbs": -2.4599999999999795,
         "changeFromOpen": -0.5322256117349213,
         "changeFromOpenAbs": -1.6399999999999864,
-        "volume": 7498821
+        "volume": 7513511
       },
       {
         "ticker": "VZ",
@@ -324,7 +324,7 @@
         "changeAbs": -0.04999999999999716,
         "changeFromOpen": 0.35678889990089135,
         "changeFromOpenAbs": 0.17999999999999972,
-        "volume": 26253768
+        "volume": 26290514
       },
       {
         "ticker": "WMT",
@@ -336,7 +336,7 @@
         "changeAbs": 1.8400000000000034,
         "changeFromOpen": 2.4817040762091636,
         "changeFromOpenAbs": 3.0349999999999966,
-        "volume": 21684908
+        "volume": 21737034
       },
       {
         "ticker": "CRM",
@@ -348,7 +348,7 @@
         "changeAbs": 5.150000000000006,
         "changeFromOpen": 2.6528614845721967,
         "changeFromOpenAbs": 5.150000000000006,
-        "volume": 26130036
+        "volume": 26304966
       }
     ]
   }
