@@ -587,13 +587,15 @@ async function sendAnalysisFromSnapshot(assetSymbol: string, label: string) {
   const indicesRaw = JSON.parse(fs.readFileSync('indices_snapshot.json', 'utf-8')).indices;
   let snapshot: Snapshot = JSON.parse(fs.readFileSync(file, 'utf-8'));
   snapshot.indices = [
-    { symbol: 'VIX', price: indicesRaw['VIX']?.price },
-    { symbol: 'US500', price: indicesRaw['US500']?.price },
-    { symbol: 'US100', price: indicesRaw['US100']?.price },
-    { symbol: 'DXY', price: indicesRaw['DXY']?.price }
+    { symbol: 'VIX', price: indicesRaw['VIX']?.price, change: indicesRaw['VIX']?.change },
+    { symbol: 'US500', price: indicesRaw['US500']?.price, change: indicesRaw['US500']?.change },
+    { symbol: 'US100', price: indicesRaw['US100']?.price, change: indicesRaw['US100']?.change },
+    { symbol: 'DXY', price: indicesRaw['DXY']?.price, change: indicesRaw['DXY']?.change }
   ].filter(e => e.price !== undefined);
   snapshot.quote = indicesRaw['US30']?.price ?? snapshot.quote;
   fs.writeFileSync(file, JSON.stringify(snapshot, null, 2));
+  // Garante enriquecimento e conversão correta
+  snapshot = await ensureSnapshotData(assetSymbol, snapshot, file);
   const tvIndices: Record<string, number> = {};
   snapshot.indices.forEach((idx: any) => {
     if (idx.symbol && typeof idx.price === 'number') {
