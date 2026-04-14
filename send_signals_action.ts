@@ -634,25 +634,13 @@ async function sendAnalysisFromSnapshot(assetSymbol: string, label: string) {
     console.error(`[SNAPSHOT] Ainda não foi possível criar o snapshot: ${file}`);
     return;
   }
-  // Atualiza snapshot com dados atuais do TradingView
-  const indicesRaw = JSON.parse(fs.readFileSync('indices_snapshot.json', 'utf-8')).indices;
   let snapshot: Snapshot = JSON.parse(fs.readFileSync(file, 'utf-8'));
-  snapshot.indices = [
-    { symbol: 'VIX', price: indicesRaw['VIX']?.price, change: indicesRaw['VIX']?.change },
-    { symbol: 'US500', price: indicesRaw['US500']?.price, change: indicesRaw['US500']?.change },
-    { symbol: 'US100', price: indicesRaw['US100']?.price, change: indicesRaw['US100']?.change },
-    { symbol: 'DXY', price: indicesRaw['DXY']?.price, change: indicesRaw['DXY']?.change }
-  ].filter(e => e.price !== undefined);
-  snapshot.quote = indicesRaw['US30']?.price ?? snapshot.quote;
-  fs.writeFileSync(file, JSON.stringify(snapshot, null, 2));
-  // Garante enriquecimento e conversão correta
   snapshot = await ensureSnapshotData(assetSymbol, snapshot, file);
-  const tvIndices: Record<string, number> = {};
-  snapshot.indices.forEach((idx: any) => {
-    if (idx.symbol && typeof idx.price === 'number') {
-      tvIndices[idx.symbol] = idx.price;
-    }
-  });
+  const tvIndices = loadTradingViewIndices();
+  const tvQuote = loadTradingViewQuote(assetSymbol);
+  if ((snapshot.quote === null || snapshot.quote === undefined) && tvQuote !== undefined) {
+    snapshot.quote = tvQuote;
+  }
   const { message, score, signal, strength } = buildAnalysisMessage(assetSymbol, label, snapshot, tvIndices);
   console.log('[OG TELEGRAM MESSAGE]\n' + message + '\n[END OG TELEGRAM MESSAGE]');
   await sendTelegramAnalysis(message);

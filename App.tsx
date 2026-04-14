@@ -12,6 +12,7 @@ import MqlCalendarWidget from './components/MqlCalendarWidget.js';
 import MacroHeaderAlert from './components/MacroHeaderAlert.js';
 
 const App: React.FC = () => {
+  const SCORE_NEUTRAL_THRESHOLD = 3;
     // ...contador de usuários online removido...
   const [isMobile, setIsMobile] = React.useState(false);
   const clientSignalsEnabled = (() => {
@@ -72,7 +73,7 @@ const App: React.FC = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
 
   const getScoreLabel = useCallback((s: number) => {
-    if (Math.abs(s) <= 15) return "NEUTRO";
+    if (Math.abs(s) < SCORE_NEUTRAL_THRESHOLD) return "NEUTRO";
     return s > 0 ? "COMPRA" : "VENDA";
   }, []);
 

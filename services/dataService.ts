@@ -104,11 +104,20 @@ const summarizeBreadthDetails = (details: BreadthCompanyDetails[]) => {
 
 const normalizeBreadthDetails = (items: any[]): BreadthCompanyDetails[] => {
   return items
-    .map(item => ({
-      symbol: String(item.symbol ?? item.ticker ?? ''),
-      change: typeof item.change === 'number' ? item.change : parseFloat(String(item.change ?? 0)) || 0,
-      status: item.status === 'SELL' ? 'SELL' : 'BUY'
-    }))
+    .map(item => {
+      const normalizedChange = typeof item.change === 'number' ? item.change : parseFloat(String(item.change ?? 0)) || 0;
+      const normalizedStatus: 'BUY' | 'SELL' = item.status === 'SELL' ? 'SELL' : 'BUY';
+      const resolvedStatus: 'BUY' | 'SELL' = item.status === 'BUY' || item.status === 'SELL'
+        ? normalizedStatus
+        : normalizedChange < 0
+          ? 'SELL'
+          : 'BUY';
+      return {
+        symbol: String(item.symbol ?? item.ticker ?? ''),
+        change: normalizedChange,
+        status: resolvedStatus
+      };
+    })
     .filter(item => item.symbol);
 };
 
