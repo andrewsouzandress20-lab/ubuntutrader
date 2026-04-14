@@ -122,6 +122,7 @@ type ScoreBreakdown = {
   indices: number;
   dxy: number;
   gap: number;
+  consensus: number;
 };
 
 const INDEX_MAP_US30: Record<string, string> = {
@@ -298,6 +299,8 @@ const formatPercentOrPrice = (symbol: string, change: number | null, tv: Record<
 };
 
 const resolveSignal = (score: number): 'COMPRA' | 'VENDA' | 'NEUTRO' => {
+  // Evita transformar conflito leve entre fatores em direção forçada.
+  if (Math.abs(score) < 3) return 'NEUTRO';
   if (score > 0) return 'COMPRA';
   if (score < 0) return 'VENDA';
   return 'NEUTRO';
@@ -305,6 +308,7 @@ const resolveSignal = (score: number): 'COMPRA' | 'VENDA' | 'NEUTRO' => {
 
 const resolveStrength = (score: number): 'FORTE' | 'MODERADA' | 'FRACA' => {
   const abs = Math.abs(score);
+  if (abs < 3) return 'FRACA';
   if (abs >= 12) return 'FORTE';
   if (abs >= 7) return 'MODERADA';
   return 'FRACA';
@@ -345,12 +349,18 @@ const computeScore = (assetSymbol: string, snapshot: Snapshot): { total: number;
     ? (dxyChange < 0 ? 2 : dxyChange > 0 ? -2 : 0)
     : 0;
 
+  // Quando os filtros intermarket principais apontam todos na mesma direção,
+  // o score final precisa refletir esse consenso para evitar inversão de leitura.
+  let consensusScore = 0;
+  if (volIndexScore > 0 && indicesScore > 0 && dxyScore > 0) consensusScore = 4;
+  else if (volIndexScore < 0 && indicesScore < 0 && dxyScore < 0) consensusScore = -4;
+
   const gapPercent = snapshot.gap?.percent ?? null;
   const gapScore = gapPercent !== null && Math.abs(gapPercent) > 1
     ? (gapPercent > 0 ? 2 : -2)
     : 0;
 
-  const total = volumeScore + volIndexScore + breadthScore + indicesScore + dxyScore + gapScore;
+  const total = volumeScore + volIndexScore + breadthScore + indicesScore + dxyScore + gapScore + consensusScore;
   return {
     total,
     parts: {
@@ -359,7 +369,8 @@ const computeScore = (assetSymbol: string, snapshot: Snapshot): { total: number;
       breadth: breadthScore,
       indices: indicesScore,
       dxy: dxyScore,
-      gap: gapScore
+      gap: gapScore,
+      consensus: consensusScore
     }
   };
 };
@@ -448,32 +459,47 @@ const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snap
         { symbol: 'DXY', label: '💵 DXY' },
       ];
 
-  // Correlação dos índices para US30
-  const correlationMap: Record<string, 'positive' | 'negative'> = {
-    'VIX': 'negative',
-    'DXY': 'negative',
-    'US500': 'positive',
-    'S&P 500': 'positive',
-    'US100': 'positive',
-    'NASDAQ': 'positive'
-  };
-  const indicatorLines = relevantSymbols.map(({ label, symbol }) => {
-    // Busca variação percentual (change) do snapshot
-    const change = getChange(snapshot, symbol);
-    if (change !== null && !Number.isNaN(change)) {
-      // Determina favorabilidade pela correlação
-      const corr = correlationMap[symbol] || 'positive';
-      let favor: boolean;
-      if (corr === 'positive') {
-        favor = (signal === 'COMPRA') ? (change > 0) : (change < 0);
-      } else {
-        favor = (signal === 'COMPRA') ? (change < 0) : (change > 0);
+  const correlationMap: Record<string, 'positive' | 'negative'> = assetSymbol === 'US30'
+    ? {
+        VIX: 'negative',
+        US500: 'positive',
+        'S&P 500': 'positive',
+        US100: 'positive',
+        NASDAQ: 'positive',
+        DXY: 'negative'
+      }
+        NIKKEI: 'positive',
+        SSE: 'positive',
+        US500: 'positive',
+        USDJPY: 'negative',
+    let favorText = '';
+        DXY: 'negative'
       }
       const check = favor ? '✅' : '❌';
       const word = favor ? 'favorável' : 'desfavorável';
       return `${label}: ${fmtPct(change)} ${check} (${word} para ${signal})`;
     } else {
       return `${label}: -`;
+=======
+      const corr = correlationMap[symbol] || 'positive';
+      let favor = false;
+      if (signal === 'COMPRA') {
+        favor = corr === 'positive' ? change > 0 : change < 0;
+      } else if (signal === 'VENDA') {
+        favor = corr === 'positive' ? change < 0 : change > 0;
+      }
+      const check = favor ? '✅' : '❌';
+      const word = signal === 'NEUTRO' ? 'neutro' : favor ? 'favorável' : 'desfavorável';
+      favorText = signal === 'NEUTRO' ? '⚖️ (neutro)' : `${check} (${word} para ${signal})`;
+      return `${label}: ${fmtPct(change)} ${favorText}`;
+    } else {
+      // Se não houver change, exibe preço e favorabilidade baseada no sinal
+      const indicesRaw = JSON.parse(fs.readFileSync('indices_snapshot.json', 'utf-8')).indices;
+      const price = indicesRaw[symbol]?.price;
+      favorText = '⚖️ (sem variação para classificar)';
+      return price !== undefined && price !== null && !Number.isNaN(price)
+        ? `${label}: ${fmtPrice(price)} ${favorText}`
+        : `${label}: ⚠️ dado ausente`;
     }
   });
 

@@ -208,8 +208,9 @@ const App: React.FC = () => {
 
       if ((isUS30Opening || isHK50Opening) && lastAutoSignalDate !== dateKey) {
         const { score, msg } = institutionalScore;
-        if (score !== 0) {
-          sendTelegramSignal(selectedAsset.symbol, score > 0 ? 'COMPRA' : 'VENDA', Math.abs(score) > 5 ? 'FORTE' : 'FRACO', score);
+        const signalLabel = getScoreLabel(score);
+        if (signalLabel !== 'NEUTRO') {
+          sendTelegramSignal(selectedAsset.symbol, signalLabel, Math.abs(score) > 5 ? 'FORTE' : 'FRACO', score);
           setTimeout(() => {
             sendTelegramAnalysis(msg);
           }, 5000);
