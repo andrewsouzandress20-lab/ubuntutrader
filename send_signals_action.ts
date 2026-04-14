@@ -15,6 +15,69 @@ type Snapshot = {
   gap?: { percent?: number };
 };
 
+const SNAPSHOT_CHANGE_SYMBOLS: Record<string, string> = {
+  '^VIX': '^VIX',
+  'VIX': '^VIX',
+  '^GSPC': '^GSPC',
+  'US500': '^GSPC',
+  'S&P 500': '^GSPC',
+  '^IXIC': '^IXIC',
+  'US100': '^IXIC',
+  'NASDAQ': '^IXIC',
+  'DX-Y.NYB': 'DX-Y.NYB',
+  'DXY': 'DX-Y.NYB',
+  '^VHSI': '^VHSI',
+  'VHSI': '^VHSI',
+  '^N225': '^N225',
+  'NIKKEI': '^N225',
+  '000001.SS': '000001.SS',
+  'SSE': '000001.SS',
+  'USDJPY=X': 'USDJPY=X',
+  'USDJPY': 'USDJPY=X',
+  'CNH=X': 'CNH=X',
+  'CNH': 'CNH=X'
+};
+
+const enrichSnapshotIndexChanges = async (snapshot: Snapshot): Promise<boolean> => {
+  if (!snapshot.indices || snapshot.indices.length === 0) return false;
+
+  const yahooSymbols = Array.from(
+    new Set(
+      snapshot.indices
+        .filter(entry => entry.change === undefined || entry.change === null || Number.isNaN(entry.change))
+        .map(entry => SNAPSHOT_CHANGE_SYMBOLS[entry.symbol] || entry.symbol)
+    )
+  );
+
+  if (yahooSymbols.length === 0) return false;
+
+  const changes = await Promise.all(
+    yahooSymbols.map(async symbol => ({
+      symbol,
+      result: await fetchYahooChartPriceChange(symbol)
+    }))
+  );
+
+  const changeMap = new Map<string, number>();
+  changes.forEach(({ symbol, result }) => {
+    if (typeof result.change === 'number' && !Number.isNaN(result.change)) {
+      changeMap.set(symbol, result.change);
+    }
+  });
+
+  let changed = false;
+  snapshot.indices = snapshot.indices.map(entry => {
+    if (typeof entry.change === 'number' && !Number.isNaN(entry.change)) return entry;
+    const yahooSymbol = SNAPSHOT_CHANGE_SYMBOLS[entry.symbol] || entry.symbol;
+    const yahooChange = changeMap.get(yahooSymbol);
+    if (yahooChange === undefined) return entry;
+    changed = true;
+    return { ...entry, change: yahooChange };
+  });
+
+  return changed;
+};
+
 const ensureSnapshotData = async (assetSymbol: string, snapshot: Snapshot, snapshotPath?: string): Promise<Snapshot> => {
   const asset = SUPPORTED_ASSETS.find(a => a.symbol === assetSymbol);
   if (!asset) return snapshot;
@@ -37,6 +100,11 @@ const ensureSnapshotData = async (assetSymbol: string, snapshot: Snapshot, snaps
       changed = true;
     }
     // Não faz fallback para Yahoo, nem mescla, nem busca change externo
+  }
+
+  if (snapshot.indices && snapshot.indices.length > 0) {
+    const indicesChanged = await enrichSnapshotIndexChanges(snapshot);
+    changed = changed || indicesChanged;
   }
 
   const breadthSummary = snapshot.breadth?.summary;
@@ -249,8 +317,16 @@ const mapIndices = (snapshot: Snapshot, map: Record<string, string>): Record<str
 };
 
 const getChange = (snapshot: Snapshot, symbols: string | string[]): number | null => {
-  const list = Array.isArray(symbols) ? symbols : [symbols];
-  const found = snapshot.indices?.find(i => list.includes(i.symbol));
+  const requested = Array.isArray(symbols) ? symbols : [symbols];
+  const list = Array.from(
+    new Set(
+      requested.flatMap(symbol => {
+        const mapped = SNAPSHOT_CHANGE_SYMBOLS[symbol];
+        return mapped ? [symbol, mapped] : [symbol];
+      })
+    )
+  );
+  const found = snapshot.indices?.find(i => list.includes(i.symbol) || list.includes(SNAPSHOT_CHANGE_SYMBOLS[i.symbol] || ''));
   return typeof found?.change === 'number' ? found.change : null;
 };
 
