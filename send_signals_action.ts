@@ -1,10 +1,9 @@
 import 'dotenv/config';
 import * as fs from 'fs';
-import { sendTelegramSignal, sendTelegramAnalysis } from './services/telegramService.js';
-import { collectSnapshot } from './scripts/collect_snapshot.js';
-import { execSync } from 'child_process';
-import { fetchCorrelationData, fetchMarketBreadth, fetchRealData, calculateVolumePressure, detectOpeningGap, fetchCurrentPrice, fetchYahooChartPriceChange } from './services/dataService.js';
-import { SUPPORTED_ASSETS } from './types.js';
+import { sendTelegramSignal, sendTelegramAnalysis } from './services/telegramService';
+import { collectSnapshot } from './scripts/collect_snapshot';
+import { fetchCorrelationData, fetchMarketBreadth, fetchRealData, calculateVolumePressure, detectOpeningGap, fetchCurrentPrice, fetchYahooChartPriceChange } from './services/dataService';
+import { SUPPORTED_ASSETS } from './types';
 import { spawnSync } from 'child_process';
 
 
@@ -30,17 +29,6 @@ const ensureSnapshotData = async (assetSymbol: string, snapshot: Snapshot, snaps
   let changed = false;
 
 
-  // Corrige: se indices for objeto, converte para array de objetos com campo symbol
-  if (snapshot.indices && !Array.isArray(snapshot.indices)) {
-    snapshot.indices = Object.entries(snapshot.indices).map(([symbol, data]) => {
-      if (data && typeof data === 'object' && !Array.isArray(data)) {
-        return { symbol, ...data };
-      } else {
-        return { symbol, value: data };
-      }
-    });
-    changed = true;
-  }
   if (!snapshot.indices || snapshot.indices.length === 0) {
     // Prioridade: TradingView
     const tvFallback = buildTvCorrelation(assetSymbol, tvIndices);
@@ -261,20 +249,7 @@ const mapIndices = (snapshot: Snapshot, map: Record<string, string>): Record<str
 };
 
 const getChange = (snapshot: Snapshot, symbols: string | string[]): number | null => {
-  // Adiciona aliases para garantir que encontra o símbolo correto
-  const aliasMap: Record<string, string[]> = {
-    'VIX': ['VIX', '^VIX'],
-    '^VIX': ['VIX', '^VIX'],
-    'US500': ['US500', '^GSPC', 'S&P 500'],
-    '^GSPC': ['US500', '^GSPC', 'S&P 500'],
-    'US100': ['US100', '^IXIC', 'NASDAQ'],
-    '^IXIC': ['US100', '^IXIC', 'NASDAQ'],
-    'DXY': ['DXY', 'DX-Y.NYB'],
-    'DX-Y.NYB': ['DXY', 'DX-Y.NYB'],
-  };
-  let list = Array.isArray(symbols) ? symbols : [symbols];
-  // Expande aliases
-  list = list.flatMap(sym => aliasMap[sym] || [sym]);
+  const list = Array.isArray(symbols) ? symbols : [symbols];
   const found = snapshot.indices?.find(i => list.includes(i.symbol));
   return typeof found?.change === 'number' ? found.change : null;
 };
@@ -376,7 +351,6 @@ const computeScore = (assetSymbol: string, snapshot: Snapshot): { total: number;
 };
 
 const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snapshot, tvIndices: Record<string, number>) => {
-  // ...existing code...
   const { total } = computeScore(assetSymbol, snapshot);
   const signal = resolveSignal(total);
   const strength = resolveStrength(total);
@@ -400,47 +374,27 @@ const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snap
     return value.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 2 });
   };
 
-
-  // Atualiza os candles do US500 como fallback para volume institucional
-  try {
-    execSync('python fetch_indices_tradingview.py us500', { stdio: 'inherit' });
-    console.log('[ACTION] Candles do US500 atualizados com sucesso (usado como proxy para volume do US30).');
-  } catch (err) {
-    console.warn('[ACTION] Falha ao atualizar candles do US500:', err);
-  }
-
-  // Leitura das empresas do US30 (companies_snapshot.json)
-  let us30Companies: { ticker: string; name: string; change?: number }[] = [];
-  let us30Resumo = '';
-  if (assetSymbol === 'US30') {
-    try {
-      const path = './companies_snapshot.json';
-      const exists = fs.existsSync(path);
-      console.log(`[DEBUG] companies_snapshot.json exists: ${exists}`);
-      if (exists) {
-        const companiesRaw = JSON.parse(fs.readFileSync(path, 'utf-8'));
-        console.log('[DEBUG] companies_snapshot.json conteúdo:', JSON.stringify(companiesRaw, null, 2));
-        if (companiesRaw?.indices?.US30) {
-          // Agora inclui o campo volume, se existir
-          us30Companies = companiesRaw.indices.US30.map((c: any) => ({
-            ticker: c.ticker ?? c.symbol,
-            name: c.name,
-            change: c.change,
-            volume: c.volume
-          }));
-          console.log(`[DEBUG] us30Companies carregadas: ${us30Companies.length}`);
-        } else {
-          console.warn('[DEBUG] Campo indices.US30 não encontrado em companies_snapshot.json');
-        }
-      } else {
-        console.warn('[DEBUG] Arquivo companies_snapshot.json não encontrado no diretório atual');
-      }
-    } catch (err) {
-      console.warn('[ANALYSIS] Falha ao ler companies_snapshot.json:', err);
+  // Sempre usa TradingView (tvIndices) para os valores das mensagens
+  const changeOrPrice = (symbol: string) => {
+    // Busca preço diretamente de indices_snapshot.json
+    const indicesRaw = JSON.parse(fs.readFileSync('indices_snapshot.json', 'utf-8')).indices;
+    const price = indicesRaw[symbol]?.price;
+    if (price !== undefined && price !== null && !Number.isNaN(price)) {
+      return `${fmtPrice(price)} (preço)`;
     }
-  }
+    return '⚠️ dado ausente';
+  };
 
-  // ...existing code...
+  const favorability = (symbol: string, prefer: 'pos' | 'neg') => {
+    const change = getChange(snapshot, symbol);
+    if (change === null || Number.isNaN(change)) return '⚠️ dado ausente';
+    const desiredPos = prefer === 'pos';
+    const ok = desiredPos ? change > 0 : change < 0;
+    const check = ok ? '✅' : '❌';
+    const word = ok ? 'favorável' : 'desfavorável';
+    return `${check} (${word} para ${signal === 'NEUTRO' ? 'NEUTRO' : signal})`;
+  };
+
   // Só exibe índices presentes no snapshot, sem buscar Yahoo ou ativos não relacionados
   // Mapeamento correto para indices_snapshot.json
   const relevantSymbols = assetSymbol === 'US30'
@@ -468,19 +422,20 @@ const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snap
         NASDAQ: 'positive',
         DXY: 'negative'
       }
+    : {
+        VHSI: 'negative',
         NIKKEI: 'positive',
         SSE: 'positive',
         US500: 'positive',
         USDJPY: 'negative',
-    let favorText = '';
         DXY: 'negative'
-      }
-      const check = favor ? '✅' : '❌';
-      const word = favor ? 'favorável' : 'desfavorável';
-      return `${label}: ${fmtPct(change)} ${check} (${word} para ${signal})`;
-    } else {
-      return `${label}: -`;
-=======
+      };
+
+  const indicatorLines = relevantSymbols.map(({ label, symbol }) => {
+    // Busca variação percentual (change) do snapshot
+    const change = getChange(snapshot, symbol);
+    let favorText = '';
+    if (change !== null && !Number.isNaN(change)) {
       const corr = correlationMap[symbol] || 'positive';
       let favor = false;
       if (signal === 'COMPRA') {
@@ -512,9 +467,9 @@ const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snap
   };
 
   const breadthSummary = () => {
-    if (!adv && !dec) return 'DOW30 indisponível';
+    if (!adv && !dec) return 'Breadth indisponível';
     const pos = adv > dec;
-    return `${pos ? '🟢 DOW30 positivo' : adv === dec ? '⚖️ DOW30 neutro' : '🔴 DOW30 negativo'} (${adv} alta, ${dec} baixa)`;
+    return `${pos ? '🟢 Breadth positivo' : adv === dec ? '⚖️ Breadth neutro' : '🔴 Breadth negativo'} (${adv} alta, ${dec} baixa)`;
   };
 
   const gapSummary = () => {
@@ -529,14 +484,18 @@ const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snap
   const lines = [
     `${headerLine}`,
     '',
-    us30Resumo,
-    `${headerAsset}: Sinal de ${signal === 'NEUTRO' ? '⚖️ NEUTRO' : signal === 'COMPRA' ? '🔺 COMPRA' : '🔻 VENDA'} ${strength}`,
+    (() => {
+      let favor;
+      if (signal === 'COMPRA') favor = 'favorável à compra';
+      else if (signal === 'VENDA') favor = 'desfavorável à compra';
+      else favor = 'neutro';
+      return `${headerAsset}: Sinal de ${signal === 'NEUTRO' ? '⚖️ NEUTRO' : signal === 'COMPRA' ? '🔺 COMPRA' : '🔻 VENDA'} ${strength} (${favor})`;
+    })(),
     `Score institucional: ${total > 0 ? '+' : ''}${total}`,
+    `Cotação: ${fmtPrice(snapshot.quote ?? null)}`,
     '',
     '🌎 Índices globais:',
     ...indicatorLines,
-    '',
-    // Removido: lista de empresas do US30
     '',
     '📊 Resumo:',
     `- ${volumeSummary()}`,
@@ -545,9 +504,16 @@ const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snap
       if (change !== null && !Number.isNaN(change)) {
         return `- ⚠️ ${volIndexSymbol === '^VIX' ? 'VIX' : 'VHSI'}: ${fmtPct(change)}`;
       }
-      return `- ⚠️ ${volIndexSymbol === '^VIX' ? 'VIX' : 'VHSI'}: -`;
+      // Busca preço do índice
+      const indicesRaw = JSON.parse(fs.readFileSync('indices_snapshot.json', 'utf-8')).indices;
+      const price = indicesRaw[volIndexSymbol.replace('^', '')]?.price;
+      if (price !== undefined && price !== null && !Number.isNaN(price)) {
+        return `- ⚠️ ${volIndexSymbol === '^VIX' ? 'VIX' : 'VHSI'}: ${fmtPrice(price)} (preço)`;
+      }
+      return `- ⚠️ ${volIndexSymbol === '^VIX' ? 'VIX' : 'VHSI'}: dado ausente`;
     })(),
     `- ${breadthSummary()}`,
+    `- 🕳️ ${gapSummary()}`,
     '',
     '⚡️ Siga as zonas SMC/FVG para melhor entrada.',
     '',
@@ -556,14 +522,8 @@ const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snap
     'Para ver os dados detalhadamente!'
   ];
 
-  // Always return the expected object
-  return {
-    message: lines.join('\n'),
-    score: total,
-    signal,
-    strength
-  };
-}
+  return { message: lines.join('\n'), signal, strength, score: total };
+};
 
 async function sendSignalFromSnapshot(assetSymbol: string, label: string) {
   const file = `snapshots/${assetSymbol.toLowerCase()}_${label}.json`;
@@ -582,9 +542,6 @@ async function sendSignalFromSnapshot(assetSymbol: string, label: string) {
   const tvIndices = loadTradingViewIndices();
   const tvQuote = loadTradingViewQuote(assetSymbol);
 
-  // LOG: Mostrar snapshot bruto
-  console.log(`[DEBUG] Snapshot lido (${assetSymbol}, ${label}):`, JSON.stringify(snapshot, null, 2));
-
   const { total: score } = computeScore(assetSymbol, snapshot);
   const signal = resolveSignal(score);
   const strength = resolveStrength(score);
@@ -601,23 +558,20 @@ async function sendSignalFromSnapshot(assetSymbol: string, label: string) {
     indicesCtx[key] = value.price;
   });
 
-  const context = {
-    quote: tvQuote ?? snapshot.quote ?? undefined,
-    indices: indicesCtx,
-    volumeBuy: snapshot.volume?.buyPercent,
-    volumeSell: snapshot.volume?.sellPercent,
-    breadthAdv: snapshot.breadth?.summary?.advancing,
-    breadthDec: snapshot.breadth?.summary?.declining,
-    gap: snapshot.gap?.percent
-  };
-  // LOG: Mostrar contexto enviado para o Telegram
-  console.log(`[DEBUG] Contexto enviado para sendTelegramSignal (${assetSymbol}, ${label}):`, JSON.stringify(context, null, 2));
   await sendTelegramSignal(
     assetSymbol,
     signal,
     strength,
     score,
-    context
+    {
+      quote: tvQuote ?? snapshot.quote ?? undefined,
+      indices: indicesCtx,
+      volumeBuy: snapshot.volume?.buyPercent,
+      volumeSell: snapshot.volume?.sellPercent,
+      breadthAdv: snapshot.breadth?.summary?.advancing,
+      breadthDec: snapshot.breadth?.summary?.declining,
+      gap: snapshot.gap?.percent
+    }
   );
   console.log(`[SINAL] Sinal enviado para ${assetSymbol} usando snapshot ${label}`);
 
@@ -642,7 +596,6 @@ async function sendAnalysisFromSnapshot(assetSymbol: string, label: string) {
     snapshot.quote = tvQuote;
   }
   const { message, score, signal, strength } = buildAnalysisMessage(assetSymbol, label, snapshot, tvIndices);
-  console.log('[OG TELEGRAM MESSAGE]\n' + message + '\n[END OG TELEGRAM MESSAGE]');
   await sendTelegramAnalysis(message);
   console.log(`[ANALISE] (${assetSymbol}) ${label} | sinal ${signal} ${strength} (score ${score}) enviado.`);
 }

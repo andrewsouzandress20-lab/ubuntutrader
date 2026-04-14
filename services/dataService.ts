@@ -303,7 +303,6 @@ export const fetchCorrelationData = async (assetSymbol: string): Promise<Correla
       name: target.name,
       price: typeof price === 'number' && !Number.isNaN(price) ? price : undefined,
       change: yahoo.change !== null && yahoo.change !== undefined && !Number.isNaN(yahoo.change) ? yahoo.change : undefined,
->>>>>>> 977eb0a (Fix score calculation and real data sourcing)
       correlation: target.correlation,
       info: target.info || ''
     } satisfies CorrelationData;
@@ -391,40 +390,38 @@ export const fallbackEmptyBreadth = (tickers: string[]): { summary: MarketBreadt
   };
 };
 
-// Novo cálculo: volume comprador/vendedor a partir do companies_snapshot.json
-import * as fs from 'fs';
-export const calculateVolumePressure = (_candles: Candle[]): VolumePressure => {
+export const calculateVolumePressure = (candles: Candle[]): VolumePressure => {
+  if (candles.length === 0) return { buyPercent: 50, sellPercent: 50, total: 0 };
+  
   let buyVol = 0;
   let sellVol = 0;
-  let total = 0;
-  try {
-    const companiesRaw = JSON.parse(fs.readFileSync('companies_snapshot.json', 'utf-8'));
-    if (companiesRaw?.indices?.US30) {
-      for (const c of companiesRaw.indices.US30) {
-        const vol = typeof c.volume === 'number' ? c.volume : parseFloat(c.volume);
-        if (typeof vol === 'number' && !isNaN(vol)) {
-          if (c.change > 0) buyVol += vol;
-          else if (c.change < 0) sellVol += vol;
-        }
-      }
-      total = buyVol + sellVol;
+  
+  const recent = candles.slice(-20);
+  recent.forEach(c => {
+    const body = Math.abs(c.close - c.open);
+    const wickTop = c.high - Math.max(c.open, c.close);
+    const wickBottom = Math.min(c.open, c.close) - c.low;
+    const vol = (c.volume || 1);
+    
+    if (c.close > c.open) {
+      buyVol += vol * (body + wickBottom);
+      sellVol += vol * wickTop;
+    } else {
+      sellVol += vol * (body + wickTop);
+      buyVol += vol * wickBottom;
     }
-  } catch (e) {
-    console.warn('[calculateVolumePressure] Falha ao ler companies_snapshot.json:', e);
-  }
-  if (total === 0) return { buyPercent: 50, sellPercent: 50, total: 0 };
-  const buyPercent = (buyVol / total) * 100;
-  const sellPercent = (sellVol / total) * 100;
-  const result = { buyPercent, sellPercent, total };
-  console.log('[calculateVolumePressure] Resultado:', result);
-  return result;
+  });
+
+  const total = buyVol + sellVol || 1;
+  return {
+    buyPercent: Math.max(10, Math.min(90, (buyVol / total) * 100)),
+    sellPercent: Math.max(10, Math.min(90, (sellVol / total) * 100)),
+    total: total
+  };
 };
 
 export const detectOpeningGap = (candles: Candle[], asset: Asset): GapData => {
-  if (candles.length < 2) {
-    console.warn('[detectOpeningGap] Menos de 2 candles recebidos');
-    return { value: 0, percent: 0, type: 'none' };
-  }
+  if (candles.length < 2) return { value: 0, percent: 0, type: 'none' };
   
   let prevDayClose = 0;
   let todayOpen = 0;
@@ -469,7 +466,7 @@ export const detectOpeningGap = (candles: Candle[], asset: Asset): GapData => {
     }
   }
 
-  const gapData = {
+  return {
     value: diff,
     percent: pct,
     type: gapType,
@@ -478,36 +475,13 @@ export const detectOpeningGap = (candles: Candle[], asset: Asset): GapData => {
     openPrice: todayOpen,
     isFilled: isFilled
   };
-  console.log('[detectOpeningGap] Resultado:', gapData);
-  return gapData;
 };
 
 export const fetchRealData = async (asset: Asset, timeframe: Timeframe): Promise<Candle[]> => {
-<<<<<<< HEAD
-  // Busca candles reais do arquivo local data/{symbol}_candles.json
-  const fs = require('fs');
-  const path = `data/${asset.symbol.toLowerCase()}_candles.json`;
-  if (!fs.existsSync(path)) {
-    console.warn(`[fetchRealData] Arquivo não encontrado: ${path}`);
-    return [];
-  }
-  try {
-    const candles = JSON.parse(fs.readFileSync(path, 'utf-8'));
-    if (Array.isArray(candles)) {
-      console.log(`[fetchRealData] Candles carregados para ${asset.symbol}:`, candles.length);
-      return candles;
-    }
-    console.warn(`[fetchRealData] Dados de candles não são array para ${asset.symbol}`);
-    return [];
-  } catch (err) {
-    console.warn('[fetchRealData] Falha ao ler candles reais:', err);
-    return [];
-=======
   const browserPath = `/data/${asset.symbol.toLowerCase()}_candles.json`;
   if (isBrowser) {
     const candles = await loadJson(browserPath);
     return Array.isArray(candles) ? candles : [];
->>>>>>> 977eb0a (Fix score calculation and real data sourcing)
   }
 
   const path = `data/${asset.symbol.toLowerCase()}_candles.json`;
