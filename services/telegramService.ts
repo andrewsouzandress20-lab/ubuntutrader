@@ -157,7 +157,9 @@ export const sendTelegramSignal = async (
     : `${vhsiMood} VHSI em ${toNum(vhsi) < 0 ? 'queda' : 'alta'} (${fmtPct(vhsi)})`;
   const breadthResumo = score > 0
     ? `🟢 Breadth positivo (${breadthAdv} alta, ${breadthDec} baixa)`
-    : `🔴 Breadth negativo (${breadthAdv} alta, ${breadthDec} baixa)`;
+    : score < 0
+      ? `🔴 Breadth negativo (${breadthAdv} alta, ${breadthDec} baixa)`
+      : `⚖️ Breadth neutro (${breadthAdv} alta, ${breadthDec} baixa)`;
   const gapNum = toNum(gap);
   const gapBias = Number.isNaN(gapNum)
     ? ''

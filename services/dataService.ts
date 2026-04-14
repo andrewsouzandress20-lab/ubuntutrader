@@ -1,5 +1,123 @@
 import { Asset, Candle, Timeframe, CorrelationData, MarketBreadthSummary, BreadthCompanyDetails, DOW_30_TICKERS, HK_50_TICKERS, VolumePressure, GapData, EconomicEvent } from '../types';
 
+const isBrowser = typeof window !== 'undefined';
+
+const ASSET_TO_YAHOO_SYMBOL: Record<string, string> = {
+  US30: '^DJI',
+  HK50: '^HSI'
+};
+
+const INDEX_NAME_MAP: Record<string, string> = {
+  '^VIX': 'VIX',
+  '^GSPC': 'S&P 500',
+  '^IXIC': 'NASDAQ',
+  'DX-Y.NYB': 'DXY',
+  '^TNX': 'Treasury 10Y',
+  '^RUT': 'Russell 2000',
+  '^VHSI': 'VHSI',
+  'CNH=X': 'CNH',
+  '^N225': 'Nikkei',
+  '000001.SS': 'SSE',
+  'USDJPY=X': 'USDJPY'
+};
+
+const INDEX_PRICE_KEYS: Record<string, string> = {
+  '^VIX': 'VIX',
+  '^GSPC': 'US500',
+  '^IXIC': 'US100',
+  'DX-Y.NYB': 'DXY',
+  '^TNX': '^TNX',
+  '^RUT': '^RUT',
+  '^VHSI': 'VHSI',
+  'CNH=X': 'CNH=X',
+  '^N225': '^N225',
+  '000001.SS': '000001.SS',
+  'USDJPY=X': 'USDJPY=X'
+};
+
+const readJsonNode = (path: string): any | null => {
+  try {
+    const fs = require('fs');
+    if (!fs.existsSync(path)) return null;
+    return JSON.parse(fs.readFileSync(path, 'utf-8'));
+  } catch {
+    return null;
+  }
+};
+
+const fetchJsonBrowser = async (path: string): Promise<any | null> => {
+  try {
+    const response = await fetch(`${path}?t=${Date.now()}`);
+    if (!response.ok) return null;
+    return await response.json();
+  } catch {
+    return null;
+  }
+};
+
+const loadJson = async (path: string): Promise<any | null> => {
+  if (isBrowser) return fetchJsonBrowser(path);
+  return readJsonNode(path.replace(/^\//, ''));
+};
+
+const loadFirstAvailableJson = async (paths: string[]): Promise<any | null> => {
+  for (const path of paths) {
+    const data = await loadJson(path);
+    if (data) return data;
+  }
+  return null;
+};
+
+const getAssetSnapshotCandidates = (assetSymbol: string) => {
+  const asset = assetSymbol.toLowerCase();
+  return [
+    `/snapshots/${asset}_open.json`,
+    `/snapshots/${asset}_preopen.json`,
+    `snapshots/${asset}_open.json`,
+    `snapshots/${asset}_preopen.json`
+  ];
+};
+
+const getCompaniesSnapshotCandidates = () => [
+  '/public/companies_snapshot.json',
+  '/companies_snapshot.json',
+  'public/companies_snapshot.json',
+  'companies_snapshot.json'
+];
+
+const getIndicesSnapshotCandidates = () => [
+  '/public/indices_snapshot.json',
+  '/indices_snapshot.json',
+  'public/indices_snapshot.json',
+  'indices_snapshot.json'
+];
+
+const summarizeBreadthDetails = (details: BreadthCompanyDetails[]) => {
+  let advancing = 0;
+  let declining = 0;
+  details.forEach(detail => {
+    if (detail.change > 0 || detail.status === 'BUY') advancing += 1;
+    else if (detail.change < 0 || detail.status === 'SELL') declining += 1;
+  });
+  return { advancing, declining, total: details.length };
+};
+
+const normalizeBreadthDetails = (items: any[]): BreadthCompanyDetails[] => {
+  return items
+    .map(item => ({
+      symbol: String(item.symbol ?? item.ticker ?? ''),
+      change: typeof item.change === 'number' ? item.change : parseFloat(String(item.change ?? 0)) || 0,
+      status: item.status === 'SELL' ? 'SELL' : 'BUY'
+    }))
+    .filter(item => item.symbol);
+};
+
+const getIndexPriceFromSnapshot = (indicesSnapshot: any, symbol: string): number | undefined => {
+  const key = INDEX_PRICE_KEYS[symbol];
+  const price = key ? indicesSnapshot?.indices?.[key]?.price : undefined;
+  return typeof price === 'number' ? price : undefined;
+};
+
 // Resolve backend base URL (Render/localhost) for proxying external calls and avoiding CORS
 const BACKEND_URL = (() => {
   if (typeof process !== 'undefined') {
@@ -126,8 +244,17 @@ export const fetchYahooChartPriceChange = async (symbol: string): Promise<{ pric
 };
 
 export const fetchCurrentPrice = async (asset: Asset): Promise<number | null> => {
-  // Função desativada, retorna null
-  return null;
+  const snapshot = await loadFirstAvailableJson(getAssetSnapshotCandidates(asset.symbol));
+  if (typeof snapshot?.quote === 'number') return snapshot.quote;
+
+  const indicesSnapshot = await loadFirstAvailableJson(getIndicesSnapshotCandidates());
+  const localPrice = indicesSnapshot?.indices?.[asset.symbol]?.price;
+  if (typeof localPrice === 'number' && !Number.isNaN(localPrice)) return localPrice;
+
+  const yahooSymbol = ASSET_TO_YAHOO_SYMBOL[asset.symbol];
+  if (!yahooSymbol) return null;
+  const { price } = await fetchYahooChartPriceChange(yahooSymbol);
+  return price;
 };
 
 export const fetchCorrelationData = async (assetSymbol: string): Promise<CorrelationData[]> => {
@@ -157,58 +284,22 @@ export const fetchCorrelationData = async (assetSymbol: string): Promise<Correla
     ];
   }
 
-  // Lê o snapshot local dos índices
-  let indicesSnapshot: any = null;
-  try {
-    const resp = await fetch('/indices_snapshot.json?t=' + Date.now());
-    if (resp.ok) indicesSnapshot = await resp.json();
-  } catch (e) {
-    console.error('Erro ao ler indices_snapshot.json', e);
-  }
-
-  for (const target of targets) {
-    let change = null;
-    let changeAbs = null;
-    if (indicesSnapshot && indicesSnapshot.indices) {
-      // Mapeamento dos símbolos do frontend para as chaves do snapshot
-      const symbolMap: Record<string, string> = {
-        '^VHSI': 'VHSI',
-        'CNH=X': 'CNH',
-        '^N225': 'NIKKEI225',
-        '000001.SS': 'SSE',
-        '^GSPC': 'US500',
-        '^IXIC': 'US100',
-        'USDJPY=X': 'USDJPY',
-        'DX-Y.NYB': 'DXY',
-        '^VIX': 'VIX',
-        '^TNX': 'TNX',
-        '^RUT': 'RUT'
-      };
-      const key = symbolMap[target.symbol] || target.symbol;
-      const idx = indicesSnapshot.indices[key];
-      if (idx) {
-        change = idx.change;
-        changeAbs = idx.changeAbs;
-      }
-    }
-    // Calcula a variação formatada
-    let changePctStr = undefined;
-    let changeAbsStr = undefined;
-    if (change !== null && change !== undefined && !Number.isNaN(change)) {
-      changePctStr = `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`;
-    }
-    if (changeAbs !== null && changeAbs !== undefined && !Number.isNaN(changeAbs)) {
-      changeAbsStr = `${changeAbs >= 0 ? '+' : ''}${changeAbs.toFixed(2)}`;
-    }
-    results.push({
-      change: change,
-      changeAbs: changeAbs,
-      changePctStr,
-      changeAbsStr,
+  const indicesSnapshot = await loadFirstAvailableJson(getIndicesSnapshotCandidates());
+  const fetched = await Promise.all(targets.map(async target => {
+    const yahoo = await fetchYahooChartPriceChange(target.symbol);
+    const localPrice = getIndexPriceFromSnapshot(indicesSnapshot, target.symbol);
+    const price = yahoo.price ?? localPrice;
+    return {
+      symbol: target.symbol,
+      name: target.name,
+      price: typeof price === 'number' && !Number.isNaN(price) ? price : undefined,
+      change: yahoo.change !== null && yahoo.change !== undefined && !Number.isNaN(yahoo.change) ? yahoo.change : undefined,
+>>>>>>> 977eb0a (Fix score calculation and real data sourcing)
       correlation: target.correlation,
-      info: (target as any).info || ''
-    });
-  }
+      info: target.info || ''
+    } satisfies CorrelationData;
+  }));
+  results = fetched;
   return results;
 }
 
@@ -266,42 +357,20 @@ export const fetchMarketBreadth = async (assetSymbol: string): Promise<{ summary
   let tickers = DOW_30_TICKERS;
   if (assetSymbol === 'HK50') tickers = HK_50_TICKERS;
 
-  // Busca dados locais de breadth (TradingView)
-  // Exemplo: companies_snapshot.json ou indices_snapshot.json
-  let details: BreadthCompanyDetails[] = [];
-  try {
-    const file = 'companies_snapshot.json';
-    const fs = require('fs');
-    if (fs.existsSync(file)) {
-      const raw = JSON.parse(fs.readFileSync(file, 'utf-8'));
-      if (raw?.indices?.[assetSymbol]) {
-        details = raw.indices[assetSymbol];
-        console.log(`[fetchMarketBreadth] Empresas carregadas para ${assetSymbol}:`, details.length);
-        // Log OG das empresas coletadas
-        if (assetSymbol === 'US30') {
-          console.log('[OG EMPRESAS US30]\n' + details.map(e => `- ${e.symbol}`).join('\n') + '\n[END OG EMPRESAS US30]');
-        }
-      } else {
-        console.warn(`[fetchMarketBreadth] Nenhum dado de empresas para ${assetSymbol} em companies_snapshot.json`);
-      }
-    } else {
-      console.warn(`[fetchMarketBreadth] Arquivo não encontrado: companies_snapshot.json`);
-    }
-  } catch (err) {
-    console.warn('[fetchMarketBreadth] Falha ao ler empresas:', err);
+  const assetSnapshot = await loadFirstAvailableJson(getAssetSnapshotCandidates(assetSymbol));
+  const snapshotDetails = normalizeBreadthDetails(assetSnapshot?.breadth?.details ?? []);
+  if (snapshotDetails.length > 0) {
+    const summary = assetSnapshot?.breadth?.summary ?? summarizeBreadthDetails(snapshotDetails);
+    return { summary, details: snapshotDetails };
   }
-  if (!details || details.length === 0) {
-    details = tickers.map(ticker => ({ symbol: ticker, change: 0, status: 'BUY' as const }));
-    console.warn(`[fetchMarketBreadth] Usando breadth neutro para ${assetSymbol}`);
-  } else {
-    // Ajusta status dinamicamente conforme o campo change
-    details = details.map(d => ({
-      ...d,
-      status: d.status || (typeof d.change === 'number' ? (d.change >= 0 ? 'BUY' : 'SELL') : 'BUY')
-    }));
+
+  const companiesSnapshot = await loadFirstAvailableJson(getCompaniesSnapshotCandidates());
+  const companyDetails = normalizeBreadthDetails(companiesSnapshot?.indices?.[assetSymbol] ?? []);
+  if (companyDetails.length > 0) {
+    return { summary: summarizeBreadthDetails(companyDetails), details: companyDetails };
   }
-  const summary = { advancing: details.filter(d => d.status === 'BUY').length, declining: details.filter(d => d.status === 'SELL').length, total: details.length };
-  return { summary, details };
+
+  return fallbackEmptyBreadth(tickers);
 };
 
 // Se tudo falhar, devolve breadth neutro com tickers conhecidos para evitar payload vazio
@@ -405,6 +474,7 @@ export const detectOpeningGap = (candles: Candle[], asset: Asset): GapData => {
 };
 
 export const fetchRealData = async (asset: Asset, timeframe: Timeframe): Promise<Candle[]> => {
+<<<<<<< HEAD
   // Busca candles reais do arquivo local data/{symbol}_candles.json
   const fs = require('fs');
   const path = `data/${asset.symbol.toLowerCase()}_candles.json`;
@@ -423,5 +493,15 @@ export const fetchRealData = async (asset: Asset, timeframe: Timeframe): Promise
   } catch (err) {
     console.warn('[fetchRealData] Falha ao ler candles reais:', err);
     return [];
+=======
+  const browserPath = `/data/${asset.symbol.toLowerCase()}_candles.json`;
+  if (isBrowser) {
+    const candles = await loadJson(browserPath);
+    return Array.isArray(candles) ? candles : [];
+>>>>>>> 977eb0a (Fix score calculation and real data sourcing)
   }
+
+  const path = `data/${asset.symbol.toLowerCase()}_candles.json`;
+  const candles = readJsonNode(path);
+  return Array.isArray(candles) ? candles : [];
 };

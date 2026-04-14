@@ -94,41 +94,47 @@ const App: React.FC = () => {
 
     // 1️⃣ VOLUME
     const volVar = candles.length > 0 ? ((candles[candles.length-1].close - candles[candles.length-1].open) / candles[candles.length-1].open) * 100 : 0;
-    const volPressao = volumePressure.buyPercent > volumePressure.sellPercent ? 'COMPRADOR' : 'VENDEDOR';
-    const volScore = volPressao === 'COMPRADOR' ? 5 : -5;
+    const volPressao = volumePressure.buyPercent > volumePressure.sellPercent
+      ? 'COMPRADOR'
+      : volumePressure.sellPercent > volumePressure.buyPercent
+        ? 'VENDEDOR'
+        : 'NEUTRO';
+    const volScore = volPressao === 'COMPRADOR' ? 5 : volPressao === 'VENDEDOR' ? -5 : 0;
     pesoTotal += 5;
     if (volScore > 0) scoreCompra += volScore; else scoreVenda += Math.abs(volScore);
     msg += `🔹 🥇 1️⃣ VOLUME - FLUXO COMPRADOR/VENDEDOR\n\n`;
     msg += `⚖️ VOLUME COMPRADOR/VENDEDOR\nAbertura = ${candles.length > 0 && candles[candles.length-1].open !== undefined ? candles[candles.length-1].open.toFixed(2) : '--'}, Fechamento = ${candles.length > 0 && candles[candles.length-1].close !== undefined ? candles[candles.length-1].close.toFixed(2) : '--'}, Var = ${volVar !== undefined ? volVar.toFixed(2) : '--'}%\n`;
-    msg += `${volPressao === 'COMPRADOR' ? '🟢' : '🔴'} Pressão: ${volPressao} (Volume = ${candles.length > 0 ? candles[candles.length-1].volume : '--'})\n`;
-    msg += `💡 Fechou acima da abertura = ${volPressao === 'COMPRADOR' ? 'Compradores dominando = COMPRA US30' : 'Vendedores dominando = VENDA US30'}\n`;
-    msg += `📊 Score Parcial [VOLUME]: ${volPressao === 'COMPRADOR' ? '+5.0 COMPRA' : '-5.0 VENDA'}\n\n`;
+    msg += `${volPressao === 'COMPRADOR' ? '🟢' : volPressao === 'VENDEDOR' ? '🔴' : '⚖️'} Pressão: ${volPressao} (Volume = ${candles.length > 0 ? candles[candles.length-1].volume : '--'})\n`;
+    msg += `💡 Fechou acima da abertura = ${volPressao === 'COMPRADOR' ? 'Compradores dominando = COMPRA US30' : volPressao === 'VENDEDOR' ? 'Vendedores dominando = VENDA US30' : 'Equilíbrio de fluxo = NEUTRO'}\n`;
+    msg += `📊 Score Parcial [VOLUME]: ${volScore > 0 ? '+5.0 COMPRA' : volScore < 0 ? '-5.0 VENDA' : 'NEUTRO'}\n\n`;
 
     // 2️⃣ VIX
     const vix = correlations.find(c => c.symbol === '^VIX' || c.symbol === 'VIX');
     let vixScore = 0;
-    if (vix) {
-      vixScore = vix.change < 0 ? 3 : -3;
+    if (vix && typeof vix.change === 'number') {
+      vixScore = vix.change < 0 ? 3 : vix.change > 0 ? -3 : 0;
       pesoTotal += 3;
       if (vixScore > 0) scoreCompra += vixScore; else scoreVenda += Math.abs(vixScore);
       msg += `🔹 🥈 2️⃣ VIX - CONFIRMAÇÃO RÁPIDA\n\n`;
-      msg += `🔹 ÍNDICE DO MEDO - VIX\nVIX resultado: ${vix.change < 0 ? 'COMPRA 1 x VENDA 0' : 'COMPRA 0 x VENDA 1'}\n`;
-      msg += `📊 Score Parcial [VIX]: ${vix.change < 0 ? '+3.0 COMPRA' : '-3.0 VENDA'}\n\n`;
+      msg += `🔹 ÍNDICE DO MEDO - VIX\nVIX resultado: ${vix.change < 0 ? 'COMPRA 1 x VENDA 0' : vix.change > 0 ? 'COMPRA 0 x VENDA 1' : 'NEUTRO'}\n`;
+      msg += `📊 Score Parcial [VIX]: ${vixScore > 0 ? '+3.0 COMPRA' : vixScore < 0 ? '-3.0 VENDA' : 'NEUTRO'}\n\n`;
     }
 
     // 3️⃣ DOW 30 - BREADTH
-    const breadthScore = breadthSummary.advancing > breadthSummary.declining ? 3 : -3;
+    const breadthScore = breadthSummary.advancing > breadthSummary.declining ? 3 : breadthSummary.declining > breadthSummary.advancing ? -3 : 0;
     pesoTotal += 3;
     if (breadthScore > 0) scoreCompra += breadthScore; else scoreVenda += Math.abs(breadthScore);
     msg += `🔹 🥉 3️⃣ DOW 30 - BREADTH INSTANTÂNEO\nDOW 30 resultado: COMPRA ${breadthSummary.advancing} x VENDA ${breadthSummary.declining}\n`;
-    msg += `📊 Score Parcial [DOW 30]: ${breadthScore > 0 ? '+3.0 COMPRA' : '-3.0 VENDA'}\n\n`;
+    msg += `📊 Score Parcial [DOW 30]: ${breadthScore > 0 ? '+3.0 COMPRA' : breadthScore < 0 ? '-3.0 VENDA' : 'NEUTRO'}\n\n`;
 
     // 4️⃣ ÍNDICES - ALINHAMENTO INTERMARKET
     let indicesCompra = 0, indicesVenda = 0;
     ['^GSPC','^IXIC','^RUT','JP225','HK50'].forEach(sym => {
       const idx = correlations.find(c => c.symbol === sym);
       if (idx) {
-        if (idx.change > 0) indicesCompra++; else if (idx.change < 0) indicesVenda++;
+        if (typeof idx.change === 'number') {
+          if (idx.change > 0) indicesCompra++; else if (idx.change < 0) indicesVenda++;
+        }
       }
     });
     let indicesScore = 0;
@@ -142,12 +148,12 @@ const App: React.FC = () => {
     // 5️⃣ DXY - FILTRO RÁPIDO
     const dxy = correlations.find(c => c.symbol === 'DXY' || c.symbol === 'DX-Y.NYB');
     let dxyScore = 0;
-    if (dxy) {
-      dxyScore = dxy.change < 0 ? 2 : -2;
+    if (dxy && typeof dxy.change === 'number') {
+      dxyScore = dxy.change < 0 ? 2 : dxy.change > 0 ? -2 : 0;
       pesoTotal += 2;
       if (dxyScore > 0) scoreCompra += dxyScore; else scoreVenda += Math.abs(dxyScore);
-      msg += `🔹 5️⃣ DXY - FILTRO RÁPIDO\nDXY resultado: ${dxy.change < 0 ? 'COMPRA' : 'VENDA'}\n`;
-      msg += `📊 Score Parcial [DXY]: ${dxyScore > 0 ? '+2.0 COMPRA' : '-2.0 VENDA'}\n\n`;
+      msg += `🔹 5️⃣ DXY - FILTRO RÁPIDO\nDXY resultado: ${dxy.change < 0 ? 'COMPRA' : dxy.change > 0 ? 'VENDA' : 'NEUTRO'}\n`;
+      msg += `📊 Score Parcial [DXY]: ${dxyScore > 0 ? '+2.0 COMPRA' : dxyScore < 0 ? '-2.0 VENDA' : 'NEUTRO'}\n\n`;
     }
 
     // 6️⃣ GAP - SÓ SE GRANDE (>1%)
@@ -240,6 +246,23 @@ const App: React.FC = () => {
       if (isInitialLoad) setLoading(false);
     }
   }, [selectedAsset, timeframe]);
+
+  useEffect(() => {
+    const snapshotCompanies = companiesSnapshot?.indices?.[selectedAsset.symbol];
+    if (!Array.isArray(snapshotCompanies) || snapshotCompanies.length === 0) return;
+
+    const details: BreadthCompanyDetails[] = snapshotCompanies.map((company: any) => ({
+      symbol: company.symbol,
+      change: typeof company.change === 'number' ? company.change : 0,
+      status: company.change > 0 ? 'BUY' : 'SELL'
+    }));
+
+    const advancing = details.filter(company => company.change > 0).length;
+    const declining = details.filter(company => company.change < 0).length;
+
+    setBreadthDetails(details);
+    setBreadthSummary({ advancing, declining, total: details.length });
+  }, [companiesSnapshot, selectedAsset.symbol]);
 
   // Carrega dados locais de índices e empresas
   useEffect(() => {

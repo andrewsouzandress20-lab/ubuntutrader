@@ -314,13 +314,15 @@ const computeScore = (assetSymbol: string, snapshot: Snapshot): { total: number;
   const volumeBuy = snapshot.volume?.buyPercent ?? null;
   const volumeSell = snapshot.volume?.sellPercent ?? null;
   const volumeScore = volumeBuy !== null && volumeSell !== null
-    ? (volumeBuy > volumeSell ? 5 : -5)
+    ? (volumeBuy > volumeSell ? 5 : volumeSell > volumeBuy ? -5 : 0)
     : 0;
 
   const volIndexChange = assetSymbol === 'HK50'
     ? getChange(snapshot, '^VHSI')
     : getChange(snapshot, '^VIX');
-  const volIndexScore = volIndexChange !== null ? (volIndexChange < 0 ? 3 : -3) : 0;
+  const volIndexScore = volIndexChange !== null
+    ? (volIndexChange < 0 ? 3 : volIndexChange > 0 ? -3 : 0)
+    : 0;
 
   const adv = snapshot.breadth?.summary?.advancing ?? 0;
   const dec = snapshot.breadth?.summary?.declining ?? 0;
@@ -339,7 +341,9 @@ const computeScore = (assetSymbol: string, snapshot: Snapshot): { total: number;
   const indicesScore = posIdx === negIdx ? 0 : posIdx > negIdx ? 2 : -2;
 
   const dxyChange = getChange(snapshot, 'DX-Y.NYB');
-  const dxyScore = dxyChange !== null ? (dxyChange < 0 ? 2 : -2) : 0;
+  const dxyScore = dxyChange !== null
+    ? (dxyChange < 0 ? 2 : dxyChange > 0 ? -2 : 0)
+    : 0;
 
   const gapPercent = snapshot.gap?.percent ?? null;
   const gapScore = gapPercent !== null && Math.abs(gapPercent) > 1
