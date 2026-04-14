@@ -15,6 +15,11 @@ type Snapshot = {
   gap?: { percent?: number };
 };
 
+type TradingViewIndexEntry = {
+  price?: number;
+  change?: number;
+};
+
 const SNAPSHOT_CHANGE_SYMBOLS: Record<string, string> = {
   '^VIX': '^VIX',
   'VIX': '^VIX',
@@ -38,8 +43,117 @@ const SNAPSHOT_CHANGE_SYMBOLS: Record<string, string> = {
   'CNH': 'CNH=X'
 };
 
+const INDEX_SNAPSHOT_KEYS: Record<string, string[]> = {
+  '^VIX': ['VIX'],
+  'VIX': ['VIX'],
+  '^GSPC': ['US500', 'S&P 500'],
+  'US500': ['US500', 'S&P 500'],
+  'S&P 500': ['US500', 'S&P 500'],
+  '^IXIC': ['US100', 'NASDAQ'],
+  'US100': ['US100', 'NASDAQ'],
+  'NASDAQ': ['US100', 'NASDAQ'],
+  'DX-Y.NYB': ['DXY'],
+  'DXY': ['DXY'],
+  '^VHSI': ['VHSI'],
+  'VHSI': ['VHSI'],
+  '^N225': ['JP225', 'NIKKEI', 'NIKKEI225'],
+  'JP225': ['JP225', 'NIKKEI', 'NIKKEI225'],
+  'NIKKEI': ['JP225', 'NIKKEI', 'NIKKEI225'],
+  '000001.SS': ['000001.SS', 'SSE'],
+  'SSE': ['000001.SS', 'SSE'],
+  'USDJPY=X': ['USDJPY=X', 'USDJPY'],
+  'USDJPY': ['USDJPY=X', 'USDJPY'],
+  'CNH=X': ['CNH=X', 'CNH'],
+  'CNH': ['CNH=X', 'CNH'],
+  'US30': ['US30'],
+  'HK50': ['HK50'],
+  '^TNX': ['^TNX'],
+  'GOLD': ['GOLD'],
+  'WTI': ['WTI']
+};
+
+let tradingViewIndexSnapshotCache: Record<string, TradingViewIndexEntry> | null = null;
+
+const toNumber = (value: unknown): number | undefined => {
+  if (typeof value === 'number' && !Number.isNaN(value)) return value;
+  if (typeof value === 'string') {
+    const parsed = parseFloat(value.replace(/,/g, ''));
+    return Number.isNaN(parsed) ? undefined : parsed;
+  }
+  return undefined;
+};
+
+const resolveSnapshotLookupKeys = (symbols: string | string[]): string[] => {
+  const requested = Array.isArray(symbols) ? symbols : [symbols];
+  return Array.from(
+    new Set(
+      requested.flatMap(symbol => {
+        const canonical = SNAPSHOT_CHANGE_SYMBOLS[symbol];
+        const direct = INDEX_SNAPSHOT_KEYS[symbol] || [symbol];
+        const canonicalKeys = canonical ? (INDEX_SNAPSHOT_KEYS[canonical] || [canonical]) : [];
+        return [...direct, ...canonicalKeys, symbol, canonical].filter(Boolean) as string[];
+      })
+    )
+  );
+};
+
+const loadTradingViewIndexSnapshot = (): Record<string, TradingViewIndexEntry> => {
+  if (tradingViewIndexSnapshotCache) return tradingViewIndexSnapshotCache;
+  const file = 'indices_snapshot.json';
+  if (!fs.existsSync(file)) {
+    tradingViewIndexSnapshotCache = {};
+    return tradingViewIndexSnapshotCache;
+  }
+
+  try {
+    const raw = JSON.parse(fs.readFileSync(file, 'utf-8'));
+    const indices = raw?.indices ?? {};
+    const out: Record<string, TradingViewIndexEntry> = {};
+    Object.entries(indices).forEach(([symbol, data]: [string, any]) => {
+      out[symbol] = {
+        price: toNumber(data?.price),
+        change: toNumber(data?.change)
+      };
+    });
+    tradingViewIndexSnapshotCache = out;
+    return out;
+  } catch (error) {
+    console.warn('[TV SNAPSHOT] Falha ao ler indices_snapshot.json:', error);
+    tradingViewIndexSnapshotCache = {};
+    return tradingViewIndexSnapshotCache;
+  }
+};
+
+const getIndexSnapshotEntry = (symbols: string | string[]): TradingViewIndexEntry | null => {
+  const snapshot = loadTradingViewIndexSnapshot();
+  const keys = resolveSnapshotLookupKeys(symbols);
+  for (const key of keys) {
+    const entry = snapshot[key];
+    if (!entry) continue;
+    if (entry.change !== undefined || entry.price !== undefined) return entry;
+  }
+  return null;
+};
+
 const enrichSnapshotIndexChanges = async (snapshot: Snapshot): Promise<boolean> => {
   if (!snapshot.indices || snapshot.indices.length === 0) return false;
+
+  const tradingViewSnapshot = loadTradingViewIndexSnapshot();
+  let changed = false;
+
+  snapshot.indices = snapshot.indices.map(entry => {
+    if (typeof entry.change === 'number' && !Number.isNaN(entry.change)) return entry;
+    const rawEntry = getIndexSnapshotEntry(entry.symbol);
+    if (typeof rawEntry?.change === 'number' && !Number.isNaN(rawEntry.change)) {
+      changed = true;
+      return { ...entry, change: rawEntry.change, price: entry.price ?? rawEntry.price };
+    }
+    if (entry.price === undefined && typeof rawEntry?.price === 'number' && !Number.isNaN(rawEntry.price)) {
+      changed = true;
+      return { ...entry, price: rawEntry.price };
+    }
+    return entry;
+  });
 
   const yahooSymbols = Array.from(
     new Set(
@@ -65,7 +179,6 @@ const enrichSnapshotIndexChanges = async (snapshot: Snapshot): Promise<boolean> 
     }
   });
 
-  let changed = false;
   snapshot.indices = snapshot.indices.map(entry => {
     if (typeof entry.change === 'number' && !Number.isNaN(entry.change)) return entry;
     const yahooSymbol = SNAPSHOT_CHANGE_SYMBOLS[entry.symbol] || entry.symbol;
@@ -263,6 +376,7 @@ let tvFetched = false;
 const ensureTvSnapshot = () => {
   if (tvFetched) return;
   tvFetched = true;
+  tradingViewIndexSnapshotCache = null;
   try {
     const res = spawnSync('python3', ['fetch_indices_tradingview.py'], { stdio: 'inherit' });
     if (res.status !== 0) console.warn('[TV] fetch_indices_tradingview.py retornou status', res.status);
@@ -272,26 +386,14 @@ const ensureTvSnapshot = () => {
 };
 
 const loadTradingViewIndices = (): Record<string, number> => {
-  const file = 'indices_snapshot.json';
-  if (!fs.existsSync(file)) return {};
-  try {
-    const raw = JSON.parse(fs.readFileSync(file, 'utf-8'));
-    const indices = raw?.indices ?? {};
-    const out: Record<string, number> = {};
-    Object.entries(indices).forEach(([sym, data]: any) => {
-      const key = TV_SYMBOL_MAP[sym];
-      if (!key) return;
-      let priceRaw = (data as any)?.price;
-      if (priceRaw === null || priceRaw === undefined) return;
-      // Corrige: converte string para número
-      if (typeof priceRaw === 'string') priceRaw = parseFloat(priceRaw.replace(/,/g, ''));
-      if (typeof priceRaw === 'number' && !Number.isNaN(priceRaw)) out[key] = priceRaw;
-    });
-    return out;
-  } catch (error) {
-    console.warn('[TV SNAPSHOT] Falha ao ler indices_snapshot.json:', error);
-    return {};
-  }
+  const indices = loadTradingViewIndexSnapshot();
+  const out: Record<string, number> = {};
+  Object.entries(indices).forEach(([sym, data]) => {
+    const key = TV_SYMBOL_MAP[sym];
+    if (!key) return;
+    if (typeof data.price === 'number' && !Number.isNaN(data.price)) out[key] = data.price;
+  });
+  return out;
 };
 
 const loadTradingViewQuote = (assetSymbol: string): number | undefined => {
@@ -327,7 +429,9 @@ const getChange = (snapshot: Snapshot, symbols: string | string[]): number | nul
     )
   );
   const found = snapshot.indices?.find(i => list.includes(i.symbol) || list.includes(SNAPSHOT_CHANGE_SYMBOLS[i.symbol] || ''));
-  return typeof found?.change === 'number' ? found.change : null;
+  if (typeof found?.change === 'number') return found.change;
+  const rawEntry = getIndexSnapshotEntry(requested);
+  return typeof rawEntry?.change === 'number' ? rawEntry.change : null;
 };
 
 const tvPriceForSymbol = (symbol: string, tv: Record<string, number>): number | undefined => {
@@ -430,6 +534,7 @@ const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snap
   const { total } = computeScore(assetSymbol, snapshot);
   const signal = resolveSignal(total);
   const strength = resolveStrength(total);
+  const tradingViewSnapshot = loadTradingViewIndexSnapshot();
 
   const volumeBuy = snapshot.volume?.buyPercent ?? null;
   const volumeSell = snapshot.volume?.sellPercent ?? null;
@@ -524,10 +629,9 @@ const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snap
       favorText = signal === 'NEUTRO' ? '⚖️ (neutro)' : `${check} (${word} para ${signal})`;
       return `${label}: ${fmtPct(change)} ${favorText}`;
     } else {
-      // Se não houver change, exibe preço e favorabilidade baseada no sinal
-      const indicesRaw = JSON.parse(fs.readFileSync('indices_snapshot.json', 'utf-8')).indices;
-      const price = indicesRaw[symbol]?.price;
-      favorText = '⚖️ (sem variação para classificar)';
+      const rawEntry = getIndexSnapshotEntry(symbol);
+      const price = rawEntry?.price;
+      favorText = '⚖️ (neutro)';
       return price !== undefined && price !== null && !Number.isNaN(price)
         ? `${label}: ${fmtPrice(price)} ${favorText}`
         : `${label}: ⚠️ dado ausente`;
@@ -580,9 +684,8 @@ const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snap
       if (change !== null && !Number.isNaN(change)) {
         return `- ⚠️ ${volIndexSymbol === '^VIX' ? 'VIX' : 'VHSI'}: ${fmtPct(change)}`;
       }
-      // Busca preço do índice
-      const indicesRaw = JSON.parse(fs.readFileSync('indices_snapshot.json', 'utf-8')).indices;
-      const price = indicesRaw[volIndexSymbol.replace('^', '')]?.price;
+      const rawEntry = getIndexSnapshotEntry(volIndexSymbol);
+      const price = rawEntry?.price;
       if (price !== undefined && price !== null && !Number.isNaN(price)) {
         return `- ⚠️ ${volIndexSymbol === '^VIX' ? 'VIX' : 'VHSI'}: ${fmtPrice(price)} (preço)`;
       }
