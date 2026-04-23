@@ -38,8 +38,8 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Build TypeScript
-        run: npx tsc
+      - name: Build scripts TypeScript
+        run: npx tsc --project tsconfig.scripts.json
 
       - name: Coletar snapshot pré-abertura
         run: node dist/scripts/collect_snapshot.js preopen

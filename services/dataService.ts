@@ -79,10 +79,10 @@ const getAssetSnapshotCandidates = (assetSymbol: string) => {
 };
 
 const getCompaniesSnapshotCandidates = () => [
-  '/public/companies_snapshot.json',
   '/companies_snapshot.json',
-  'public/companies_snapshot.json',
-  'companies_snapshot.json'
+  '/public/companies_snapshot.json',
+  'companies_snapshot.json',
+  'public/companies_snapshot.json'
 ];
 
 const getIndicesSnapshotCandidates = () => [
@@ -96,8 +96,8 @@ const summarizeBreadthDetails = (details: BreadthCompanyDetails[]) => {
   let advancing = 0;
   let declining = 0;
   details.forEach(detail => {
-    if (detail.change > 0 || detail.status === 'BUY') advancing += 1;
-    else if (detail.change < 0 || detail.status === 'SELL') declining += 1;
+    if (detail.change > 0) advancing += 1;
+    else if (detail.change < 0) declining += 1;
   });
   return { advancing, declining, total: details.length };
 };
@@ -106,12 +106,7 @@ const normalizeBreadthDetails = (items: any[]): BreadthCompanyDetails[] => {
   return items
     .map(item => {
       const normalizedChange = typeof item.change === 'number' ? item.change : parseFloat(String(item.change ?? 0)) || 0;
-      const normalizedStatus: 'BUY' | 'SELL' = item.status === 'SELL' ? 'SELL' : 'BUY';
-      const resolvedStatus: 'BUY' | 'SELL' = item.status === 'BUY' || item.status === 'SELL'
-        ? normalizedStatus
-        : normalizedChange < 0
-          ? 'SELL'
-          : 'BUY';
+      const resolvedStatus: 'BUY' | 'SELL' = normalizedChange < 0 ? 'SELL' : 'BUY';
       return {
         symbol: String(item.symbol ?? item.ticker ?? ''),
         change: normalizedChange,
@@ -119,6 +114,12 @@ const normalizeBreadthDetails = (items: any[]): BreadthCompanyDetails[] => {
       };
     })
     .filter(item => item.symbol);
+};
+
+const getCompanySnapshotEntries = async (assetSymbol: string): Promise<any[]> => {
+  const companiesSnapshot = await loadFirstAvailableJson(getCompaniesSnapshotCandidates());
+  const entries = companiesSnapshot?.indices?.[assetSymbol];
+  return Array.isArray(entries) ? entries : [];
 };
 
 const getIndexPriceFromSnapshot = (indicesSnapshot: any, symbol: string): number | undefined => {
@@ -379,6 +380,31 @@ export const fetchMarketBreadth = async (assetSymbol: string): Promise<{ summary
   }
 
   return fallbackEmptyBreadth(tickers);
+};
+
+export const calculateVolumePressureFromCompanies = async (assetSymbol: string): Promise<VolumePressure | null> => {
+  const entries = await getCompanySnapshotEntries(assetSymbol);
+  if (entries.length === 0) return null;
+
+  let buyVolume = 0;
+  let sellVolume = 0;
+
+  entries.forEach(entry => {
+    const volume = typeof entry.volume === 'number' && !Number.isNaN(entry.volume) ? entry.volume : 0;
+    const change = typeof entry.change === 'number' ? entry.change : parseFloat(String(entry.change ?? 0)) || 0;
+
+    if (change > 0) buyVolume += volume;
+    else if (change < 0) sellVolume += volume;
+  });
+
+  const total = buyVolume + sellVolume;
+  if (total <= 0) return null;
+
+  return {
+    buyPercent: (buyVolume / total) * 100,
+    sellPercent: (sellVolume / total) * 100,
+    total,
+  };
 };
 
 // Se tudo falhar, devolve breadth neutro com tickers conhecidos para evitar payload vazio

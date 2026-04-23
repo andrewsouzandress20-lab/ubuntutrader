@@ -20,6 +20,79 @@ type TradingViewIndexEntry = {
   change?: number;
 };
 
+type SnapshotCompanyEntry = {
+  ticker?: string;
+  symbol?: string;
+  change?: number;
+  status?: string;
+  volume?: number;
+};
+
+const loadCompaniesSnapshotEntries = (assetSymbol: string): SnapshotCompanyEntry[] => {
+  const paths = ['companies_snapshot.json', 'public/companies_snapshot.json'];
+  for (const file of paths) {
+    if (!fs.existsSync(file)) continue;
+    try {
+      const raw = JSON.parse(fs.readFileSync(file, 'utf-8'));
+      const entries = raw?.indices?.[assetSymbol];
+      if (Array.isArray(entries) && entries.length > 0) return entries;
+    } catch {
+      // tenta o proximo arquivo
+    }
+  }
+  return [];
+};
+
+const buildBreadthFromCompaniesSnapshot = (assetSymbol: string) => {
+  const entries = loadCompaniesSnapshotEntries(assetSymbol)
+    .map((entry: SnapshotCompanyEntry) => {
+      const change = typeof entry.change === 'number' ? entry.change : 0;
+      const status = change < 0 ? 'SELL' : 'BUY';
+      const symbol = String(entry.ticker ?? entry.symbol ?? '');
+      return symbol ? { symbol, change, status } : null;
+    })
+    .filter(Boolean) as { symbol: string; change: number; status: 'BUY' | 'SELL' }[];
+
+  if (entries.length === 0) return null;
+
+  const advancing = entries.filter(entry => entry.change > 0).length;
+  const declining = entries.filter(entry => entry.change < 0).length;
+
+  return {
+    summary: {
+      advancing,
+      declining,
+      total: entries.length
+    },
+    details: entries
+  };
+};
+
+const calculateRealVolumeFromCompanies = (assetSymbol: string) => {
+  const entries = loadCompaniesSnapshotEntries(assetSymbol);
+  if (entries.length === 0) return null;
+
+  let buyVolume = 0;
+  let sellVolume = 0;
+
+  entries.forEach((entry: SnapshotCompanyEntry) => {
+    const volume = typeof entry.volume === 'number' && !Number.isNaN(entry.volume) ? entry.volume : 0;
+    const change = typeof entry.change === 'number' ? entry.change : 0;
+
+    if (change > 0) buyVolume += volume;
+    else if (change < 0) sellVolume += volume;
+  });
+
+  const total = buyVolume + sellVolume;
+  if (total <= 0) return null;
+
+  return {
+    buyPercent: (buyVolume / total) * 100,
+    sellPercent: (sellVolume / total) * 100,
+    total
+  };
+};
+
 const SNAPSHOT_CHANGE_SYMBOLS: Record<string, string> = {
   '^VIX': '^VIX',
   'VIX': '^VIX',
@@ -204,6 +277,21 @@ const ensureSnapshotData = async (assetSymbol: string, snapshot: Snapshot, snaps
   }
   let changed = false;
 
+  const liveIndices = buildTvCorrelation(assetSymbol, tvIndices);
+  if (liveIndices.length > 0) {
+    const currentSerialized = JSON.stringify(snapshot.indices ?? []);
+    const liveSerialized = JSON.stringify(liveIndices);
+    if (currentSerialized !== liveSerialized) {
+      snapshot.indices = liveIndices as any;
+      changed = true;
+    }
+  }
+
+  if (tvQuote !== undefined && tvQuote !== null && snapshot.quote !== tvQuote) {
+    snapshot.quote = tvQuote;
+    changed = true;
+  }
+
 
   if (!snapshot.indices || snapshot.indices.length === 0) {
     // Prioridade: TradingView
@@ -233,17 +321,11 @@ const ensureSnapshotData = async (assetSymbol: string, snapshot: Snapshot, snaps
   }
 
   const needVolume = !snapshot.volume || snapshot.volume.buyPercent === undefined || snapshot.volume.sellPercent === undefined;
-  const needGap = !snapshot.gap || snapshot.gap.percent === undefined;
-  if (needVolume || needGap) {
+  if (needVolume) {
     try {
       const candles = await fetchRealData(asset, '1m');
       if (needVolume) {
         snapshot.volume = calculateVolumePressure(candles) as any;
-        changed = true;
-      }
-      if (needGap) {
-        const gapData = detectOpeningGap(candles, asset);
-        snapshot.gap = { percent: gapData.percent } as any;
         changed = true;
       }
     } catch (err) {
@@ -253,7 +335,7 @@ const ensureSnapshotData = async (assetSymbol: string, snapshot: Snapshot, snaps
 
   if (snapshot.quote === undefined || snapshot.quote === null) {
     // Prioridade: TradingView
-    let quote = tvQuote;
+    let quote: number | null | undefined = tvQuote;
     if (quote === undefined || quote === null) {
       try {
         quote = await fetchCurrentPrice(asset);
@@ -284,13 +366,71 @@ const ensureSnapshotData = async (assetSymbol: string, snapshot: Snapshot, snaps
   return snapshot;
 };
 
+// Atualiza sempre os campos críticos antes de enviar a mensagem,
+// evitando reutilizar volume/breadth/gap antigos do snapshot salvo.
+const refreshCriticalSnapshotFields = async (assetSymbol: string, snapshot: Snapshot, snapshotPath?: string): Promise<Snapshot> => {
+  ensureCriticalSources(assetSymbol);
+
+  const asset = SUPPORTED_ASSETS.find(a => a.symbol === assetSymbol);
+  if (!asset) return snapshot;
+
+  let changed = false;
+
+  const companiesBreadth = buildBreadthFromCompaniesSnapshot(assetSymbol);
+  if (companiesBreadth?.summary) {
+    snapshot.breadth = companiesBreadth as any;
+    changed = true;
+  }
+
+  try {
+    if (!companiesBreadth?.summary) {
+      const breadth = await fetchMarketBreadth(assetSymbol);
+      snapshot.breadth = breadth as any;
+      changed = true;
+    }
+  } catch (err) {
+    console.warn('[SNAPSHOT] Falha ao atualizar breadth em tempo real:', err);
+  }
+
+  const companyVolume = calculateRealVolumeFromCompanies(assetSymbol);
+  if (companyVolume) {
+    snapshot.volume = companyVolume as any;
+    changed = true;
+  }
+
+  try {
+    if (!companyVolume) {
+      let candles = await fetchAssetCandlesFromYahoo(assetSymbol);
+      if (!Array.isArray(candles) || candles.length < 20) {
+        candles = await fetchRealData(asset, '1m');
+      }
+
+      if (Array.isArray(candles) && candles.length > 0) {
+        snapshot.volume = calculateVolumePressure(candles) as any;
+        changed = true;
+      }
+    }
+  } catch (err) {
+    console.warn('[SNAPSHOT] Falha ao atualizar volume em tempo real:', err);
+  }
+
+  if (changed && snapshotPath) {
+    try {
+      fs.writeFileSync(snapshotPath, JSON.stringify(snapshot, null, 2));
+    } catch (err) {
+      console.warn('[SNAPSHOT] Falha ao persistir atualização crítica do snapshot:', err);
+    }
+  }
+
+  return snapshot;
+};
+
 type ScoreBreakdown = {
   volume: number;
   volIndex: number;
   breadth: number;
   indices: number;
   dxy: number;
-  gap: number;
   consensus: number;
 };
 
@@ -383,6 +523,71 @@ const ensureTvSnapshot = () => {
   } catch (err) {
     console.warn('[TV] Falha ao executar fetch_indices_tradingview.py:', err);
   }
+};
+
+const refreshedCriticalSources: Partial<Record<string, boolean>> = {};
+const ensureCriticalSources = (assetSymbol: string) => {
+  if (refreshedCriticalSources[assetSymbol]) return;
+  refreshedCriticalSources[assetSymbol] = true;
+
+  if (assetSymbol === 'US30') {
+    try {
+      const companiesRes = spawnSync('python3', ['fetch_us30_companies_tradingview_api.py'], { stdio: 'inherit' });
+      if (companiesRes.status !== 0) {
+        console.warn('[SNAPSHOT] fetch_us30_companies_tradingview_api.py retornou status', companiesRes.status);
+      }
+      if (fs.existsSync('companies_snapshot.json')) {
+        fs.copyFileSync('companies_snapshot.json', 'public/companies_snapshot.json');
+      }
+    } catch (err) {
+      console.warn('[SNAPSHOT] Falha ao atualizar companies_snapshot do US30:', err);
+    }
+  }
+};
+
+const fetchAssetCandlesFromYahoo = async (assetSymbol: string): Promise<any[]> => {
+  const yahooSymbol = assetSymbol === 'HK50' ? '^HSI' : '^DJI';
+  const urls = [
+    `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSymbol)}?interval=1m&range=2d`,
+    `https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSymbol)}?interval=1m&range=2d`
+  ];
+
+  for (const url of urls) {
+    try {
+      const res = await fetch(url, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; ubuntutrader/1.0)' }
+      });
+      if (!res.ok) continue;
+      const data = await res.json();
+      const result = data?.chart?.result?.[0];
+      const ts = result?.timestamp;
+      const q = result?.indicators?.quote?.[0];
+      if (!Array.isArray(ts) || !q) continue;
+
+      const candles = ts
+        .map((time: number, i: number) => ({
+          time,
+          open: q.open?.[i],
+          high: q.high?.[i],
+          low: q.low?.[i],
+          close: q.close?.[i],
+          volume: q.volume?.[i]
+        }))
+        .filter((c: any) =>
+          typeof c.time === 'number' &&
+          typeof c.open === 'number' &&
+          typeof c.high === 'number' &&
+          typeof c.low === 'number' &&
+          typeof c.close === 'number'
+        );
+
+      if (candles.length > 0) return candles;
+    } catch {
+      // tenta próxima URL
+    }
+  }
+
+  return [];
 };
 
 const loadTradingViewIndices = (): Record<string, number> => {
@@ -510,12 +715,7 @@ const computeScore = (assetSymbol: string, snapshot: Snapshot): { total: number;
   if (volIndexScore > 0 && indicesScore > 0 && dxyScore > 0) consensusScore = 4;
   else if (volIndexScore < 0 && indicesScore < 0 && dxyScore < 0) consensusScore = -4;
 
-  const gapPercent = snapshot.gap?.percent ?? null;
-  const gapScore = gapPercent !== null && Math.abs(gapPercent) > 1
-    ? (gapPercent > 0 ? 2 : -2)
-    : 0;
-
-  const total = volumeScore + volIndexScore + breadthScore + indicesScore + dxyScore + gapScore + consensusScore;
+  const total = volumeScore + volIndexScore + breadthScore + indicesScore + dxyScore + consensusScore;
   return {
     total,
     parts: {
@@ -524,7 +724,6 @@ const computeScore = (assetSymbol: string, snapshot: Snapshot): { total: number;
       breadth: breadthScore,
       indices: indicesScore,
       dxy: dxyScore,
-      gap: gapScore,
       consensus: consensusScore
     }
   };
@@ -540,7 +739,6 @@ const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snap
   const volumeSell = snapshot.volume?.sellPercent ?? null;
   const adv = snapshot.breadth?.summary?.advancing ?? 0;
   const dec = snapshot.breadth?.summary?.declining ?? 0;
-  const gapPercent = snapshot.gap?.percent ?? null;
   const volIndexSymbol = assetSymbol === 'HK50' ? '^VHSI' : '^VIX';
   const labelText = 'ABERTURA';
   const headerAsset = assetSymbol === 'HK50' ? '🇭🇰 HK50' : '🇺🇸 US30';
@@ -652,12 +850,6 @@ const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snap
     return `${pos ? '🟢 Breadth positivo' : adv === dec ? '⚖️ Breadth neutro' : '🔴 Breadth negativo'} (${adv} alta, ${dec} baixa)`;
   };
 
-  const gapSummary = () => {
-    if (gapPercent === null) return 'Gap de abertura: -';
-    const bias = gapPercent > 0 ? 'favorável à compra' : gapPercent < 0 ? 'favorável à venda' : 'neutro';
-    return `Gap de abertura: ${fmtPct(gapPercent)} (${bias})`;
-  };
-
   const headerLine = '🧠 ABERTURA';
   const siteUrl = process.env.VITE_SITE_URL || process.env.SITE_URL || 'https://ubuntutrader.com.br/';
 
@@ -692,7 +884,6 @@ const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snap
       return `- ⚠️ ${volIndexSymbol === '^VIX' ? 'VIX' : 'VHSI'}: dado ausente`;
     })(),
     `- ${breadthSummary()}`,
-    `- 🕳️ ${gapSummary()}`,
     '',
     '⚡️ Siga as zonas SMC/FVG para melhor entrada.',
     '',
@@ -716,6 +907,7 @@ async function sendSignalFromSnapshot(assetSymbol: string, label: string) {
   }
   let snapshot: Snapshot = JSON.parse(fs.readFileSync(file, 'utf-8'));
   snapshot = await ensureSnapshotData(assetSymbol, snapshot, file);
+  snapshot = await refreshCriticalSnapshotFields(assetSymbol, snapshot, file);
   // Usa apenas os dados coletados do TradingView
   const indicesMap = assetSymbol === 'HK50' ? INDEX_MAP_HK50 : INDEX_MAP_US30;
   const tvIndices = loadTradingViewIndices();
@@ -731,11 +923,7 @@ async function sendSignalFromSnapshot(assetSymbol: string, label: string) {
   }
 
   // Monta contexto apenas com dados do indices_snapshot.json
-  const indicesRaw = JSON.parse(fs.readFileSync('indices_snapshot.json', 'utf-8')).indices;
-  const indicesCtx: Record<string, number | string> = {};
-  Object.entries(indicesRaw).forEach(([key, value]: [string, any]) => {
-    indicesCtx[key] = value.price;
-  });
+  const indicesCtx = JSON.parse(fs.readFileSync('indices_snapshot.json', 'utf-8')).indices;
 
   await sendTelegramSignal(
     assetSymbol,
@@ -748,8 +936,7 @@ async function sendSignalFromSnapshot(assetSymbol: string, label: string) {
       volumeBuy: snapshot.volume?.buyPercent,
       volumeSell: snapshot.volume?.sellPercent,
       breadthAdv: snapshot.breadth?.summary?.advancing,
-      breadthDec: snapshot.breadth?.summary?.declining,
-      gap: snapshot.gap?.percent
+      breadthDec: snapshot.breadth?.summary?.declining
     }
   );
   console.log(`[SINAL] Sinal enviado para ${assetSymbol} usando snapshot ${label}`);
@@ -769,6 +956,7 @@ async function sendAnalysisFromSnapshot(assetSymbol: string, label: string) {
   }
   let snapshot: Snapshot = JSON.parse(fs.readFileSync(file, 'utf-8'));
   snapshot = await ensureSnapshotData(assetSymbol, snapshot, file);
+  snapshot = await refreshCriticalSnapshotFields(assetSymbol, snapshot, file);
   const tvIndices = loadTradingViewIndices();
   const tvQuote = loadTradingViewQuote(assetSymbol);
   if ((snapshot.quote === null || snapshot.quote === undefined) && tvQuote !== undefined) {

@@ -1,7 +1,8 @@
 import 'dotenv/config';
 import { SUPPORTED_ASSETS, CorrelationData } from '../types';
-import { fetchCurrentPrice, fetchCorrelationData, fetchMarketBreadth, fetchRealData, calculateVolumePressure, detectOpeningGap } from '../services/dataService';
+import { fetchCurrentPrice, fetchCorrelationData, fetchMarketBreadth, fetchRealData, calculateVolumePressure, calculateVolumePressureFromCompanies } from '../services/dataService';
 import * as fs from 'fs';
+import { spawnSync } from 'child_process';
 
 const loadTradingViewSnapshot = (): Record<string, number> => {
   const file = 'indices_snapshot.json';
@@ -83,11 +84,21 @@ export async function collectSnapshot(assetSymbol: string, label: string) {
   const asset = SUPPORTED_ASSETS.find(a => a.symbol === assetSymbol);
   if (!asset) throw new Error('Ativo não suportado: ' + assetSymbol);
 
+  if (assetSymbol === 'US30') {
+    const res = spawnSync('python3', ['fetch_us30_companies_tradingview_api.py'], { stdio: 'inherit' });
+    if (res.status !== 0) {
+      console.warn('[SNAPSHOT] Falha ao atualizar companies_snapshot do US30:', res.status);
+    } else if (fs.existsSync('companies_snapshot.json')) {
+      fs.copyFileSync('companies_snapshot.json', 'public/companies_snapshot.json');
+    }
+  }
+
 
   const candles = await fetchRealData(asset, '1m');
   const breadth = await fetchMarketBreadth(assetSymbol);
-  const volume = calculateVolumePressure(candles);
-  const gap = detectOpeningGap(candles, asset);
+  const volume = (assetSymbol === 'US30')
+    ? (await calculateVolumePressureFromCompanies(assetSymbol)) ?? calculateVolumePressure(candles)
+    : calculateVolumePressure(candles);
 
   // Só usa TradingView para índices e cotação
   const tvQuote = fallbackQuoteFromTV(assetSymbol, tvSnapshot);
@@ -101,8 +112,7 @@ export async function collectSnapshot(assetSymbol: string, label: string) {
     quote,
     indices,
     breadth,
-    volume,
-    gap
+    volume
   };
 
   const outPath = `snapshots/${assetSymbol.toLowerCase()}_${label}.json`;

@@ -4,9 +4,10 @@
 import cron from 'node-cron';
 import { sendTelegramSignal } from './services/telegramService.js';
 import { SUPPORTED_ASSETS } from './types.js';
-import { fetchCurrentPrice, fetchCorrelationData, fetchMarketBreadth, fetchRealData, calculateVolumePressure, detectOpeningGap } from './services/dataService.js';
+import { fetchCurrentPrice, fetchCorrelationData, fetchMarketBreadth, fetchRealData, calculateVolumePressure, calculateVolumePressureFromCompanies } from './services/dataService.js';
 import * as fs from 'fs';
 import * as path from 'path';
+import { spawnSync } from 'child_process';
 
 console.log('==============================');
 console.log('🚦 UBUNTUTRADER SCHEDULER INICIADO!');
@@ -33,6 +34,15 @@ export async function collectAndSendSignal(assetSymbol: string) {
     const asset = SUPPORTED_ASSETS.find(a => a.symbol === assetSymbol);
     if (!asset) throw new Error('Ativo não suportado: ' + assetSymbol);
 
+    if (assetSymbol === 'US30') {
+      const res = spawnSync('python3', ['fetch_us30_companies_tradingview_api.py'], { stdio: 'inherit' });
+      if (res.status !== 0) {
+        console.warn('[SINAL] Falha ao atualizar companies_snapshot do US30 antes do envio:', res.status);
+      } else if (fs.existsSync('companies_snapshot.json')) {
+        fs.copyFileSync('companies_snapshot.json', 'public/companies_snapshot.json');
+      }
+    }
+
     // Coleta candles (1m timeframe, últimos 2 dias)
     const candles = await fetchRealData(asset, '1m');
     // Preço atual
@@ -42,9 +52,9 @@ export async function collectAndSendSignal(assetSymbol: string) {
     // Breadth (avanço/queda das empresas)
     const breadth = await fetchMarketBreadth(assetSymbol);
     // Volume
-    const volume = calculateVolumePressure(candles);
-    // Gap de abertura
-    const gap = detectOpeningGap(candles, asset);
+    const volume = (assetSymbol === 'US30')
+      ? (await calculateVolumePressureFromCompanies(assetSymbol)) ?? calculateVolumePressure(candles)
+      : calculateVolumePressure(candles);
 
     // Score institucional (exemplo: proporção de empresas em alta)
     const score = breadth.summary.advancing - breadth.summary.declining;
@@ -53,7 +63,7 @@ export async function collectAndSendSignal(assetSymbol: string) {
 
     // Log para debug
     console.log('[SINAL] Dados coletados:', {
-      quote, indices, breadth, volume, gap, score
+      quote, indices, breadth, volume, score
     });
 
     if (signal !== 'NEUTRO') {
@@ -61,7 +71,14 @@ export async function collectAndSendSignal(assetSymbol: string) {
         assetSymbol,
         signal,
         strength,
-        score
+        score,
+        {
+          quote: quote ?? undefined,
+          volumeBuy: volume.buyPercent,
+          volumeSell: volume.sellPercent,
+          breadthAdv: breadth.summary.advancing,
+          breadthDec: breadth.summary.declining
+        }
       );
     } else {
       console.log('[SINAL] Score neutro, não enviando mensagem.');

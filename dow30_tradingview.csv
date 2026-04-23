@@ -1,6 +1,7 @@
 symbol,market,url,title
 AAPL,NASDAQ,https://www.tradingview.com/symbols/NASDAQ-AAPL/,Apple Stock Chart — NASDAQ:AAPL Stock Price — TradingView
 AMGN,NASDAQ,https://www.tradingview.com/symbols/NASDAQ-AMGN/,AMGN Stock Price and Chart — NASDAQ:AMGN — TradingView
+AMZN,NASDAQ,https://www.tradingview.com/symbols/NASDAQ-AMZN/,Amazon Stock Price and Chart — NASDAQ:AMZN — TradingView
 AXP,NYSE,https://www.tradingview.com/symbols/NYSE-AXP/,AXP Stock Price and Chart — NYSE:AXP — TradingView
 BA,NYSE,https://www.tradingview.com/symbols/NYSE-BA/,Boeing Stock Price and Chart — NYSE:BA — TradingView
 CAT,NYSE,https://www.tradingview.com/symbols/NYSE-CAT/,CAT Stock Price and Chart — NYSE:CAT — TradingView

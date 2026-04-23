@@ -83,6 +83,15 @@ export const sendTelegramSignal = async (
     return Number.isNaN(num) ? 0 : num;
   };
 
+  const getIndexChange = (entry: any): number | undefined => {
+    if (entry && typeof entry === 'object') {
+      if (typeof entry.change === 'number' && !Number.isNaN(entry.change)) return entry.change;
+      if (typeof entry.changePct === 'number' && !Number.isNaN(entry.changePct)) return entry.changePct;
+    }
+    if (typeof entry === 'number' && !Number.isNaN(entry)) return entry;
+    return undefined;
+  };
+
 // ...existing code...
   // Montar string dos índices globais
   const indicesMsg = context?.indices
@@ -107,7 +116,6 @@ export const sendTelegramSignal = async (
   const volumeSell = context?.volumeSell ?? '-';
   const breadthAdv = context?.breadthAdv ?? '-';
   const breadthDec = context?.breadthDec ?? '-';
-  const gap = context?.gap ?? '-';
 
   // HK set
   function safeIndex(idx: any): { change?: number, changePctStr?: string } {
@@ -116,18 +124,18 @@ export const sendTelegramSignal = async (
   }
   // US set
   const vix = safeIndex(indices.VIX);
-  const sp500 = safeIndex(indices.SP500 ?? indices['S&P 500']);
-  const nasdaq = safeIndex(indices.NASDAQ ?? indices['NASDAQ']);
-  const russell = safeIndex(indices.RUT ?? indices['RUSSELL']);
-  const tnx = safeIndex(indices.TNX ?? indices['10Y']);
+  const sp500 = safeIndex(indices.US500 ?? indices.SP500 ?? indices['S&P 500']);
+  const nasdaq = safeIndex(indices.US100 ?? indices.NASDAQ ?? indices['NASDAQ']);
+  const russell = safeIndex(indices.RUT ?? indices.RUSSELL ?? indices['RUSSELL 2000']);
+  const tnx = safeIndex(indices['^TNX'] ?? indices.TNX ?? indices['10Y']);
   const dxy = safeIndex(indices.DXY);
   // Outros índices
   const vhsi = safeIndex(indices.VHSI);
-  const cnh = safeIndex(indices.CNH) || safeIndex(indices['USD/CNH']);
-  const nikkei = safeIndex(indices.NIKKEI225);
-  const sse = safeIndex(indices.SSE);
+  const cnh = safeIndex(indices['CNH=X'] ?? indices.CNH ?? indices['USD/CNH']);
+  const nikkei = safeIndex(indices.JP225 ?? indices.NIKKEI ?? indices.NIKKEI225);
+  const sse = safeIndex(indices['000001.SS'] ?? indices.SSE);
   const us500 = safeIndex(indices.US500);
-  const usdjpy = safeIndex(indices.USDJPY);
+  const usdjpy = safeIndex(indices['USDJPY=X'] ?? indices.USDJPY);
   const dxyHK = safeIndex(indices.DXY);
 
   const vixMood = toNum(vix) < 0 ? '😌' : '⚠️';
@@ -152,23 +160,17 @@ export const sendTelegramSignal = async (
   const volumeResumo = isBuy
     ? `📈 Volume comprador dominante (${fmtInt(volumeBuy)}% compra)`
     : `📉 Volume vendedor dominante (${fmtInt(volumeSell)}% venda)`;
+  const vixChange = assetSymbol === 'US30' ? getIndexChange(vix) : getIndexChange(vhsi);
   const vixResumo = assetSymbol === 'US30'
-    ? `${vixMood} VIX em ${toNum(vix) < 0 ? 'queda' : 'alta'} (${fmtPct(vix)})`
-    : `${vhsiMood} VHSI em ${toNum(vhsi) < 0 ? 'queda' : 'alta'} (${fmtPct(vhsi)})`;
-  const breadthResumo = score > 0
+    ? `${vixMood} VIX em ${vixChange !== undefined && vixChange < 0 ? 'queda' : 'alta'} (${fmtPct(vixChange)})`
+    : `${vhsiMood} VHSI em ${vixChange !== undefined && vixChange < 0 ? 'queda' : 'alta'} (${fmtPct(vixChange)})`;
+  const breadthAdvNum = toNum(breadthAdv);
+  const breadthDecNum = toNum(breadthDec);
+  const breadthResumo = breadthAdvNum > breadthDecNum
     ? `🟢 Breadth positivo (${breadthAdv} alta, ${breadthDec} baixa)`
-    : score < 0
+    : breadthAdvNum < breadthDecNum
       ? `🔴 Breadth negativo (${breadthAdv} alta, ${breadthDec} baixa)`
       : `⚖️ Breadth neutro (${breadthAdv} alta, ${breadthDec} baixa)`;
-  const gapNum = toNum(gap);
-  const gapBias = Number.isNaN(gapNum)
-    ? ''
-    : gapNum > 0
-      ? ' (favorável à compra)'
-      : gapNum < 0
-        ? ' (favorável à venda)'
-        : ' (neutro)';
-  const gapResumo = `🕳️ Gap de abertura: ${fmtPct(gap)}${gapBias}`;
 
   const siteUrl = getEnvVar('VITE_SITE_URL') || getEnvVar('SITE_URL') || 'https://ubuntutrader.com.br/';
 
@@ -206,7 +208,6 @@ export const sendTelegramSignal = async (
       hkVolumeLine,
       `- ${vixResumo}`,
       `- ${breadthResumo}`,
-      `- ${gapResumo}`,
       '',
       '⚡️ Siga as zonas SMC/FVG para melhor entrada.',
       '',
