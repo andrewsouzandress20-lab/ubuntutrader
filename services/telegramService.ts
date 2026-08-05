@@ -31,6 +31,15 @@ const resolveTelegramCreds = () => {
   return { botToken, chatId };
 };
 
+const parseJsonOrText = async (response: Response): Promise<any> => {
+  const text = await response.text();
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
+};
+
 // In browser builds we avoid filesystem access; in server/CLI we don't need TXT persistence.
 const writeMessageToFile = (_message: string): string | null => null;
 
@@ -266,12 +275,12 @@ export const sendTelegramSignal = async (
           },
           body: JSON.stringify({ text: message }),
         });
-        const data = await response.json();
-        if (data?.ok) {
+        const data = await parseJsonOrText(response);
+        if (response.ok && data?.ok) {
           console.log(`[${now}] Mensagem enviada pelo backend (${backendUrl})`, { response: data });
           sent = true;
         } else {
-          errors.push(`Backend respondeu erro: ${data?.error || 'desconhecido'}`);
+          errors.push(`Backend respondeu ${response.status}: ${typeof data === 'string' ? data : data?.error || 'desconhecido'}`);
         }
       } catch (err: any) {
         errors.push(`Falha no backend: ${err?.message || err}`);
@@ -335,12 +344,12 @@ export const sendTelegramAnalysis = async (message: string): Promise<void> => {
           },
           body: JSON.stringify({ text: message }),
         });
-        const data = await response.json();
-        if (data?.ok) {
+        const data = await parseJsonOrText(response);
+        if (response.ok && data?.ok) {
           console.log(`[${now}] Análise enviada pelo backend (${backendUrl})`, { response: data });
           sent = true;
         } else {
-          errors.push(`Backend respondeu erro: ${data?.error || 'desconhecido'}`);
+          errors.push(`Backend respondeu ${response.status}: ${typeof data === 'string' ? data : data?.error || 'desconhecido'}`);
         }
       } catch (err: any) {
         errors.push(`Falha no backend: ${err?.message || err}`);
