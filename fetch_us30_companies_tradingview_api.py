@@ -1,17 +1,10 @@
-# Exemplo: Buscar volume do E-mini Dow Futures (YM1!) via TradingView
-try:
-    from tradingview_screener import Query
-    data = Query().select('name', 'close', 'volume', 'change')\
-                  .where('market == "america"')\
-                  .get_scanner_data()
-    print('Exemplo tradingview-screener:')
-    print(data)
-except Exception as e:
-    print('Erro ao buscar dados com tradingview-screener:', e)
 import csv
 import json
 from datetime import datetime, timezone
 import requests
+
+# O script consome diretamente a API de scanner do TradingView via requests.
+# A importação de tradingview_screener não é mais necessária aqui.
 
 # Lê os tickers do CSV e consulta a API do TradingView para todos de uma vez
 

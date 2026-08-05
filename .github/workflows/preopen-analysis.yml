@@ -17,6 +17,7 @@ jobs:
       - name: Instalar dependencias Python (TradingView)
         run: |
           python3 -m pip install --upgrade pip
+          python3 -m pip install requests
 
       - name: Coletar indices TradingView (prioridade)
         run: python3 fetch_indices_tradingview.py
