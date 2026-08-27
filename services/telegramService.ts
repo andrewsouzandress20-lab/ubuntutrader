@@ -83,10 +83,6 @@ export const sendTelegramSignal = async (
     gap?: number | string;
   }
 ): Promise<void> => {
-  if (signal === 'NEUTRO') {
-    console.log(`[${new Date().toISOString()}] Sinal neutro, nenhuma mensagem enviada ao Telegram.`);
-    return;
-  }
   const toNum = (v: any): number => {
     const num = parseFloat(String(v).replace(/[^0-9\-\.]/g, ''));
     return Number.isNaN(num) ? 0 : num;
@@ -116,7 +112,7 @@ export const sendTelegramSignal = async (
     : '';
 
     // ...existing code...
-    const isBuy = signal === 'COMPRA'; // This line determines if the signal is a buy signal
+    const isBuy = signal !== 'VENDA';
 
   const quote = context?.quote ?? '-';
   const quoteChange = context?.quoteChange ?? undefined;
@@ -166,6 +162,20 @@ export const sendTelegramSignal = async (
     return fav ? `(favorável para ${dir})` : `(desfavorável para ${dir})`;
   };
 
+  const us30Correlation: Record<string, 'positive' | 'negative'> = {
+    VIX: 'negative', US500: 'positive', SP500: 'positive',
+    NASDAQ: 'positive', US100: 'positive', DXY: 'negative',
+    TNX: 'negative', RUSSELL: 'positive'
+  };
+
+  const us30Favorability = (symbol: string, value: any) => {
+    const change = getIndexChange(value);
+    if (change === undefined || change === 0) return '⚖️ (neutro para US30)';
+    const correlation = us30Correlation[symbol] ?? 'positive';
+    const favorable = correlation === 'positive' ? change > 0 : change < 0;
+    return `${favorable ? '✅' : '❌'} (${favorable ? 'favorável' : 'desfavorável'} para US30)`;
+  };
+
   const volumeResumo = isBuy
     ? `📈 Volume comprador dominante (${fmtInt(volumeBuy)}% compra)`
     : `📉 Volume vendedor dominante (${fmtInt(volumeSell)}% venda)`;
@@ -189,9 +199,6 @@ export const sendTelegramSignal = async (
 
   let message = '';
 
-  const arrow = isBuy ? '🔺' : '🔻';
-  const signalText = `${arrow} ${signal}`;
-
   if (assetSymbol === 'HK50') {
     const hkVolumeLine = isBuy
       ? `- 📈 Volume comprador dominante (${fmtOneDec(volumeBuy)}% compra)`
@@ -200,7 +207,7 @@ export const sendTelegramSignal = async (
     message = [
       '🧠 ABERTURA',
       '',
-      `🇭🇰 HK50: Sinal de ${signalText} ${strength}`,
+      `🇭🇰 HK50: Dados atuais dos ativos correlacionados`,
       `Score institucional: ${score > 0 ? '+' : ''}${score}`,
       quoteLine,
       '',
@@ -232,17 +239,17 @@ export const sendTelegramSignal = async (
     message = [
       '🧠 ABERTURA',
       '',
-      `🇺🇸 US30: Sinal de ${signalText} ${strength}`,
+      `🇺🇸 US30: Dados atuais dos ativos correlacionados`,
       `Score institucional: ${score > 0 ? '+' : ''}${score}`,
       quoteLine,
       '',
       '🌎 Índices globais:',
-      `🥇 VIX: ${vix.changePctStr ?? (vix.change !== undefined ? `${vix.change >= 0 ? '+' : ''}${vix.change?.toFixed(2)}%` : '-')}`,
-      `🇺🇸 S&P 500: ${sp500.changePctStr ?? (sp500.change !== undefined ? `${sp500.change >= 0 ? '+' : ''}${sp500.change?.toFixed(2)}%` : '-')}`,
-      `🇺🇸 NASDAQ: ${nasdaq.changePctStr ?? (nasdaq.change !== undefined ? `${nasdaq.change >= 0 ? '+' : ''}${nasdaq.change?.toFixed(2)}%` : '-')}`,
-      `💵 DXY: ${dxy.changePctStr ?? (dxy.change !== undefined ? `${dxy.change >= 0 ? '+' : ''}${dxy.change?.toFixed(2)}%` : '-')}`,
-      `🇺🇸 10Y: ${tnx.changePctStr ?? (tnx.change !== undefined ? `${tnx.change >= 0 ? '+' : ''}${tnx.change?.toFixed(2)}%` : '-')}`,
-      `🇺🇸 Russell 2000: ${russell.changePctStr ?? (russell.change !== undefined ? `${russell.change >= 0 ? '+' : ''}${russell.change?.toFixed(2)}%` : '-')}`,
+      `🥇 VIX: ${vix.changePctStr ?? (vix.change !== undefined ? `${vix.change >= 0 ? '+' : ''}${vix.change?.toFixed(2)}%` : '-')} ${us30Favorability('VIX', vix)}`,
+      `🇺🇸 S&P 500: ${sp500.changePctStr ?? (sp500.change !== undefined ? `${sp500.change >= 0 ? '+' : ''}${sp500.change?.toFixed(2)}%` : '-')} ${us30Favorability('US500', sp500)}`,
+      `🇺🇸 NASDAQ: ${nasdaq.changePctStr ?? (nasdaq.change !== undefined ? `${nasdaq.change >= 0 ? '+' : ''}${nasdaq.change?.toFixed(2)}%` : '-')} ${us30Favorability('US100', nasdaq)}`,
+      `💵 DXY: ${dxy.changePctStr ?? (dxy.change !== undefined ? `${dxy.change >= 0 ? '+' : ''}${dxy.change?.toFixed(2)}%` : '-')} ${us30Favorability('DXY', dxy)}`,
+      `🇺🇸 10Y: ${tnx.changePctStr ?? (tnx.change !== undefined ? `${tnx.change >= 0 ? '+' : ''}${tnx.change?.toFixed(2)}%` : '-')} ${us30Favorability('TNX', tnx)}`,
+      `🇺🇸 Russell 2000: ${russell.changePctStr ?? (russell.change !== undefined ? `${russell.change >= 0 ? '+' : ''}${russell.change?.toFixed(2)}%` : '-')} ${us30Favorability('RUSSELL', russell)}`,
       '',
       '📊 Resumo:',
       volumeLine,

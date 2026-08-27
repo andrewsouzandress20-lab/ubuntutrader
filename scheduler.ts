@@ -58,7 +58,6 @@ export async function collectAndSendSignal(assetSymbol: string) {
 
     // Score institucional (exemplo: proporção de empresas em alta)
     const score = breadth.summary.advancing - breadth.summary.declining;
-    const signal = score > 0 ? 'COMPRA' : score < 0 ? 'VENDA' : 'NEUTRO';
     const strength = Math.abs(score) > 10 ? 'FORTE' : Math.abs(score) > 5 ? 'MODERADA' : 'FRACA';
 
     // Log para debug
@@ -66,23 +65,20 @@ export async function collectAndSendSignal(assetSymbol: string) {
       quote, indices, breadth, volume, score
     });
 
-    if (signal !== 'NEUTRO') {
-      await sendTelegramSignal(
-        assetSymbol,
-        signal,
-        strength,
-        score,
-        {
-          quote: quote ?? undefined,
-          volumeBuy: volume.buyPercent,
-          volumeSell: volume.sellPercent,
-          breadthAdv: breadth.summary.advancing,
-          breadthDec: breadth.summary.declining
-        }
-      );
-    } else {
-      console.log('[SINAL] Score neutro, não enviando mensagem.');
-    }
+    await sendTelegramSignal(
+      assetSymbol,
+      score > 0 ? 'COMPRA' : score < 0 ? 'VENDA' : 'NEUTRO',
+      strength,
+      score,
+      {
+        quote: quote ?? undefined,
+        indices: Object.fromEntries(indices.map(index => [index.symbol, index])),
+        volumeBuy: volume.buyPercent,
+        volumeSell: volume.sellPercent,
+        breadthAdv: breadth.summary.advancing,
+        breadthDec: breadth.summary.declining
+      }
+    );
   } catch (err) {
     console.error('[SINAL] Erro ao coletar/enviar sinal:', err);
   }

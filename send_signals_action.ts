@@ -771,7 +771,7 @@ const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snap
     const ok = desiredPos ? change > 0 : change < 0;
     const check = ok ? '✅' : '❌';
     const word = ok ? 'favorável' : 'desfavorável';
-    return `${check} (${word} para ${signal === 'NEUTRO' ? 'NEUTRO' : signal})`;
+    return `${check} (${word} para US30)`;
   };
 
   // Só exibe índices presentes no snapshot, sem buscar Yahoo ou ativos não relacionados
@@ -817,19 +817,15 @@ const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snap
     if (change !== null && !Number.isNaN(change)) {
       const corr = correlationMap[symbol] || 'positive';
       let favor = false;
-      if (signal === 'COMPRA') {
-        favor = corr === 'positive' ? change > 0 : change < 0;
-      } else if (signal === 'VENDA') {
-        favor = corr === 'positive' ? change < 0 : change > 0;
-      }
+      favor = corr === 'positive' ? change > 0 : change < 0;
       const check = favor ? '✅' : '❌';
-      const word = signal === 'NEUTRO' ? 'neutro' : favor ? 'favorável' : 'desfavorável';
-      favorText = signal === 'NEUTRO' ? '⚖️ (neutro)' : `${check} (${word} para ${signal})`;
+      const word = favor ? 'favorável' : 'desfavorável';
+      favorText = `${check} (${word} para US30)`;
       return `${label}: ${fmtPct(change)} ${favorText}`;
     } else {
       const rawEntry = getIndexSnapshotEntry(symbol);
       const price = rawEntry?.price;
-      favorText = '⚖️ (neutro)';
+      favorText = '⚖️ (neutro para US30)';
       return price !== undefined && price !== null && !Number.isNaN(price)
         ? `${label}: ${fmtPrice(price)} ${favorText}`
         : `${label}: ⚠️ dado ausente`;
@@ -856,13 +852,7 @@ const buildAnalysisMessage = (assetSymbol: string, label: string, snapshot: Snap
   const lines = [
     `${headerLine}`,
     '',
-    (() => {
-      let favor;
-      if (signal === 'COMPRA') favor = 'favorável à compra';
-      else if (signal === 'VENDA') favor = 'desfavorável à compra';
-      else favor = 'neutro';
-      return `${headerAsset}: Sinal de ${signal === 'NEUTRO' ? '⚖️ NEUTRO' : signal === 'COMPRA' ? '🔺 COMPRA' : '🔻 VENDA'} ${strength} (${favor})`;
-    })(),
+    `${headerAsset}: Dados atuais dos ativos correlacionados`,
     `Score institucional: ${total > 0 ? '+' : ''}${total}`,
     `Cotação: ${fmtPrice(snapshot.quote ?? null)}`,
     '',
@@ -917,11 +907,6 @@ async function sendSignalFromSnapshot(assetSymbol: string, label: string) {
   const signal = resolveSignal(score);
   const strength = resolveStrength(score);
 
-  if (signal === 'NEUTRO') {
-    console.log(`[SINAL] Score neutro para ${assetSymbol} (${label}), nada enviado.`);
-    return;
-  }
-
   // Monta contexto apenas com dados do indices_snapshot.json
   const indicesCtx = JSON.parse(fs.readFileSync('indices_snapshot.json', 'utf-8')).indices;
 
@@ -939,7 +924,7 @@ async function sendSignalFromSnapshot(assetSymbol: string, label: string) {
       breadthDec: snapshot.breadth?.summary?.declining
     }
   );
-  console.log(`[SINAL] Sinal enviado para ${assetSymbol} usando snapshot ${label}`);
+  console.log(`[DADOS] Dados atuais enviados para ${assetSymbol} usando snapshot ${label}`);
 
 }
 
